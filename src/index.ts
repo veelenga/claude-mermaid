@@ -15,7 +15,12 @@ import { randomBytes } from "crypto";
 
 const execAsync = promisify(exec);
 
-function createHtmlWrapper(content: string): string {
+export function getOpenCommand(): string {
+  return process.platform === "darwin" ? "open" :
+         process.platform === "win32" ? "start" : "xdg-open";
+}
+
+export function createHtmlWrapper(content: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -165,8 +170,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       // Open in default browser/viewer
-      const openCommand = process.platform === "darwin" ? "open" :
-                          process.platform === "win32" ? "start" : "xdg-open";
+      const openCommand = getOpenCommand();
       await execAsync(`${openCommand} "${fileToOpen}"`);
 
       return {

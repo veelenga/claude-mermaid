@@ -11,6 +11,8 @@
     "build": "tsc",
     "start": "node build/index.js",
     "dev": "tsc --watch",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -26,8 +28,11 @@
     "@modelcontextprotocol/sdk": "^1.18.2"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^24.6.0",
+    "@vitest/ui": "^3.2.4",
     "pkg": "^5.8.1",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   }
 }
