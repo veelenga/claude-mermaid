@@ -4,6 +4,26 @@ MCP server for previewing Mermaid diagrams in Claude Code.
 
 ![Demo](assets/demo.gif)
 
+## Examples
+
+<details>
+<summary>Package Dependencies</summary>
+
+![Dependencies Diagram](assets/example-dependencies.png)
+</details>
+
+<details>
+<summary>Project Architecture</summary>
+
+![Architecture Diagram](assets/example-architecture.png)
+</details>
+
+<details>
+<summary>HTTPS Connection Flow</summary>
+
+![HTTPS Sequence Diagram](assets/example-https.png)
+</details>
+
 ## Installation
 
 ### From Source
