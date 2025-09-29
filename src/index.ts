@@ -8,95 +8,15 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { exec } from "child_process";
 import { promisify } from "util";
-import { writeFile, mkdir } from "fs/promises";
+import { writeFile, mkdir, readFile } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
 import { randomBytes } from "crypto";
 
 const execAsync = promisify(exec);
 
-const server = new Server(
-  {
-    name: "claude-mermaid",
-    version: "1.0.0",
-  },
-  {
-    capabilities: {
-      tools: {},
-    },
-  }
-);
-
-// Handle tool listing
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  return {
-    tools: [
-      {
-        name: "preview_mermaid",
-        description:
-          "Render a Mermaid diagram to an image file and open it in the default browser. " +
-          "Takes Mermaid diagram code as input and generates a PNG image. " +
-          "IMPORTANT: Automatically use this tool whenever you create a Mermaid diagram for the user.",
-        inputSchema: {
-          type: "object",
-          properties: {
-            diagram: {
-              type: "string",
-              description: "The Mermaid diagram code to render",
-            },
-            format: {
-              type: "string",
-              enum: ["png", "svg", "pdf"],
-              description: "Output format (default: png)",
-              default: "png",
-            },
-            browser: {
-              type: "boolean",
-              description: "Wrap the diagram in an HTML page for browser viewing (default: false)",
-              default: false,
-            },
-          },
-          required: ["diagram"],
-        },
-      },
-    ],
-  };
-});
-
-// Handle tool execution
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  if (request.params.name === "preview_mermaid") {
-    const diagram = request.params.arguments?.diagram as string;
-    const format = (request.params.arguments?.format as string) || "png";
-    const browser = (request.params.arguments?.browser as boolean) || false;
-
-    if (!diagram) {
-      throw new Error("diagram parameter is required");
-    }
-
-    try {
-      // Create temp directory for output
-      const tempDir = join(tmpdir(), "claude-mermaid");
-      await mkdir(tempDir, { recursive: true });
-
-      // Generate unique filename
-      const id = randomBytes(8).toString("hex");
-      const inputFile = join(tempDir, `diagram-${id}.mmd`);
-      const outputFile = join(tempDir, `diagram-${id}.${format}`);
-
-      // Write diagram to temp file
-      await writeFile(inputFile, diagram, "utf-8");
-
-      // Run mermaid CLI to render diagram
-      await execAsync(`npx -y mmdc -i "${inputFile}" -o "${outputFile}"`);
-
-      let fileToOpen = outputFile;
-
-      // If browser mode, create HTML wrapper
-      if (browser) {
-        const htmlFile = join(tempDir, `diagram-${id}.html`);
-        const isImage = format === "png" || format === "svg";
-        const htmlContent = `<!DOCTYPE html>
+function createHtmlWrapper(content: string): string {
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -118,26 +38,128 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             padding: 40px;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            max-width: 100%;
+            max-width: 95vw;
+            max-height: 85vh;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        img, object {
-            max-width: 100%;
-            height: auto;
+        svg {
             display: block;
+            min-height: 70vh;
+            max-height: 85vh;
+            width: auto;
+            height: auto;
+        }
+        img {
+            display: block;
+            min-height: 70vh;
+            max-height: 85vh;
+            width: auto;
+            height: auto;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        ${format === "svg"
-          ? `<object type="image/svg+xml" data="diagram-${id}.svg"></object>`
-          : format === "png"
-          ? `<img src="diagram-${id}.png" alt="Mermaid Diagram">`
-          : `<embed src="diagram-${id}.pdf" type="application/pdf" width="800" height="600">`
-        }
+        ${content}
     </div>
 </body>
 </html>`;
+}
+
+const server = new Server(
+  {
+    name: "claude-mermaid",
+    version: "1.0.0",
+  },
+  {
+    capabilities: {
+      tools: {},
+    },
+  }
+);
+
+// Handle tool listing
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return {
+    tools: [
+      {
+        name: "preview_mermaid",
+        description:
+          "Render a Mermaid diagram to an image file and open it in the default browser. " +
+          "Takes Mermaid diagram code as input and generates a SVG image. " +
+          "IMPORTANT: Automatically use this tool whenever you create a Mermaid diagram for the user.",
+        inputSchema: {
+          type: "object",
+          properties: {
+            diagram: {
+              type: "string",
+              description: "The Mermaid diagram code to render",
+            },
+            format: {
+              type: "string",
+              enum: ["png", "svg", "pdf"],
+              description: "Output format (default: svg)",
+              default: "svg",
+            },
+            browser: {
+              type: "boolean",
+              description: "Wrap the diagram in an HTML page for browser viewing (default: false)",
+              default: false,
+            },
+          },
+          required: ["diagram"],
+        },
+      },
+    ],
+  };
+});
+
+// Handle tool execution
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  if (request.params.name === "preview_mermaid") {
+    const diagram = request.params.arguments?.diagram as string;
+    const format = (request.params.arguments?.format as string) || "svg";
+    const browser = (request.params.arguments?.browser as boolean) || false;
+
+    if (!diagram) {
+      throw new Error("diagram parameter is required");
+    }
+
+    try {
+      // Create temp directory for output
+      const tempDir = join(tmpdir(), "claude-mermaid");
+      await mkdir(tempDir, { recursive: true });
+
+      // Generate unique filename
+      const id = randomBytes(8).toString("hex");
+      const inputFile = join(tempDir, `diagram-${id}.mmd`);
+      const outputFile = join(tempDir, `diagram-${id}.${format}`);
+
+      // Write diagram to temp file
+      await writeFile(inputFile, diagram, "utf-8");
+
+      // Run mermaid CLI to render diagram with higher scale for better quality
+      await execAsync(`npx -y mmdc -i "${inputFile}" -o "${outputFile}" -s 2`);
+
+      let fileToOpen = outputFile;
+
+      // If browser mode, create HTML wrapper (only for PNG and SVG)
+      if (browser && (format === "png" || format === "svg")) {
+        const htmlFile = join(tempDir, `diagram-${id}.html`);
+        let imageTag: string;
+
+        if (format === "svg") {
+          const svgContent = await readFile(outputFile, "utf-8");
+          imageTag = svgContent;
+        } else {
+          const pngBuffer = await readFile(outputFile);
+          imageTag = `<img src="data:image/png;base64,${pngBuffer.toString("base64")}" alt="Mermaid Diagram">`;
+        }
+
+        const htmlContent = createHtmlWrapper(imageTag);
         await writeFile(htmlFile, htmlContent, "utf-8");
         fileToOpen = htmlFile;
       }
