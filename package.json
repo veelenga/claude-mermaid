@@ -1,0 +1,33 @@
+{
+  "name": "claude-mermaid",
+  "version": "1.0.0",
+  "description": "MCP server for previewing Mermaid diagrams in Claude Code",
+  "main": "build/index.js",
+  "type": "module",
+  "bin": {
+    "claude-mermaid": "./build/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/index.js",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "mermaid",
+    "claude",
+    "diagram"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "^11.12.0",
+    "@modelcontextprotocol/sdk": "^1.18.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "pkg": "^5.8.1",
+    "typescript": "^5.9.2"
+  }
+}
