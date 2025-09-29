@@ -2,6 +2,8 @@
 
 MCP server for previewing Mermaid diagrams in Claude Code.
 
+![Demo](assets/demo.gif)
+
 ## Installation
 
 ### From Source

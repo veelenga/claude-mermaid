@@ -95,7 +95,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         description:
           "Render a Mermaid diagram to an image file and open it in the default browser. " +
           "Takes Mermaid diagram code as input and generates a SVG image. " +
-          "IMPORTANT: Automatically use this tool whenever you create a Mermaid diagram for the user.",
+          "IMPORTANT: Automatically use this tool whenever you create a Mermaid diagram for the user. " +
+          "NOTE: Sequence diagrams do not support style directives - avoid using 'style' statements in sequenceDiagram.",
         inputSchema: {
           type: "object",
           properties: {
@@ -147,7 +148,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       await writeFile(inputFile, diagram, "utf-8");
 
       // Run mermaid CLI to render diagram with higher scale for better quality
-      await execAsync(`npx -y mmdc -i "${inputFile}" -o "${outputFile}" -s 2`);
+      // Use --pdfFit to fit content for PDFs (removes blank first page)
+      const fitFlag = format === "pdf" ? "--pdfFit" : "";
+      await execAsync(`npx -y mmdc -i "${inputFile}" -o "${outputFile}" -s 2 ${fitFlag}`.trim());
 
       let fileToOpen = outputFile;
 
