@@ -50,8 +50,8 @@ describe('getOpenCommand', () => {
 
 describe('MCP Tool Schema', () => {
   it('should validate tool name', () => {
-    const toolName = 'preview_mermaid';
-    expect(toolName).toBe('preview_mermaid');
+    const toolName = 'render_mermaid';
+    expect(toolName).toBe('render_mermaid');
   });
 
   it('should require diagram parameter', () => {
