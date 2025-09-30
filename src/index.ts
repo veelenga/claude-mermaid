@@ -9,11 +9,24 @@ import {
 import { exec } from "child_process";
 import { promisify } from "util";
 import { writeFile, mkdir, readFile } from "fs/promises";
-import { join } from "path";
+import { join, dirname } from "path";
 import { tmpdir } from "os";
 import { randomBytes } from "crypto";
+import { fileURLToPath } from "url";
 
 const execAsync = promisify(exec);
+
+// Read version from package.json
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const packageJson = JSON.parse(await readFile(join(__dirname, '../package.json'), 'utf-8'));
+const VERSION = packageJson.version;
+
+// Check for version flag
+if (process.argv.includes('-v') || process.argv.includes('--version')) {
+  console.log(VERSION);
+  process.exit(0);
+}
 
 export function getOpenCommand(): string {
   return process.platform === "darwin" ? "open" :
@@ -77,7 +90,7 @@ export function createHtmlWrapper(content: string): string {
 const server = new Server(
   {
     name: "claude-mermaid",
-    version: "1.0.0",
+    version: VERSION,
   },
   {
     capabilities: {
