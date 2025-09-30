@@ -2,34 +2,40 @@
 
 MCP server for previewing Mermaid diagrams in Claude Code.
 
-![Demo](assets/demo.gif)
+![Demo](https://raw.githubusercontent.com/veelenga/claude-mermaid/main/assets/demo.gif)
 
 ## Examples
 
 <details>
 <summary>Package Dependencies</summary>
 
-![Dependencies Diagram](assets/example-dependencies.png)
+![Dependencies Diagram](https://raw.githubusercontent.com/veelenga/claude-mermaid/main/assets/example-dependencies.png)
 </details>
 
 <details>
 <summary>Project Architecture</summary>
 
-![Architecture Diagram](assets/example-architecture.png)
+![Architecture Diagram](https://raw.githubusercontent.com/veelenga/claude-mermaid/main/assets/example-architecture.png)
 </details>
 
 <details>
 <summary>HTTPS Connection Flow</summary>
 
-![HTTPS Sequence Diagram](assets/example-https.png)
+![HTTPS Sequence Diagram](https://raw.githubusercontent.com/veelenga/claude-mermaid/main/assets/example-https.png)
 </details>
 
 ## Installation
 
+### From npm
+
+```bash
+npm install -g claude-mermaid
+```
+
 ### From Source
 
 ```bash
-git clone https://github.com/yourusername/claude-mermaid.git && cd claude-mermaid
+git clone https://github.com/veelenga/claude-mermaid.git && cd claude-mermaid
 npm install
 npm run build
 npm install -g .

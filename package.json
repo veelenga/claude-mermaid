@@ -20,8 +20,16 @@
     "claude",
     "diagram"
   ],
-  "author": "",
+  "author": "Vitalii Elenhaupt",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/veelenga/claude-mermaid.git"
+  },
+  "homepage": "https://github.com/veelenga/claude-mermaid#readme",
+  "bugs": {
+    "url": "https://github.com/veelenga/claude-mermaid/issues"
+  },
   "dependencies": {
     "@mermaid-js/mermaid-cli": "^11.12.0",
     "@modelcontextprotocol/sdk": "^1.18.2"
