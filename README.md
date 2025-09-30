@@ -29,18 +29,10 @@ MCP server for previewing Mermaid diagrams in Claude Code.
 ### From Source
 
 ```bash
-git clone https://github.com/yourusername/claude-mermaid.git
-cd claude-mermaid
+git clone https://github.com/yourusername/claude-mermaid.git && cd claude-mermaid
 npm install
 npm run build
 npm install -g .
-```
-
-### Using Homebrew (Coming Soon)
-
-```bash
-brew tap veelenga/tap
-brew install claude-mermaid
 ```
 
 ## Configuration
@@ -84,9 +76,9 @@ Claude will automatically use the `preview_mermaid` tool to render the diagram a
 You can request different output formats:
 
 ```
-"Create a diagram and save it as SVG"
-"Preview this diagram as a PDF"
-"Show me this diagram in the browser" (uses browser mode with HTML wrapper)
+"Create user auth diagram in SVG"
+"Preview pizza delivery diagram as a PDF"
+"Show me diagram explaining how https works in browser" (uses browser mode with HTML wrapper)
 ```
 
 ### Example
