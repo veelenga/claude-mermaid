@@ -43,10 +43,16 @@ npm install -g .
 
 ## Configuration
 
-Add the MCP server to Claude Code:
+Add the MCP server to Claude Code locally (current directory):
 
 ```bash
 claude mcp add mermaid claude-mermaid
+```
+
+Or add it globally (available in all directories):
+
+```bash
+claude mcp add --scope user mermaid claude-mermaid
 ```
 
 Or manually add to your MCP config file:
