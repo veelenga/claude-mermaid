@@ -1,12 +1,16 @@
 {
   "name": "claude-mermaid",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server for previewing Mermaid diagrams in Claude Code",
   "main": "build/index.js",
   "type": "module",
   "bin": {
     "claude-mermaid": "./build/index.js"
   },
+  "files": [
+    "build/index.js",
+    "CHANGELOG.md"
+  ],
   "scripts": {
     "build": "tsc",
     "start": "node build/index.js",
