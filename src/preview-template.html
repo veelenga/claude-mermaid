@@ -79,18 +79,20 @@
       .diagram-wrapper {
         width: 100%;
         min-height: calc(100vh - 32px);
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
         padding: 40px;
+        min-width: 100%;
       }
       svg {
         display: block;
         height: auto !important;
         width: auto !important;
-        max-width: 100% !important;
+        max-width: none !important;
         margin: 0 auto;
-        transform-origin: top center;
+        transform-origin: top left;
+        flex-shrink: 0;
       }
       svg.very-tall {
         width: 40% !important;
@@ -99,7 +101,7 @@
         width: 70% !important;
       }
       svg.square {
-        width: 50% !important;
+        width: 100% !important;
       }
       svg.wide {
         width: 100% !important;
@@ -122,9 +124,7 @@
     </div>
 
     <div class="viewport">
-      <div class="diagram-wrapper">
-        {{CONTENT}}
-      </div>
+      <div class="diagram-wrapper">{{CONTENT}}</div>
     </div>
 
     <script>

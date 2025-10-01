@@ -184,7 +184,7 @@ describe("Template rendering", () => {
     expect(template).toContain("{{TIMESTAMP}}");
 
     // Verify these placeholders appear in meaningful contexts
-    expect(template).toContain('class="diagram-wrapper">\n        {{CONTENT}}');
+    expect(template).toContain('class="diagram-wrapper">{{CONTENT}}');
     expect(template).toContain('new WebSocket("ws://localhost:{{PORT}}/{{DIAGRAM_ID}}');
     expect(template).toContain("background: {{BACKGROUND}}");
   });
