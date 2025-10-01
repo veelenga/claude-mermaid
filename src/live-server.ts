@@ -2,17 +2,15 @@ import { createServer, Server as HttpServer, IncomingMessage, ServerResponse } f
 import { WebSocketServer, WebSocket } from "ws";
 import { watch, FSWatcher } from "fs";
 import { readFile } from "fs/promises";
-import { homedir } from "os";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { loadDiagramOptions } from "./file-utils.js";
+import { loadDiagramOptions, getLiveDir } from "./file-utils.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const TEMPLATE_PATH = join(__dirname, "preview-template.html");
 
-const CONFIG_DIR = process.env.XDG_CONFIG_HOME || `${homedir()}/.config`;
-const LIVE_DIR = `${CONFIG_DIR}/claude-mermaid/live`;
+// Live directories are resolved via shared utils (respects XDG_CONFIG_HOME/HOME)
 
 interface DiagramState {
   filePath: string;
@@ -49,7 +47,7 @@ async function findAvailablePort(
 
 async function handleViewRequest(url: string, res: ServerResponse, port: number): Promise<void> {
   const diagramId = url.substring(6);
-  const filePath = `${LIVE_DIR}/${diagramId}/diagram.svg`;
+  const filePath = join(getLiveDir(), diagramId, "diagram.svg");
 
   try {
     const content = await readFile(filePath, "utf-8");

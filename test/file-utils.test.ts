@@ -9,6 +9,7 @@ import {
   loadDiagramSource,
   loadDiagramOptions,
   cleanupOldDiagrams,
+  getConfigDir,
 } from "../src/file-utils.js";
 import { writeFile, unlink, mkdir, utimes, rmdir, readdir, mkdtemp } from "fs/promises";
 import { tmpdir } from "os";
@@ -45,10 +46,11 @@ describe("File Utilities", () => {
       expect(path1).toBe(path2);
     });
 
-    it("should use HOME or USERPROFILE environment variable", () => {
+    it("should derive from config dir based on env", () => {
       const liveDir = getLiveDir();
       const homeDir = process.env.HOME || process.env.USERPROFILE || tmpdir();
-      expect(liveDir).toContain(homeDir);
+      const expectedRoot = process.env.XDG_CONFIG_HOME || join(homeDir, ".config");
+      expect(liveDir).toContain(expectedRoot);
     });
   });
 
@@ -66,6 +68,47 @@ describe("File Utilities", () => {
       expect(archDir).toContain("architecture");
       expect(flowDir).toContain("flow");
       expect(archDir).not.toBe(flowDir);
+    });
+  });
+
+  describe("getConfigDir precedence", () => {
+    let originalXdg: string | undefined;
+    let originalHomeLocal: string | undefined;
+
+    beforeEach(() => {
+      originalXdg = process.env.XDG_CONFIG_HOME;
+      originalHomeLocal = process.env.HOME;
+    });
+
+    afterEach(() => {
+      if (originalXdg === undefined) delete process.env.XDG_CONFIG_HOME;
+      else process.env.XDG_CONFIG_HOME = originalXdg;
+
+      if (originalHomeLocal === undefined) delete process.env.HOME;
+      else process.env.HOME = originalHomeLocal;
+    });
+
+    it("should prefer XDG_CONFIG_HOME when set", async () => {
+      const xdgDir = await mkdtemp(join(tmpdir(), "claude-mermaid-xdg-"));
+      process.env.XDG_CONFIG_HOME = xdgDir;
+
+      const cfg = getConfigDir();
+      expect(cfg).toBe(xdgDir);
+
+      const live = getLiveDir();
+      expect(live).toBe(join(xdgDir, "claude-mermaid", "live"));
+    });
+
+    it("should fallback to HOME/.config when XDG unset", async () => {
+      delete process.env.XDG_CONFIG_HOME;
+      const tempHome = await mkdtemp(join(tmpdir(), "claude-mermaid-home-"));
+      process.env.HOME = tempHome;
+
+      const cfg = getConfigDir();
+      expect(cfg).toBe(join(tempHome, ".config"));
+
+      const live = getLiveDir();
+      expect(live).toBe(join(cfg, "claude-mermaid", "live"));
     });
   });
 
