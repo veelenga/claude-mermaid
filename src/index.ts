@@ -114,40 +114,42 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (request.params.name === "render_mermaid") {
     const diagram = request.params.arguments?.diagram as string;
-    const format = (request.params.arguments?.format as string) || "svg";
+    const savePath = request.params.arguments?.save_path as string | undefined;
+    // Default to png when saving files, svg for preview only
+    const format = (request.params.arguments?.format as string) || (savePath ? "png" : "svg");
     const theme = (request.params.arguments?.theme as string) || "default";
     const background = (request.params.arguments?.background as string) || "white";
     const width = (request.params.arguments?.width as number) || 800;
     const height = (request.params.arguments?.height as number) || 600;
     const scale = (request.params.arguments?.scale as number) || 2;
-    let savePath = request.params.arguments?.save_path as string | undefined;
 
     if (!diagram) {
       throw new Error("diagram parameter is required");
     }
 
-    // If no save path provided, use default location
-    if (!savePath) {
-      const homeDir = process.env.HOME || process.env.USERPROFILE || tmpdir();
-      const configDir = join(homeDir, ".config");
-      const liveDir = join(configDir, "claude-mermaid");
-      await mkdir(liveDir, { recursive: true });
-      savePath = join(liveDir, `live-diagram.${format}`);
-    }
+    // Always use home directory for live reload
+    const homeDir = process.env.HOME || process.env.USERPROFILE || tmpdir();
+    const configDir = join(homeDir, ".config");
+    const liveDir = join(configDir, "claude-mermaid");
+    await mkdir(liveDir, { recursive: true });
+
+    // Generate stable ID from user's save path (or default) for consistent live reload
+    const idSource = savePath || join(liveDir, `live-diagram.${format}`);
+    const id = Buffer.from(idSource).toString('base64').replace(/[/+=]/g, '').substring(0, 16);
+
+    // Live reload always uses home directory
+    const liveFilePath = join(liveDir, `live-diagram-${id}.${format}`);
 
     try {
       // Create temp directory for output
       const tempDir = join(tmpdir(), "claude-mermaid");
       await mkdir(tempDir, { recursive: true });
 
-      // Generate stable ID from save path for consistent live reload
-      const id = Buffer.from(savePath).toString('base64').replace(/[/+=]/g, '').substring(0, 16);
       const inputFile = join(tempDir, `diagram-${id}.mmd`);
 
-      // For PDF format, we need both PDF (for saving) and SVG (for live preview)
+      // Always generate SVG for live preview, plus the requested format for saving
       const outputFile = join(tempDir, `diagram-${id}.${format}`);
-      const previewFormat = format === "pdf" ? "svg" : format;
-      const previewFile = format === "pdf" ? join(tempDir, `diagram-${id}.${previewFormat}`) : outputFile;
+      const previewFile = join(tempDir, `diagram-${id}.svg`);
 
       // Write diagram to temp file
       await writeFile(inputFile, diagram, "utf-8");
@@ -168,8 +170,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       await execAsync(cmd);
 
-      // If PDF format, also generate SVG for live preview
-      if (format === "pdf") {
+      // Always generate SVG for live preview (if not already the requested format)
+      if (format !== "svg") {
         const previewCmd = [
           'npx -y mmdc',
           `-i "${inputFile}"`,
@@ -183,17 +185,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         await execAsync(previewCmd);
       }
 
-      // Copy to save_path if provided
+      // Always save to live directory for live reload
+      await copyFile(outputFile, liveFilePath);
+
+      // Optionally save to user-provided path
       if (savePath) {
         const saveDir = dirname(savePath);
         await mkdir(saveDir, { recursive: true });
         await copyFile(outputFile, savePath);
-
-        // For PDF format, also save the SVG preview
-        if (format === "pdf") {
-          const livePreviewPath = savePath.replace(/\.pdf$/, '.svg');
-          await copyFile(previewFile, livePreviewPath);
-        }
       }
 
       // Start live server and serve diagram
@@ -202,9 +201,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       // Check if there are active connections before adding the diagram
       const hasConnections = hasActiveConnections(id);
 
-      // For live reload, use the preview file (SVG for PDF format, otherwise the actual file)
-      const livePreviewPath = format === "pdf" ? savePath.replace(/\.pdf$/, '.svg') : savePath;
-      await addLiveDiagram(id, livePreviewPath);
+      // Always use SVG for live preview
+      await addLiveDiagram(id, previewFile);
       const serverUrl = `http://localhost:${port}/${id}`;
 
       // Only open browser if there are no active connections
@@ -217,19 +215,19 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         ? `Mermaid diagram updated successfully.`
         : `Mermaid diagram rendered successfully and opened in browser.`;
 
-      const formatMessage = format === "pdf"
-        ? `\nSaved to: ${savePath}\nLive preview: ${livePreviewPath}`
-        : `\nSaved to: ${savePath}`;
-
       const liveMessage = hasConnections
         ? `\nDiagram updated. Browser will refresh automatically.`
         : `\nLive reload URL: ${serverUrl}\nThe diagram will auto-refresh when you update it.`;
+
+      const saveMessage = savePath
+        ? `\nSaved to: ${savePath} (${format.toUpperCase()})`
+        : `\nWorking file: ${liveFilePath} (${format.toUpperCase()})`;
 
       return {
         content: [
           {
             type: "text",
-            text: `${actionMessage}${formatMessage}${liveMessage}`,
+            text: `${actionMessage}${saveMessage}${liveMessage}`,
           },
         ],
       };

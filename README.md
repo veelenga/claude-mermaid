@@ -110,8 +110,9 @@ Simply ask Claude Code to create Mermaid diagrams. The server will:
 **With specific output format:**
 ```
 "Create an ER diagram and save as PDF to ./docs/schema.pdf"
+"Save the flowchart as PNG to ./docs/flow.png"
 ```
-*Note: PDF format saves the PDF file while showing an SVG preview in the browser.*
+*Note: Browser always shows SVG for live preview, while saving to your chosen format.*
 
 **Iterative refinement:**
 ```
@@ -148,7 +149,7 @@ The `render_mermaid` tool accepts these parameters:
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `diagram` | string | *required* | The Mermaid diagram code |
-| `format` | string | `svg` | Output format: `svg`, `png`, or `pdf` |
+| `format` | string | `svg` (or `png` if `save_path` provided) | Output format: `svg`, `png`, or `pdf` |
 | `theme` | string | `default` | Theme: `default`, `forest`, `dark`, `neutral` |
 | `background` | string | `white` | Background color (e.g., `transparent`, `white`, `#F0F0F0`) |
 | `width` | number | `800` | Diagram width in pixels |
