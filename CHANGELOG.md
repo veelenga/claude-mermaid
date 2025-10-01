@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Custom background color support (transparent, custom colors)
 - Configurable diagram dimensions (`width`, `height`) and scale factor
 - `save_path` parameter to save diagrams to project location
+- `live` parameter for live reload mode with automatic diagram refresh via WebSocket
 
 ### Changed
 - Tool renamed from `preview_mermaid` to `render_mermaid`

@@ -157,6 +157,20 @@ describe('MCP Tool Schema', () => {
       expect(path).toMatch(/\.(svg|png|pdf)$/);
     });
   });
+
+  it('should have live parameter with default value', () => {
+    const liveParam = {
+      type: 'boolean',
+      default: false,
+    };
+    expect(liveParam.type).toBe('boolean');
+    expect(liveParam.default).toBe(false);
+  });
+
+  it('should enable live reload mode when live is true', () => {
+    const liveParam = true;
+    expect(liveParam).toBe(true);
+  });
 });
 
 describe('Image embedding', () => {

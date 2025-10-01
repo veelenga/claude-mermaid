@@ -13,6 +13,7 @@ import { join, dirname } from "path";
 import { tmpdir } from "os";
 import { randomBytes } from "crypto";
 import { fileURLToPath } from "url";
+import { ensureLiveServer, addLiveDiagram, hasActiveConnections } from "./live-server.js";
 
 const execAsync = promisify(exec);
 
@@ -160,6 +161,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "string",
               description: "Optional path to save the diagram file (e.g., './docs/diagram.svg'). If not provided, uses temp directory.",
             },
+            live: {
+              type: "boolean",
+              description: "Enable live reload mode with automatic refresh when diagram changes. Starts a local server and watches for file changes. Requires save_path or uses default location. Only works with browser mode (automatically enabled).",
+              default: false,
+            },
           },
           required: ["diagram"],
         },
@@ -173,16 +179,35 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   if (request.params.name === "render_mermaid") {
     const diagram = request.params.arguments?.diagram as string;
     const format = (request.params.arguments?.format as string) || "svg";
-    const browser = (request.params.arguments?.browser as boolean) || false;
+    let browser = (request.params.arguments?.browser as boolean) || false;
     const theme = (request.params.arguments?.theme as string) || "default";
     const background = (request.params.arguments?.background as string) || "white";
     const width = (request.params.arguments?.width as number) || 800;
     const height = (request.params.arguments?.height as number) || 600;
     const scale = (request.params.arguments?.scale as number) || 2;
-    const savePath = request.params.arguments?.save_path as string | undefined;
+    let savePath = request.params.arguments?.save_path as string | undefined;
+    const live = (request.params.arguments?.live as boolean) || false;
 
     if (!diagram) {
       throw new Error("diagram parameter is required");
+    }
+
+    // Live mode requires SVG or PNG format
+    if (live && format === "pdf") {
+      throw new Error("Live mode is not supported with PDF format. Use SVG or PNG instead.");
+    }
+
+    // Live mode automatically enables browser mode
+    if (live) {
+      browser = true;
+
+      // If no save path provided, use default location
+      if (!savePath) {
+        const homeDir = process.env.HOME || process.env.USERPROFILE || tmpdir();
+        const liveDir = join(homeDir, ".claude-mermaid");
+        await mkdir(liveDir, { recursive: true });
+        savePath = join(liveDir, `live-diagram.${format}`);
+      }
     }
 
     try {
@@ -190,8 +215,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const tempDir = join(tmpdir(), "claude-mermaid");
       await mkdir(tempDir, { recursive: true });
 
-      // Generate unique filename
-      const id = randomBytes(8).toString("hex");
+      // Generate unique filename (or use hash of save path for live mode)
+      const id = live && savePath
+        ? Buffer.from(savePath).toString('base64').replace(/[/+=]/g, '').substring(0, 16)
+        : randomBytes(8).toString("hex");
       const inputFile = join(tempDir, `diagram-${id}.mmd`);
       const outputFile = join(tempDir, `diagram-${id}.${format}`);
 
@@ -221,36 +248,72 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         await copyFile(outputFile, savePath);
       }
 
-      let fileToOpen = outputFile;
+      let fileToOpen: string;
+      let serverUrl: string | null = null;
+      let shouldOpenBrowser = false;
 
-      // If browser mode, create HTML wrapper (only for PNG and SVG)
-      if (browser && (format === "png" || format === "svg")) {
-        const htmlFile = join(tempDir, `diagram-${id}.html`);
-        let imageTag: string;
+      // Handle live mode with server
+      if (live && savePath) {
+        const port = await ensureLiveServer();
 
-        if (format === "svg") {
-          const svgContent = await readFile(outputFile, "utf-8");
-          imageTag = svgContent;
-        } else {
-          const pngBuffer = await readFile(outputFile);
-          imageTag = `<img src="data:image/png;base64,${pngBuffer.toString("base64")}" alt="Mermaid Diagram">`;
+        // Check if there are active connections before adding the diagram
+        const hasConnections = hasActiveConnections(id);
+
+        await addLiveDiagram(id, savePath);
+        serverUrl = `http://localhost:${port}/${id}`;
+        fileToOpen = serverUrl;
+
+        // Only open browser if there are no active connections
+        if (!hasConnections) {
+          const openCommand = getOpenCommand();
+          await execAsync(`${openCommand} "${serverUrl}"`);
+          shouldOpenBrowser = true;
+        }
+      } else {
+        fileToOpen = outputFile;
+
+        // If browser mode, create HTML wrapper (only for PNG and SVG)
+        if (browser && (format === "png" || format === "svg")) {
+          const htmlFile = join(tempDir, `diagram-${id}.html`);
+          let imageTag: string;
+
+          if (format === "svg") {
+            const svgContent = await readFile(outputFile, "utf-8");
+            imageTag = svgContent;
+          } else {
+            const pngBuffer = await readFile(outputFile);
+            imageTag = `<img src="data:image/png;base64,${pngBuffer.toString("base64")}" alt="Mermaid Diagram">`;
+          }
+
+          const htmlContent = createHtmlWrapper(imageTag);
+          await writeFile(htmlFile, htmlContent, "utf-8");
+          fileToOpen = htmlFile;
         }
 
-        const htmlContent = createHtmlWrapper(imageTag);
-        await writeFile(htmlFile, htmlContent, "utf-8");
-        fileToOpen = htmlFile;
+        // Open in default browser/viewer
+        const openCommand = getOpenCommand();
+        await execAsync(`${openCommand} "${fileToOpen}"`);
       }
 
-      // Open in default browser/viewer
-      const openCommand = getOpenCommand();
-      await execAsync(`${openCommand} "${fileToOpen}"`);
-
       const savedMessage = savePath ? `\nSaved to: ${savePath}` : '';
+      let liveMessage = '';
+      if (live) {
+        if (shouldOpenBrowser) {
+          liveMessage = `\nLive reload URL: ${serverUrl}\nThe diagram will auto-refresh when you update it.`;
+        } else {
+          liveMessage = `\nDiagram updated. Browser will refresh automatically.`;
+        }
+      }
+
+      const actionMessage = live && !shouldOpenBrowser
+        ? `Mermaid diagram updated successfully.`
+        : `Mermaid diagram rendered successfully and opened in ${browser ? "browser" : "default viewer"}.`;
+
       return {
         content: [
           {
             type: "text",
-            text: `Mermaid diagram rendered successfully and opened in ${browser ? "browser" : "default viewer"}.\nOutput file: ${fileToOpen}${savedMessage}`,
+            text: `${actionMessage}\nOutput file: ${fileToOpen}${savedMessage}${liveMessage}`,
           },
         ],
       };
