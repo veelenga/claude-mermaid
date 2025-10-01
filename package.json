@@ -8,11 +8,11 @@
     "claude-mermaid": "./build/index.js"
   },
   "files": [
-    "build/index.js",
+    "build/**/*.js",
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && chmod +x build/index.js",
     "start": "node build/index.js",
     "dev": "tsc --watch",
     "test": "vitest",
@@ -36,10 +36,12 @@
   },
   "dependencies": {
     "@mermaid-js/mermaid-cli": "^11.12.0",
-    "@modelcontextprotocol/sdk": "^1.18.2"
+    "@modelcontextprotocol/sdk": "^1.18.2",
+    "ws": "^8.18.3"
   },
   "devDependencies": {
     "@types/node": "^24.6.0",
+    "@types/ws": "^8.18.1",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }
