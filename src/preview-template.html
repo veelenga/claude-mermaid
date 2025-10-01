@@ -186,6 +186,19 @@
       document.getElementById("zoom-out").addEventListener("click", zoomOut);
       document.getElementById("zoom-reset").addEventListener("click", resetZoom);
 
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "+" || e.key === "=") {
+          e.preventDefault();
+          zoomIn();
+        } else if (e.key === "-") {
+          e.preventDefault();
+          zoomOut();
+        } else if (e.key === "0") {
+          e.preventDefault();
+          resetZoom();
+        }
+      });
+
       window.addEventListener("load", scaleDiagram);
       window.addEventListener("resize", scaleDiagram);
       scaleDiagram();
