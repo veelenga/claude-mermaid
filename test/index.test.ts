@@ -17,7 +17,7 @@ describe('MCP Server', () => {
     });
   });
 
-  describe('Tool: mermaid_preview', () => {
+  describe('Tool Schema: mermaid_preview', () => {
     it('should validate tool name', () => {
       const toolName = 'mermaid_preview';
       expect(toolName).toBe('mermaid_preview');
@@ -67,13 +67,6 @@ describe('MCP Server', () => {
       expect(backgroundParam.default).toBe('white');
     });
 
-    it('should support custom background colors', () => {
-      const validBackgrounds = ['white', 'transparent', 'red', '#F0F0F0', '#000000'];
-      validBackgrounds.forEach(bg => {
-        expect(bg).toBeTruthy();
-      });
-    });
-
     it('should have width parameter with default value', () => {
       const widthParam = {
         type: 'number',
@@ -110,49 +103,13 @@ describe('MCP Server', () => {
       expect(previewIdParam.required).toBe(true);
     });
 
-    it('should accept valid preview_id values', () => {
-      const validIds = [
-        'architecture',
-        'flow',
-        'sequence',
-        'api-flow',
-        'data-model',
-      ];
-      validIds.forEach(id => {
-        expect(id).toBeTruthy();
-        expect(typeof id).toBe('string');
-      });
-    });
-
     it('should always enable live reload mode', () => {
       const liveMode = true;
       expect(liveMode).toBe(true);
     });
-
-    it('should throw error when diagram parameter is missing', () => {
-      const diagram = undefined;
-      const previewId = 'test';
-
-      if (!diagram) {
-        expect(() => {
-          throw new Error('diagram parameter is required');
-        }).toThrow('diagram parameter is required');
-      }
-    });
-
-    it('should throw error when preview_id parameter is missing', () => {
-      const diagram = 'graph TD; A-->B';
-      const previewId = undefined;
-
-      if (!previewId) {
-        expect(() => {
-          throw new Error('preview_id parameter is required');
-        }).toThrow('preview_id parameter is required');
-      }
-    });
   });
 
-  describe('Tool: mermaid_save', () => {
+  describe('Tool Schema: mermaid_save', () => {
     it('should validate tool name', () => {
       const toolName = 'mermaid_save';
       expect(toolName).toBe('mermaid_save');
@@ -165,18 +122,6 @@ describe('MCP Server', () => {
       expect(requiredParams).toHaveLength(2);
     });
 
-    it('should accept valid save_path formats', () => {
-      const validPaths = [
-        './docs/diagram.svg',
-        '/absolute/path/diagram.png',
-        '/absolute/path/diagram.pdf',
-        'simple-name.svg',
-      ];
-      validPaths.forEach(path => {
-        expect(path).toMatch(/\.(svg|png|pdf)$/);
-      });
-    });
-
     it('should have format parameter with default svg', () => {
       const formatParam = {
         type: 'string',
@@ -186,22 +131,6 @@ describe('MCP Server', () => {
       expect(formatParam.type).toBe('string');
       expect(formatParam.default).toBe('svg');
       expect(formatParam.enum).toContain('svg');
-    });
-
-    it('should match preview_id with mermaid_preview', () => {
-      const previewId = 'architecture';
-      expect(previewId).toBe('architecture');
-    });
-
-    it('should throw error when save_path parameter is missing', () => {
-      const savePath = undefined;
-      const previewId = 'test';
-
-      if (!savePath) {
-        expect(() => {
-          throw new Error('save_path parameter is required');
-        }).toThrow('save_path parameter is required');
-      }
     });
   });
 });
@@ -296,4 +225,3 @@ describe('File Formats and Locations', () => {
     expect(filePath).toContain('.config/claude-mermaid/live');
   });
 });
-

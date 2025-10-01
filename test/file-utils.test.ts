@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { getLiveDir, getDiagramFilePath, cleanupOldDiagrams } from './file-utils.js';
+import { getLiveDir, getDiagramFilePath, cleanupOldDiagrams } from '../src/file-utils.js';
 import { writeFile, unlink, mkdir, utimes } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';

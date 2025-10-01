@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { ensureLiveServer, addLiveDiagram, hasActiveConnections } from './live-server.js';
+import { ensureLiveServer, addLiveDiagram, hasActiveConnections } from '../src/live-server.js';
 import { writeFile, unlink, mkdir } from 'fs/promises';
 import { tmpdir } from 'os';
 import { join } from 'path';
