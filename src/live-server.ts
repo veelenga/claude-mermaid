@@ -3,7 +3,13 @@ import { WebSocketServer, WebSocket } from "ws";
 import { watch, FSWatcher } from "fs";
 import { readFile } from "fs/promises";
 import { homedir } from "os";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 import { loadDiagramOptions } from "./file-utils.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const TEMPLATE_PATH = join(__dirname, "preview-template.html");
 
 const CONFIG_DIR = process.env.XDG_CONFIG_HOME || `${homedir()}/.config`;
 const LIVE_DIR = `${CONFIG_DIR}/claude-mermaid/live`;
@@ -47,7 +53,7 @@ async function handleViewRequest(url: string, res: ServerResponse, port: number)
 
   try {
     const content = await readFile(filePath, "utf-8");
-    const html = createLiveHtmlWrapper(content, diagramId, port, "white");
+    const html = await createLiveHtmlWrapper(content, diagramId, port, "white");
     res.writeHead(200, { "Content-Type": "text/html" });
     res.end(html);
   } catch (error) {
@@ -77,7 +83,7 @@ async function handleLivePreviewRequest(
       loadDiagramOptions(diagramId),
     ]);
 
-    const html = createLiveHtmlWrapper(content, diagramId, port, options.background);
+    const html = await createLiveHtmlWrapper(content, diagramId, port, options.background);
     res.writeHead(200, { "Content-Type": "text/html" });
     res.end(html);
   } catch (error) {
@@ -170,191 +176,27 @@ function notifyClients(diagramId: string): void {
   });
 }
 
-function createLiveHtmlWrapper(
+let templateCache: string | null = null;
+
+async function loadTemplate(): Promise<string> {
+  if (!templateCache) {
+    templateCache = await readFile(TEMPLATE_PATH, "utf-8");
+  }
+  return templateCache;
+}
+
+async function createLiveHtmlWrapper(
   content: string,
   diagramId: string,
   port: number,
   background: string = "white"
-): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mermaid Diagram Preview (Live)</title>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-        body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            background: #1a1a1a;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        .status-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            padding: 8px 16px;
-            background: rgba(0, 0, 0, 0.9);
-            color: white;
-            font-size: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 1000;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        .status-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #4CAF50;
-            margin-right: 8px;
-            display: inline-block;
-        }
-        .status-indicator.disconnected {
-            background: #f44336;
-        }
-        .viewport {
-            position: fixed;
-            top: 32px;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            overflow: auto;
-            background: ${background};
-        }
-        .diagram-wrapper {
-            width: 100%;
-            min-height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 40px;
-        }
-        #diagram-container {
-            display: block;
-            width: 100%;
-        }
-        svg {
-            display: block;
-            height: auto !important;
-            width: auto !important;
-            max-width: 100% !important;
-            margin: 0 auto;
-        }
-        svg.tall {
-            width: 70% !important;
-        }
-        svg.square {
-            width: 50% !important;
-        }
-        svg.wide {
-            width: 100% !important;
-        }
-    </style>
-</head>
-<body>
-    <div class="status-bar">
-        <div>
-            <span class="status-indicator" id="status-indicator"></span>
-            <span id="status-text">Live Reload Active</span>
-        </div>
-        <div id="last-update">Last updated: ${new Date().toLocaleTimeString()}</div>
-    </div>
+): Promise<string> {
+  const template = await loadTemplate();
 
-    <div class="viewport">
-        <div class="diagram-wrapper">
-            <div id="diagram-container">
-                ${content}
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // Auto-scale diagram based on viewport
-        function scaleDiagram() {
-            const svg = document.querySelector('svg');
-            if (!svg) return;
-
-            const viewBox = svg.getAttribute('viewBox');
-            if (!viewBox) return;
-
-            const [, , width, height] = viewBox.split(' ').map(Number);
-            const ratio = width / height;
-
-            // Remove all classes first
-            svg.classList.remove('tall', 'square', 'wide');
-
-            // 1. Tall diagrams
-            if (ratio < 0.7) {
-                svg.classList.add('tall');
-            }
-            // 2. Square-ish diagrams
-            else if (ratio >= 0.7 && ratio <= 1.5) {
-                svg.classList.add('square');
-            }
-            // 3. Wide diagrams
-            else {
-                svg.classList.add('wide');
-            }
-        }
-
-        // Scale on load and resize
-        window.addEventListener('load', scaleDiagram);
-        window.addEventListener('resize', scaleDiagram);
-        scaleDiagram();
-
-        let ws;
-        let reconnectInterval;
-
-        function connect() {
-            ws = new WebSocket('ws://localhost:${port}/${diagramId}');
-
-            ws.onopen = () => {
-                console.log('WebSocket connected');
-                document.getElementById('status-text').textContent = 'Live Reload Active';
-                document.getElementById('status-indicator').classList.remove('disconnected');
-                if (reconnectInterval) {
-                    clearInterval(reconnectInterval);
-                    reconnectInterval = null;
-                }
-            };
-
-            ws.onmessage = (event) => {
-                if (event.data === 'reload') {
-                    console.log('Reloading diagram...');
-                    location.reload();
-                }
-            };
-
-            ws.onclose = () => {
-                console.log('WebSocket disconnected');
-                document.getElementById('status-text').textContent = 'Disconnected - Reconnecting...';
-                document.getElementById('status-indicator').classList.add('disconnected');
-
-                if (!reconnectInterval) {
-                    reconnectInterval = setInterval(() => {
-                        console.log('Attempting to reconnect...');
-                        connect();
-                    }, 2000);
-                }
-            };
-
-            ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
-                ws.close();
-            };
-        }
-
-        connect();
-    </script>
-</body>
-</html>`;
+  return template
+    .replace("{{CONTENT}}", content)
+    .replace("{{DIAGRAM_ID}}", diagramId)
+    .replace("{{PORT}}", port.toString())
+    .replace("{{BACKGROUND}}", background)
+    .replace("{{TIMESTAMP}}", new Date().toLocaleTimeString());
 }
