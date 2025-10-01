@@ -32,6 +32,30 @@
         z-index: 1000;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       }
+      .zoom-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .zoom-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: background 0.2s;
+      }
+      .zoom-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+      .zoom-level {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.7);
+        min-width: 45px;
+        text-align: center;
+      }
       .status-indicator {
         width: 8px;
         height: 8px;
@@ -54,7 +78,7 @@
       }
       .diagram-wrapper {
         width: 100%;
-        min-height: 100%;
+        min-height: calc(100vh - 32px);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -66,6 +90,10 @@
         width: auto !important;
         max-width: 100% !important;
         margin: 0 auto;
+        transform-origin: top center;
+      }
+      svg.very-tall {
+        width: 40% !important;
       }
       svg.tall {
         width: 70% !important;
@@ -84,6 +112,12 @@
         <span class="status-indicator" id="status-indicator"></span>
         <span id="status-text">Live Reload Active</span>
       </div>
+      <div class="zoom-controls">
+        <button class="zoom-btn" id="zoom-out">−</button>
+        <span class="zoom-level" id="zoom-level">100%</span>
+        <button class="zoom-btn" id="zoom-in">+</button>
+        <button class="zoom-btn" id="zoom-reset">Reset</button>
+      </div>
       <div id="last-update">Last updated: {{TIMESTAMP}}</div>
     </div>
 
@@ -94,6 +128,9 @@
     </div>
 
     <script>
+      const diagramId = "{{DIAGRAM_ID}}";
+      let zoomLevel = parseFloat(localStorage.getItem(`zoom-${diagramId}`)) || 1;
+
       function scaleDiagram() {
         const svg = document.querySelector("svg");
         if (!svg) return;
@@ -104,16 +141,50 @@
         const [, , width, height] = viewBox.split(" ").map(Number);
         const ratio = width / height;
 
-        svg.classList.remove("tall", "square", "wide");
+        svg.setAttribute("data-ratio", ratio.toFixed(2));
+        svg.classList.remove("very-tall", "tall", "square", "wide");
 
-        if (ratio < 0.7) {
+        if (ratio < 0.3) {
+          svg.classList.add("very-tall");
+        } else if (ratio < 0.7) {
           svg.classList.add("tall");
         } else if (ratio >= 0.7 && ratio <= 1.5) {
           svg.classList.add("square");
         } else {
           svg.classList.add("wide");
         }
+
+        applyZoom();
       }
+
+      function applyZoom() {
+        const svg = document.querySelector("svg");
+        if (!svg) return;
+
+        svg.style.transform = `scale(${zoomLevel})`;
+
+        document.getElementById("zoom-level").textContent = `${Math.round(zoomLevel * 100)}%`;
+        localStorage.setItem(`zoom-${diagramId}`, zoomLevel);
+      }
+
+      function zoomIn() {
+        zoomLevel = Math.min(zoomLevel + 0.1, 3);
+        applyZoom();
+      }
+
+      function zoomOut() {
+        zoomLevel = Math.max(zoomLevel - 0.1, 0.1);
+        applyZoom();
+      }
+
+      function resetZoom() {
+        zoomLevel = 1;
+        applyZoom();
+      }
+
+      document.getElementById("zoom-in").addEventListener("click", zoomIn);
+      document.getElementById("zoom-out").addEventListener("click", zoomOut);
+      document.getElementById("zoom-reset").addEventListener("click", resetZoom);
 
       window.addEventListener("load", scaleDiagram);
       window.addEventListener("resize", scaleDiagram);
