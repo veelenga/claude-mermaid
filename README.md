@@ -1,6 +1,6 @@
 # Claude Mermaid MCP Server
 
-MCP server for previewing Mermaid diagrams in Claude Code.
+MCP server for rendering Mermaid diagrams in Claude Code.
 
 ![Demo](https://raw.githubusercontent.com/veelenga/claude-mermaid/main/assets/demo.gif)
 
@@ -69,34 +69,42 @@ Or manually add to your MCP config file:
 
 ## Usage
 
-Once configured, you can ask Claude Code to create and preview Mermaid diagrams:
+Once configured, you can ask Claude Code to create and render Mermaid diagrams:
 
 ```
 "Create a Mermaid diagram showing the user authentication flow"
 ```
 
-Claude will automatically use the `preview_mermaid` tool to render the diagram and open it in your default browser/viewer.
+Claude will automatically use the `render_mermaid` tool to render the diagram and open it in your default viewer.
 
 ### Tool Parameters
 
 - `diagram` (required): The Mermaid diagram code
-- `format` (optional): Output format - `png`, `svg`, or `pdf` (default: `png`)
+- `format` (optional): Output format - `png`, `svg`, or `pdf` (default: `svg`)
 - `browser` (optional): Wrap diagram in HTML page for browser viewing (default: `false`)
+- `theme` (optional): Chart theme - `default`, `forest`, `dark`, or `neutral` (default: `default`)
+- `background` (optional): Background color for pngs/svgs - e.g., `transparent`, `white`, `#F0F0F0` (default: `white`)
+- `width` (optional): Diagram width in pixels (default: `800`)
+- `height` (optional): Diagram height in pixels (default: `600`)
+- `scale` (optional): Scale factor for higher quality output (default: `2`)
+- `save_path` (optional): Path to save the diagram file - e.g., `./docs/diagram.svg`
 
-### Output Formats
+### Examples
 
-You can request different output formats:
+You can request different output formats and styles:
 
 ```
 "Create user auth diagram in SVG"
-"Preview pizza delivery diagram as a PDF"
-"Show me diagram explaining how https works in browser" (uses browser mode with HTML wrapper)
+"Render pizza delivery diagram as a PDF"
+"Show me diagram explaining how https works in browser" (uses browser mode)
+"Create a dark theme flowchart with transparent background"
+"Save the architecture diagram to ./docs/architecture.svg"
 ```
 
 ### Example
 
 ```
-"Create a flowchart diagram of:
+"Create a flowchart diagram and save to ./docs/auth-flow.svg:
 graph LR
     A[User Login] --> B{Valid Credentials?}
     B -->|Yes| C[Access Granted]
@@ -110,7 +118,7 @@ graph LR
 "
 ```
 
-The diagram will be automatically rendered and opened in your browser.
+The diagram will be automatically rendered, saved to your project, and opened in your default viewer.
 
 ## Development
 

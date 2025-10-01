@@ -8,7 +8,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import { exec } from "child_process";
 import { promisify } from "util";
-import { writeFile, mkdir, readFile } from "fs/promises";
+import { writeFile, mkdir, readFile, copyFile } from "fs/promises";
 import { join, dirname } from "path";
 import { tmpdir } from "os";
 import { randomBytes } from "crypto";
@@ -104,10 +104,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
   return {
     tools: [
       {
-        name: "preview_mermaid",
+        name: "render_mermaid",
         description:
-          "Render a Mermaid diagram to an image file and open it in the default browser. " +
-          "Takes Mermaid diagram code as input and generates a SVG image. " +
+          "Render a Mermaid diagram to an image file and open it in the default viewer. " +
+          "Takes Mermaid diagram code as input and generates an image (PNG, SVG, or PDF). " +
+          "Supports themes (default, forest, dark, neutral), custom backgrounds, dimensions, and quality scaling. " +
+          "Can save to project location or temp directory. " +
           "IMPORTANT: Automatically use this tool whenever you create a Mermaid diagram for the user. " +
           "NOTE: Sequence diagrams do not support style directives - avoid using 'style' statements in sequenceDiagram.",
         inputSchema: {
@@ -128,6 +130,36 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               description: "Wrap the diagram in an HTML page for browser viewing (default: false)",
               default: false,
             },
+            theme: {
+              type: "string",
+              enum: ["default", "forest", "dark", "neutral"],
+              description: "Theme of the chart (default: default)",
+              default: "default",
+            },
+            background: {
+              type: "string",
+              description: "Background color for pngs/svgs. Example: transparent, red, '#F0F0F0' (default: white)",
+              default: "white",
+            },
+            width: {
+              type: "number",
+              description: "Diagram width in pixels (default: 800)",
+              default: 800,
+            },
+            height: {
+              type: "number",
+              description: "Diagram height in pixels (default: 600)",
+              default: 600,
+            },
+            scale: {
+              type: "number",
+              description: "Scale factor for higher quality output (default: 2)",
+              default: 2,
+            },
+            save_path: {
+              type: "string",
+              description: "Optional path to save the diagram file (e.g., './docs/diagram.svg'). If not provided, uses temp directory.",
+            },
           },
           required: ["diagram"],
         },
@@ -138,10 +170,16 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
 
 // Handle tool execution
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  if (request.params.name === "preview_mermaid") {
+  if (request.params.name === "render_mermaid") {
     const diagram = request.params.arguments?.diagram as string;
     const format = (request.params.arguments?.format as string) || "svg";
     const browser = (request.params.arguments?.browser as boolean) || false;
+    const theme = (request.params.arguments?.theme as string) || "default";
+    const background = (request.params.arguments?.background as string) || "white";
+    const width = (request.params.arguments?.width as number) || 800;
+    const height = (request.params.arguments?.height as number) || 600;
+    const scale = (request.params.arguments?.scale as number) || 2;
+    const savePath = request.params.arguments?.save_path as string | undefined;
 
     if (!diagram) {
       throw new Error("diagram parameter is required");
@@ -160,10 +198,28 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       // Write diagram to temp file
       await writeFile(inputFile, diagram, "utf-8");
 
-      // Run mermaid CLI to render diagram with higher scale for better quality
-      // Use --pdfFit to fit content for PDFs (removes blank first page)
+      // Build mermaid CLI command with all parameters
       const fitFlag = format === "pdf" ? "--pdfFit" : "";
-      await execAsync(`npx -y mmdc -i "${inputFile}" -o "${outputFile}" -s 2 ${fitFlag}`.trim());
+      const cmd = [
+        'npx -y mmdc',
+        `-i "${inputFile}"`,
+        `-o "${outputFile}"`,
+        `-t ${theme}`,
+        `-b ${background}`,
+        `-w ${width}`,
+        `-H ${height}`,
+        `-s ${scale}`,
+        fitFlag
+      ].filter(Boolean).join(' ');
+
+      await execAsync(cmd);
+
+      // Copy to save_path if provided
+      if (savePath) {
+        const saveDir = dirname(savePath);
+        await mkdir(saveDir, { recursive: true });
+        await copyFile(outputFile, savePath);
+      }
 
       let fileToOpen = outputFile;
 
@@ -189,11 +245,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const openCommand = getOpenCommand();
       await execAsync(`${openCommand} "${fileToOpen}"`);
 
+      const savedMessage = savePath ? `\nSaved to: ${savePath}` : '';
       return {
         content: [
           {
             type: "text",
-            text: `Mermaid diagram rendered successfully and opened in ${browser ? "browser" : "default viewer"}.\nOutput file: ${fileToOpen}`,
+            text: `Mermaid diagram rendered successfully and opened in ${browser ? "browser" : "default viewer"}.\nOutput file: ${fileToOpen}${savedMessage}`,
           },
         ],
       };

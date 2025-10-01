@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - `-v` and `--version` CLI flags to display version
+- Theme support (`default`, `forest`, `dark`, `neutral`)
+- Custom background color support (transparent, custom colors)
+- Configurable diagram dimensions (`width`, `height`) and scale factor
+- `save_path` parameter to save diagrams to project location
+
+### Changed
+- Tool renamed from `preview_mermaid` to `render_mermaid`
+- Default output format changed from `png` to `svg`
 
 ## [1.0.1] - 2025-09-30
 
