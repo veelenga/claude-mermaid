@@ -94,7 +94,7 @@ export async function ensureLiveServer(): Promise<number> {
 }
 
 // Add or update a diagram in live mode
-export async function addLiveDiagram(diagramId: string, filePath: string): Promise<void> {
+export async function addLiveDiagram(diagramId: string, filePath: string, format: string = "svg"): Promise<void> {
   // Clean up existing watcher if any
   if (diagrams.has(diagramId)) {
     const existing = diagrams.get(diagramId)!;

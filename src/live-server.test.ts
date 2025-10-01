@@ -96,12 +96,13 @@ describe('Live mode parameters', () => {
     if (!savePath) {
       const homeDir = process.env.HOME || process.env.USERPROFILE || tmpdir();
       const configDir = join(homeDir, '.config');
-      savePath = join(configDir, 'claude-mermaid', 'live-diagram.svg');
+      savePath = join(configDir, 'claude-mermaid', 'live', 'example-diagram.svg');
     }
 
     expect(savePath).toBeTruthy();
     expect(savePath).toContain('.config');
     expect(savePath).toContain('claude-mermaid');
+    expect(savePath).toContain('live');
   });
 
   it('should support SVG format', () => {
