@@ -262,4 +262,15 @@ describe("handleMermaidSave", () => {
     await access(pngPath);
     await unlink(pngPath);
   });
+
+  it("should handle missing diagram source when saving", async () => {
+    const nonExistentId = "non-existent-preview";
+    const result = await handleMermaidSave({
+      save_path: "/tmp/test-diagram.svg",
+      preview_id: nonExistentId,
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Error saving diagram");
+  });
 });

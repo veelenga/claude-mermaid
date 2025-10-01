@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { ensureLiveServer, addLiveDiagram, hasActiveConnections } from "../src/live-server.js";
-import { writeFile, unlink, mkdir } from "fs/promises";
+import { writeFile, unlink, mkdir, mkdtemp, readdir, rmdir } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -89,161 +89,226 @@ describe("Live Server", () => {
   });
 });
 
-describe("Live mode parameters", () => {
-  it("should use default location when save_path not provided", () => {
-    let savePath: string | undefined = undefined;
+describe("Template rendering", () => {
+  let tempDir: string;
+  let testFilePath: string;
+  let originalHome: string | undefined;
 
-    if (!savePath) {
-      const homeDir = process.env.HOME || process.env.USERPROFILE || tmpdir();
-      const configDir = join(homeDir, ".config");
-      savePath = join(configDir, "claude-mermaid", "live", "example-diagram.svg");
+  beforeEach(async () => {
+    // Override HOME to use temp directory
+    originalHome = process.env.HOME;
+    const tempHome = await mkdtemp(join(tmpdir(), "claude-mermaid-render-test-"));
+    process.env.HOME = tempHome;
+
+    tempDir = join(tmpdir(), "claude-mermaid-template-test", Date.now().toString());
+    await mkdir(tempDir, { recursive: true });
+    testFilePath = join(tempDir, "test-diagram.svg");
+    await writeFile(
+      testFilePath,
+      '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40"/></svg>',
+      "utf-8"
+    );
+  });
+
+  afterEach(async () => {
+    try {
+      await unlink(testFilePath);
+    } catch {
+      // Ignore if file doesn't exist
     }
 
-    expect(savePath).toBeTruthy();
-    expect(savePath).toContain(".config");
-    expect(savePath).toContain("claude-mermaid");
-    expect(savePath).toContain("live");
+    // Restore original HOME
+    if (originalHome) {
+      process.env.HOME = originalHome;
+    } else {
+      delete process.env.HOME;
+    }
   });
 
-  it("should support SVG format", () => {
-    const formats = ["png", "svg", "pdf"];
-    expect(formats).toContain("svg");
+  it("should load template from file system", async () => {
+    const { readFile } = await import("fs/promises");
+    const { join } = await import("path");
+    const { fileURLToPath } = await import("url");
+    const { dirname } = await import("path");
+
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const templatePath = join(__dirname, "../src/preview-template.html");
+
+    const template = await readFile(templatePath, "utf-8");
+    expect(template).toBeTruthy();
+    expect(template.length).toBeGreaterThan(0);
   });
 
-  it("should support PNG format", () => {
-    const formats = ["png", "svg", "pdf"];
-    expect(formats).toContain("png");
+  it("should have template accessible for rendering", async () => {
+    // This test verifies the template exists and can be loaded by the rendering pipeline
+    // The actual rendering is tested in handlers.test.ts with mocked exec
+    const { readFile } = await import("fs/promises");
+    const { join } = await import("path");
+    const { fileURLToPath } = await import("url");
+    const { dirname } = await import("path");
+
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const templatePath = join(__dirname, "../src/preview-template.html");
+
+    // Verify template can be read
+    const template = await readFile(templatePath, "utf-8");
+    expect(template).toBeTruthy();
+
+    // Verify it's actual HTML content
+    expect(template).toContain("<!doctype html>");
+    expect(template).toContain("{{CONTENT}}");
+    expect(template).toContain("{{DIAGRAM_ID}}");
   });
 
-  it("should support PDF format with SVG preview", () => {
-    const formats = ["png", "svg", "pdf"];
-    expect(formats).toContain("pdf");
-  });
-});
+  it("should replace placeholders in template", async () => {
+    // We can't directly test createLiveHtmlWrapper since it's not exported,
+    // but we can verify the template has the right structure
+    const { readFile } = await import("fs/promises");
+    const { join } = await import("path");
+    const { fileURLToPath } = await import("url");
+    const { dirname } = await import("path");
 
-describe("Port management", () => {
-  it("should use default port range 3737-3747", () => {
-    const startPort = 3737;
-    const maxPort = 3747;
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const templatePath = join(__dirname, "../src/preview-template.html");
 
-    expect(maxPort - startPort).toBe(10);
-    expect(startPort).toBe(3737);
-    expect(maxPort).toBe(3747);
-  });
+    const template = await readFile(templatePath, "utf-8");
 
-  it("should have valid port range", () => {
-    const startPort = 3737;
-    const maxPort = 3747;
+    // Verify template has placeholders that will be replaced
+    expect(template).toContain("{{CONTENT}}");
+    expect(template).toContain("{{DIAGRAM_ID}}");
+    expect(template).toContain("{{PORT}}");
+    expect(template).toContain("{{BACKGROUND}}");
+    expect(template).toContain("{{TIMESTAMP}}");
 
-    expect(startPort).toBeGreaterThan(0);
-    expect(maxPort).toBeLessThan(65536);
-    expect(maxPort).toBeGreaterThan(startPort);
-  });
-});
-
-describe("WebSocket functionality", () => {
-  it("should support WebSocket protocol URL format", () => {
-    const port = 3737;
-    const diagramId = "test-diagram";
-    const wsUrl = `ws://localhost:${port}/${diagramId}`;
-
-    expect(wsUrl).toContain("ws://");
-    expect(wsUrl).toContain("localhost");
-    expect(wsUrl).toContain(diagramId);
+    // Verify these placeholders appear in meaningful contexts
+    expect(template).toContain('id="diagram-container">{{CONTENT}}');
+    expect(template).toContain('new WebSocket("ws://localhost:{{PORT}}/{{DIAGRAM_ID}}');
+    expect(template).toContain("background: {{BACKGROUND}}");
   });
 
-  it("should construct HTTP URL for diagram access", () => {
-    const port = 3737;
-    const diagramId = "test-diagram";
-    const httpUrl = `http://localhost:${port}/${diagramId}`;
+  it("should produce valid HTML structure", async () => {
+    const { readFile } = await import("fs/promises");
+    const { join } = await import("path");
+    const { fileURLToPath } = await import("url");
+    const { dirname } = await import("path");
 
-    expect(httpUrl).toContain("http://");
-    expect(httpUrl).toContain("localhost");
-    expect(httpUrl).toContain(diagramId);
-  });
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const templatePath = join(__dirname, "../src/preview-template.html");
 
-  it("should use reload message for client notifications", () => {
-    const reloadMessage = "reload";
-    expect(reloadMessage).toBe("reload");
-  });
+    const template = await readFile(templatePath, "utf-8");
 
-  it("should support /view/ endpoint URL format", () => {
-    const port = 3737;
-    const diagramId = "test-diagram";
-    const viewUrl = `http://localhost:${port}/view/${diagramId}`;
+    // Verify HTML5 structure
+    expect(template).toMatch(/<!doctype html>/i);
+    expect(template).toContain("<html");
+    expect(template).toContain("<head>");
+    expect(template).toContain("<body>");
+    expect(template).toContain("</html>");
 
-    expect(viewUrl).toContain("/view/");
-    expect(viewUrl).toContain(diagramId);
-  });
-});
+    // Verify has proper meta tags
+    expect(template).toContain('charset="UTF-8"');
+    expect(template).toContain('name="viewport"');
 
-describe("Diagram options", () => {
-  it("should support background color option", () => {
-    const backgrounds = ["white", "transparent", "#F0F0F0", "red"];
-    backgrounds.forEach((bg) => {
-      expect(bg).toBeTruthy();
-    });
-  });
-
-  it("should use white as default background", () => {
-    const defaultBackground = "white";
-    expect(defaultBackground).toBe("white");
-  });
-
-  it("should support theme options", () => {
-    const themes = ["default", "forest", "dark", "neutral"];
-    expect(themes).toContain("default");
-    expect(themes).toContain("forest");
-    expect(themes).toContain("dark");
-    expect(themes).toContain("neutral");
-  });
-
-  it("should support width and height options", () => {
-    const defaultWidth = 800;
-    const defaultHeight = 600;
-
-    expect(defaultWidth).toBeGreaterThan(0);
-    expect(defaultHeight).toBeGreaterThan(0);
-  });
-
-  it("should support scale option", () => {
-    const defaultScale = 2;
-    expect(defaultScale).toBeGreaterThanOrEqual(1);
+    // Verify has style and script tags
+    expect(template).toContain("<style>");
+    expect(template).toContain("</style>");
+    expect(template).toContain("<script>");
+    expect(template).toContain("</script>");
   });
 });
 
-describe("HTML wrapper features", () => {
-  it("should include viewport styling in HTML wrapper", () => {
-    const viewportStyles = `
-      position: fixed;
-      top: 32px;
-      left: 0;
-      right: 0;
-      bottom: 0;
-    `;
+describe("HTML wrapper and template", () => {
+  it("should have all required placeholders in template", async () => {
+    const { readFile } = await import("fs/promises");
+    const { join } = await import("path");
+    const { fileURLToPath } = await import("url");
+    const { dirname } = await import("path");
 
-    expect(viewportStyles).toContain("position: fixed");
-    expect(viewportStyles).toContain("top:");
-    expect(viewportStyles).toContain("bottom:");
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const templatePath = join(__dirname, "../src/preview-template.html");
+
+    const template = await readFile(templatePath, "utf-8");
+
+    expect(template).toContain("{{CONTENT}}");
+    expect(template).toContain("{{DIAGRAM_ID}}");
+    expect(template).toContain("{{PORT}}");
+    expect(template).toContain("{{BACKGROUND}}");
+    expect(template).toContain("{{TIMESTAMP}}");
   });
 
-  it("should include status bar in HTML wrapper", () => {
-    const statusBarClass = "status-bar";
-    expect(statusBarClass).toBe("status-bar");
+  it("should have required CSS classes in template", async () => {
+    const { readFile } = await import("fs/promises");
+    const { join } = await import("path");
+    const { fileURLToPath } = await import("url");
+    const { dirname } = await import("path");
+
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const templatePath = join(__dirname, "../src/preview-template.html");
+
+    const template = await readFile(templatePath, "utf-8");
+
+    expect(template).toContain('class="status-bar"');
+    expect(template).toContain('class="viewport"');
+    expect(template).toContain('class="diagram-wrapper"');
+    expect(template).toContain('id="diagram-container"');
   });
 
-  it("should support box-sizing border-box", () => {
-    const boxSizing = "border-box";
-    expect(boxSizing).toBe("border-box");
+  it("should include WebSocket reconnection logic in template", async () => {
+    const { readFile } = await import("fs/promises");
+    const { join } = await import("path");
+    const { fileURLToPath } = await import("url");
+    const { dirname } = await import("path");
+
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const templatePath = join(__dirname, "../src/preview-template.html");
+
+    const template = await readFile(templatePath, "utf-8");
+
+    expect(template).toContain("new WebSocket");
+    expect(template).toContain("ws.onopen");
+    expect(template).toContain("ws.onclose");
+    expect(template).toContain("ws.onmessage");
+    expect(template).toContain('event.data === "reload"');
   });
 
-  it("should use dark theme for wrapper background", () => {
-    const wrapperBackground = "#1a1a1a";
-    expect(wrapperBackground).toMatch(/^#[0-9a-fA-F]{6}$/);
+  it("should include diagram scaling logic in template", async () => {
+    const { readFile } = await import("fs/promises");
+    const { join } = await import("path");
+    const { fileURLToPath } = await import("url");
+    const { dirname } = await import("path");
+
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const templatePath = join(__dirname, "../src/preview-template.html");
+
+    const template = await readFile(templatePath, "utf-8");
+
+    expect(template).toContain("function scaleDiagram");
+    expect(template).toContain("viewBox");
+    expect(template).toContain("classList.add");
   });
 
-  it("should support custom diagram background color", () => {
-    const diagramBackground = "white";
-    expect(["white", "transparent", "#F0F0F0"]).toContain(diagramBackground);
+  it("should have viewport and status bar styles in template", async () => {
+    const { readFile } = await import("fs/promises");
+    const { join } = await import("path");
+    const { fileURLToPath } = await import("url");
+    const { dirname } = await import("path");
+
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const templatePath = join(__dirname, "../src/preview-template.html");
+
+    const template = await readFile(templatePath, "utf-8");
+
+    expect(template).toContain(".viewport");
+    expect(template).toContain(".status-bar");
+    expect(template).toContain("position: fixed");
+    expect(template).toContain("box-sizing: border-box");
   });
 });
