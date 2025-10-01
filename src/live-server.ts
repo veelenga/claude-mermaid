@@ -2,6 +2,11 @@ import { createServer, Server as HttpServer, IncomingMessage, ServerResponse } f
 import { WebSocketServer, WebSocket } from "ws";
 import { watch, FSWatcher } from "fs";
 import { readFile } from "fs/promises";
+import { homedir } from "os";
+import { loadDiagramOptions } from "./file-utils.js";
+
+const CONFIG_DIR = process.env.XDG_CONFIG_HOME || `${homedir()}/.config`;
+const LIVE_DIR = `${CONFIG_DIR}/claude-mermaid/live`;
 
 // Live reload server state
 interface DiagramState {
@@ -47,7 +52,27 @@ export async function ensureLiveServer(): Promise<number> {
   const port = await findAvailablePort();
 
   liveServer = createServer((req: IncomingMessage, res: ServerResponse) => {
-    const diagramId = req.url?.substring(1); // Remove leading '/'
+    const url = req.url || "/";
+
+    // Test endpoint with file from live storage
+    if (url.startsWith("/file/")) {
+      const fileName = url.substring(6); // Remove '/file/'
+      const filePath = `${LIVE_DIR}/${fileName}/diagram.svg`;
+
+      readFile(filePath, "utf-8")
+        .then((content) => {
+          const html = createLiveHtmlWrapper(content, fileName, port, "white");
+          res.writeHead(200, { "Content-Type": "text/html" });
+          res.end(html);
+        })
+        .catch((error) => {
+          res.writeHead(500, { "Content-Type": "text/plain" });
+          res.end(`Error reading file: ${error.message}`);
+        });
+      return;
+    }
+
+    const diagramId = url.substring(1); // Remove leading '/'
 
     if (!diagramId || !diagrams.has(diagramId)) {
       res.writeHead(404, { "Content-Type": "text/plain" });
@@ -57,10 +82,9 @@ export async function ensureLiveServer(): Promise<number> {
 
     const state = diagrams.get(diagramId)!;
 
-    // Read and serve the diagram file
-    readFile(state.filePath, "utf-8")
-      .then((content) => {
-        const html = createLiveHtmlWrapper(content, diagramId, port);
+    Promise.all([readFile(state.filePath, "utf-8"), loadDiagramOptions(diagramId)])
+      .then(([content, options]) => {
+        const html = createLiveHtmlWrapper(content, diagramId, port, options.background);
         res.writeHead(200, { "Content-Type": "text/html" });
         res.end(html);
       })
@@ -140,7 +164,12 @@ function notifyClients(diagramId: string): void {
   });
 }
 
-function createLiveHtmlWrapper(content: string, diagramId: string, port: number): string {
+function createLiveHtmlWrapper(
+  content: string,
+  diagramId: string,
+  port: number,
+  background: string = "white"
+): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -148,14 +177,16 @@ function createLiveHtmlWrapper(content: string, diagramId: string, port: number)
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mermaid Diagram Preview (Live)</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             margin: 0;
-            padding: 20px;
+            padding: 0;
             display: flex;
             flex-direction: column;
-            align-items: center;
             min-height: 100vh;
-            background: #f5f5f5;
+            background: #1a1a1a;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
         .status-bar {
@@ -164,13 +195,14 @@ function createLiveHtmlWrapper(content: string, diagramId: string, port: number)
             left: 0;
             right: 0;
             padding: 8px 16px;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             color: white;
             font-size: 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             z-index: 1000;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         .status-indicator {
             width: 8px;
@@ -183,32 +215,42 @@ function createLiveHtmlWrapper(content: string, diagramId: string, port: number)
         .status-indicator.disconnected {
             background: #f44336;
         }
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            max-width: 95vw;
-            max-height: 85vh;
+        .viewport {
+            position: fixed;
+            top: 32px;
+            left: 0;
+            right: 0;
+            bottom: 0;
             overflow: auto;
+            background: ${background};
+        }
+        .diagram-wrapper {
+            width: 100%;
+            min-height: 100%;
             display: flex;
-            justify-content: center;
             align-items: center;
-            margin-top: 40px;
+            justify-content: center;
+            padding: 40px;
+        }
+        #diagram-container {
+            display: block;
+            width: 100%;
         }
         svg {
             display: block;
-            min-height: 70vh;
-            max-height: 85vh;
-            width: auto;
-            height: auto;
+            height: auto !important;
+            width: auto !important;
+            max-width: 100% !important;
+            margin: 0 auto;
         }
-        img {
-            display: block;
-            min-height: 70vh;
-            max-height: 85vh;
-            width: auto;
-            height: auto;
+        svg.tall {
+            width: 70% !important;
+        }
+        svg.square {
+            width: 50% !important;
+        }
+        svg.wide {
+            width: 100% !important;
         }
     </style>
 </head>
@@ -220,10 +262,49 @@ function createLiveHtmlWrapper(content: string, diagramId: string, port: number)
         </div>
         <div id="last-update">Last updated: ${new Date().toLocaleTimeString()}</div>
     </div>
-    <div class="container" id="diagram-container">
-        ${content}
+
+    <div class="viewport">
+        <div class="diagram-wrapper">
+            <div id="diagram-container">
+                ${content}
+            </div>
+        </div>
     </div>
+
     <script>
+        // Auto-scale diagram based on viewport
+        function scaleDiagram() {
+            const svg = document.querySelector('svg');
+            if (!svg) return;
+
+            const viewBox = svg.getAttribute('viewBox');
+            if (!viewBox) return;
+
+            const [, , width, height] = viewBox.split(' ').map(Number);
+            const ratio = width / height;
+
+            // Remove all classes first
+            svg.classList.remove('tall', 'square', 'wide');
+
+            // 1. Tall diagrams
+            if (ratio < 0.7) {
+                svg.classList.add('tall');
+            }
+            // 2. Square-ish diagrams
+            else if (ratio >= 0.7 && ratio <= 1.5) {
+                svg.classList.add('square');
+            }
+            // 3. Wide diagrams
+            else {
+                svg.classList.add('wide');
+            }
+        }
+
+        // Scale on load and resize
+        window.addEventListener('load', scaleDiagram);
+        window.addEventListener('resize', scaleDiagram);
+        scaleDiagram();
+
         let ws;
         let reconnectInterval;
 

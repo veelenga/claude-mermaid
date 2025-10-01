@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { handleMermaidPreview, handleMermaidSave } from "../src/handlers.js";
 import { getPreviewDir, getDiagramFilePath } from "../src/file-utils.js";
-import { mkdir, readdir, unlink, rmdir, access, writeFile } from "fs/promises";
+import { mkdir, readdir, unlink, rmdir, access, writeFile, mkdtemp } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
 
@@ -34,8 +34,14 @@ vi.mock("../src/live-server.js", () => ({
 describe("handleMermaidPreview", () => {
   const testPreviewId = "test-preview";
   let testDir: string;
+  let originalHome: string | undefined;
 
   beforeEach(async () => {
+    // Override HOME to use temp directory
+    originalHome = process.env.HOME;
+    const tempHome = await mkdtemp(join(tmpdir(), "claude-mermaid-test-home-"));
+    process.env.HOME = tempHome;
+
     testDir = getPreviewDir(testPreviewId);
     await mkdir(testDir, { recursive: true });
   });
@@ -47,8 +53,21 @@ describe("handleMermaidPreview", () => {
         await unlink(`${testDir}/${file}`);
       }
       await rmdir(testDir);
+
+      // Clean up parent directories
+      const liveDir = join(process.env.HOME!, ".config", "claude-mermaid", "live");
+      await rmdir(join(process.env.HOME!, ".config", "claude-mermaid"));
+      await rmdir(join(process.env.HOME!, ".config"));
+      await rmdir(process.env.HOME!);
     } catch {
       // Ignore errors
+    }
+
+    // Restore original HOME
+    if (originalHome) {
+      process.env.HOME = originalHome;
+    } else {
+      delete process.env.HOME;
     }
   });
 
@@ -144,8 +163,14 @@ describe("handleMermaidPreview", () => {
 describe("handleMermaidSave", () => {
   const testPreviewId = "test-save";
   let testDir: string;
+  let originalHome: string | undefined;
 
   beforeEach(async () => {
+    // Override HOME to use temp directory
+    originalHome = process.env.HOME;
+    const tempHome = await mkdtemp(join(tmpdir(), "claude-mermaid-test-home-"));
+    process.env.HOME = tempHome;
+
     testDir = getPreviewDir(testPreviewId);
     await mkdir(testDir, { recursive: true });
 
@@ -163,8 +188,21 @@ describe("handleMermaidSave", () => {
         await unlink(`${testDir}/${file}`);
       }
       await rmdir(testDir);
+
+      // Clean up parent directories
+      await rmdir(join(process.env.HOME!, ".config", "claude-mermaid", "live"));
+      await rmdir(join(process.env.HOME!, ".config", "claude-mermaid"));
+      await rmdir(join(process.env.HOME!, ".config"));
+      await rmdir(process.env.HOME!);
     } catch {
       // Ignore errors
+    }
+
+    // Restore original HOME
+    if (originalHome) {
+      process.env.HOME = originalHome;
+    } else {
+      delete process.env.HOME;
     }
   });
 
