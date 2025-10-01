@@ -2,8 +2,16 @@ import { createServer, Server as HttpServer, IncomingMessage, ServerResponse } f
 import { WebSocketServer, WebSocket } from "ws";
 import { watch, FSWatcher } from "fs";
 import { readFile } from "fs/promises";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+import { loadDiagramOptions, getLiveDir } from "./file-utils.js";
 
-// Live reload server state
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const TEMPLATE_PATH = join(__dirname, "preview-template.html");
+
+// Live directories are resolved via shared utils (respects XDG_CONFIG_HOME/HOME)
+
 interface DiagramState {
   filePath: string;
   watcher: FSWatcher;
@@ -13,9 +21,8 @@ interface DiagramState {
 let liveServer: HttpServer | null = null;
 let liveServerPort: number | null = null;
 let wss: WebSocketServer | null = null;
-const diagrams = new Map<string, DiagramState>(); // diagramId -> state
+const diagrams = new Map<string, DiagramState>();
 
-// Find available port starting from 3737
 async function findAvailablePort(
   startPort: number = 3737,
   maxPort: number = 3747
@@ -38,7 +45,51 @@ async function findAvailablePort(
   throw new Error(`No available ports found between ${startPort} and ${maxPort}`);
 }
 
-// Start live reload server if not already running
+async function handleViewRequest(url: string, res: ServerResponse, port: number): Promise<void> {
+  const diagramId = url.substring(6);
+  const filePath = join(getLiveDir(), diagramId, "diagram.svg");
+
+  try {
+    const content = await readFile(filePath, "utf-8");
+    const html = await createLiveHtmlWrapper(content, diagramId, port, "white");
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(html);
+  } catch (error) {
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end(`Diagram not found: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+async function handleLivePreviewRequest(
+  url: string,
+  res: ServerResponse,
+  port: number
+): Promise<void> {
+  const diagramId = url.substring(1);
+
+  if (!diagramId || !diagrams.has(diagramId)) {
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end("Diagram not found");
+    return;
+  }
+
+  const state = diagrams.get(diagramId)!;
+
+  try {
+    const [content, options] = await Promise.all([
+      readFile(state.filePath, "utf-8"),
+      loadDiagramOptions(diagramId),
+    ]);
+
+    const html = await createLiveHtmlWrapper(content, diagramId, port, options.background);
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(html);
+  } catch (error) {
+    res.writeHead(500, { "Content-Type": "text/plain" });
+    res.end(`Error reading diagram: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 export async function ensureLiveServer(): Promise<number> {
   if (liveServer && liveServerPort) {
     return liveServerPort;
@@ -46,28 +97,20 @@ export async function ensureLiveServer(): Promise<number> {
 
   const port = await findAvailablePort();
 
-  liveServer = createServer((req: IncomingMessage, res: ServerResponse) => {
-    const diagramId = req.url?.substring(1); // Remove leading '/'
+  liveServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
+    const url = req.url || "/";
 
-    if (!diagramId || !diagrams.has(diagramId)) {
-      res.writeHead(404, { "Content-Type": "text/plain" });
-      res.end("Diagram not found");
-      return;
+    try {
+      if (url.startsWith("/view/")) {
+        await handleViewRequest(url, res, port);
+        return;
+      }
+
+      await handleLivePreviewRequest(url, res, port);
+    } catch (error) {
+      res.writeHead(500, { "Content-Type": "text/plain" });
+      res.end(`Server error: ${error instanceof Error ? error.message : String(error)}`);
     }
-
-    const state = diagrams.get(diagramId)!;
-
-    // Read and serve the diagram file
-    readFile(state.filePath, "utf-8")
-      .then((content) => {
-        const html = createLiveHtmlWrapper(content, diagramId, port);
-        res.writeHead(200, { "Content-Type": "text/html" });
-        res.end(html);
-      })
-      .catch((error) => {
-        res.writeHead(500, { "Content-Type": "text/plain" });
-        res.end(`Error reading diagram: ${error.message}`);
-      });
   });
 
   wss = new WebSocketServer({ server: liveServer });
@@ -96,19 +139,12 @@ export async function ensureLiveServer(): Promise<number> {
   return port;
 }
 
-// Add or update a diagram in live mode
-export async function addLiveDiagram(
-  diagramId: string,
-  filePath: string,
-  format: string = "svg"
-): Promise<void> {
-  // Clean up existing watcher if any
+export async function addLiveDiagram(diagramId: string, filePath: string): Promise<void> {
   if (diagrams.has(diagramId)) {
     const existing = diagrams.get(diagramId)!;
     existing.watcher.close();
   }
 
-  // Create file watcher
   const watcher = watch(filePath, (eventType) => {
     if (eventType === "change") {
       notifyClients(diagramId);
@@ -122,13 +158,11 @@ export async function addLiveDiagram(
   });
 }
 
-// Check if there are active connections viewing this diagram
 export function hasActiveConnections(diagramId: string): boolean {
   const state = diagrams.get(diagramId);
   return state ? state.clients.size > 0 : false;
 }
 
-// Notify all connected clients for a diagram to reload
 function notifyClients(diagramId: string): void {
   const state = diagrams.get(diagramId);
   if (!state) return;
@@ -140,134 +174,27 @@ function notifyClients(diagramId: string): void {
   });
 }
 
-function createLiveHtmlWrapper(content: string, diagramId: string, port: number): string {
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mermaid Diagram Preview (Live)</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            background: #f5f5f5;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        .status-bar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            padding: 8px 16px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            font-size: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 1000;
-        }
-        .status-indicator {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #4CAF50;
-            margin-right: 8px;
-            display: inline-block;
-        }
-        .status-indicator.disconnected {
-            background: #f44336;
-        }
-        .container {
-            background: white;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            max-width: 95vw;
-            max-height: 85vh;
-            overflow: auto;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-top: 40px;
-        }
-        svg {
-            display: block;
-            min-height: 70vh;
-            max-height: 85vh;
-            width: auto;
-            height: auto;
-        }
-        img {
-            display: block;
-            min-height: 70vh;
-            max-height: 85vh;
-            width: auto;
-            height: auto;
-        }
-    </style>
-</head>
-<body>
-    <div class="status-bar">
-        <div>
-            <span class="status-indicator" id="status-indicator"></span>
-            <span id="status-text">Live Reload Active</span>
-        </div>
-        <div id="last-update">Last updated: ${new Date().toLocaleTimeString()}</div>
-    </div>
-    <div class="container" id="diagram-container">
-        ${content}
-    </div>
-    <script>
-        let ws;
-        let reconnectInterval;
+let templateCache: string | null = null;
 
-        function connect() {
-            ws = new WebSocket('ws://localhost:${port}/${diagramId}');
+async function loadTemplate(): Promise<string> {
+  if (!templateCache) {
+    templateCache = await readFile(TEMPLATE_PATH, "utf-8");
+  }
+  return templateCache;
+}
 
-            ws.onopen = () => {
-                console.log('WebSocket connected');
-                document.getElementById('status-text').textContent = 'Live Reload Active';
-                document.getElementById('status-indicator').classList.remove('disconnected');
-                if (reconnectInterval) {
-                    clearInterval(reconnectInterval);
-                    reconnectInterval = null;
-                }
-            };
+async function createLiveHtmlWrapper(
+  content: string,
+  diagramId: string,
+  port: number,
+  background: string = "white"
+): Promise<string> {
+  const template = await loadTemplate();
 
-            ws.onmessage = (event) => {
-                if (event.data === 'reload') {
-                    console.log('Reloading diagram...');
-                    location.reload();
-                }
-            };
-
-            ws.onclose = () => {
-                console.log('WebSocket disconnected');
-                document.getElementById('status-text').textContent = 'Disconnected - Reconnecting...';
-                document.getElementById('status-indicator').classList.add('disconnected');
-
-                if (!reconnectInterval) {
-                    reconnectInterval = setInterval(() => {
-                        console.log('Attempting to reconnect...');
-                        connect();
-                    }, 2000);
-                }
-            };
-
-            ws.onerror = (error) => {
-                console.error('WebSocket error:', error);
-                ws.close();
-            };
-        }
-
-        connect();
-    </script>
-</body>
-</html>`;
+  return template
+    .replace("{{CONTENT}}", content)
+    .replace("{{DIAGRAM_ID}}", diagramId)
+    .replace("{{PORT}}", port.toString())
+    .replace("{{BACKGROUND}}", background)
+    .replace("{{TIMESTAMP}}", new Date().toLocaleTimeString());
 }

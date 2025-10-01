@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { handleMermaidPreview, handleMermaidSave } from "../src/handlers.js";
 import { getPreviewDir, getDiagramFilePath } from "../src/file-utils.js";
-import { mkdir, readdir, unlink, rmdir, access, writeFile } from "fs/promises";
+import { mkdir, readdir, unlink, rmdir, access, writeFile, mkdtemp } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
 
@@ -34,21 +34,24 @@ vi.mock("../src/live-server.js", () => ({
 describe("handleMermaidPreview", () => {
   const testPreviewId = "test-preview";
   let testDir: string;
+  let originalHome: string | undefined;
 
   beforeEach(async () => {
+    // Override HOME to use temp directory
+    originalHome = process.env.HOME;
+    const tempHome = await mkdtemp(join(tmpdir(), "claude-mermaid-test-home-"));
+    process.env.HOME = tempHome;
+
     testDir = getPreviewDir(testPreviewId);
     await mkdir(testDir, { recursive: true });
   });
 
   afterEach(async () => {
-    try {
-      const files = await readdir(testDir);
-      for (const file of files) {
-        await unlink(`${testDir}/${file}`);
-      }
-      await rmdir(testDir);
-    } catch {
-      // Ignore errors
+    // Restore original HOME
+    if (originalHome) {
+      process.env.HOME = originalHome;
+    } else {
+      delete process.env.HOME;
     }
   });
 
@@ -144,8 +147,14 @@ describe("handleMermaidPreview", () => {
 describe("handleMermaidSave", () => {
   const testPreviewId = "test-save";
   let testDir: string;
+  let originalHome: string | undefined;
 
   beforeEach(async () => {
+    // Override HOME to use temp directory
+    originalHome = process.env.HOME;
+    const tempHome = await mkdtemp(join(tmpdir(), "claude-mermaid-test-home-"));
+    process.env.HOME = tempHome;
+
     testDir = getPreviewDir(testPreviewId);
     await mkdir(testDir, { recursive: true });
 
@@ -157,14 +166,11 @@ describe("handleMermaidSave", () => {
   });
 
   afterEach(async () => {
-    try {
-      const files = await readdir(testDir);
-      for (const file of files) {
-        await unlink(`${testDir}/${file}`);
-      }
-      await rmdir(testDir);
-    } catch {
-      // Ignore errors
+    // Restore original HOME
+    if (originalHome) {
+      process.env.HOME = originalHome;
+    } else {
+      delete process.env.HOME;
     }
   });
 
@@ -223,5 +229,16 @@ describe("handleMermaidSave", () => {
     const pngPath = getDiagramFilePath(testPreviewId, "png");
     await access(pngPath);
     await unlink(pngPath);
+  });
+
+  it("should handle missing diagram source when saving", async () => {
+    const nonExistentId = "non-existent-preview";
+    const result = await handleMermaidSave({
+      save_path: "/tmp/test-diagram.svg",
+      preview_id: nonExistentId,
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Error saving diagram");
   });
 });

@@ -9,10 +9,12 @@ Automatically renders diagrams in your browser with real-time updates as you ref
 ## ✨ Features
 
 - 🔄 **Live Reload** - Diagrams auto-refresh in your browser as you edit
-- 🎨 **Multiple Formats** - Export to SVG, PNG, or PDF
+- 🎨 **Multiple Save Formats** - Export to SVG, PNG, or PDF
 - 🌈 **Themes** - Choose from default, forest, dark, or neutral themes
 - 📐 **Customizable** - Control dimensions, scale, and background colors
-- 💾 **Auto-Save** - Saves to `~/.config/claude-mermaid/` or your project directory
+- 🪄 **Zoom Controls** - Zoom in/out and reset via UI or keyboard (`+`, `-`, `0`)
+- 🗂️ **Multiple Previews** - Use `preview_id` to work on multiple diagrams simultaneously
+- 💾 **Persistent Working Files** - Live previews are stored under `~/.config/claude-mermaid/live`
 
 ## Architecture
 
@@ -97,8 +99,8 @@ Simply ask Claude Code to create Mermaid diagrams. The server will:
 
 1. ✅ Render the diagram
 2. 🌐 Open it in your browser with live reload
-3. 💾 Save it to disk (default: `~/.config/claude-mermaid/`)
-4. 🔄 Auto-refresh when you make changes
+3. 🔄 Auto-refresh when you make changes
+4. 💾 Save to your project path using the `mermaid_save` tool
 
 ### Basic Examples
 
@@ -155,29 +157,46 @@ graph LR
 
 The diagram will be saved to `./docs/auth-flow.svg` and opened in your browser with live reload enabled.
 
-## 🔧 Parameters
+## 🔧 Tools and Parameters
 
-The `render_mermaid` tool accepts these parameters:
+There are two tools exposed by the MCP server:
 
-| Parameter    | Type   | Default                                          | Description                                                |
-| ------------ | ------ | ------------------------------------------------ | ---------------------------------------------------------- |
-| `diagram`    | string | _required_                                       | The Mermaid diagram code                                   |
-| `format`     | string | `svg` (or `png` if `save_path` provided)         | Output format: `svg`, `png`, or `pdf`                      |
-| `theme`      | string | `default`                                        | Theme: `default`, `forest`, `dark`, `neutral`              |
-| `background` | string | `white`                                          | Background color (e.g., `transparent`, `white`, `#F0F0F0`) |
-| `width`      | number | `800`                                            | Diagram width in pixels                                    |
-| `height`     | number | `600`                                            | Diagram height in pixels                                   |
-| `scale`      | number | `2`                                              | Scale factor for higher quality                            |
-| `save_path`  | string | `~/.config/claude-mermaid/live-diagram.{format}` | Where to save the file                                     |
+1. `mermaid_preview` — render and open a live preview
+
+- `diagram` (string, required) — Mermaid diagram code
+- `preview_id` (string, required) — Identifier for this preview session. Use different IDs for multiple concurrent diagrams (e.g., `architecture`, `flow`).
+- `format` (string, default `svg`) — One of `svg`, `png`, `pdf`. Live preview is available only for `svg`.
+- `theme` (string, default `default`) — One of `default`, `forest`, `dark`, `neutral`.
+- `background` (string, default `white`) — Background color. Examples: `transparent`, `white`, `#F0F0F0`.
+- `width` (number, default `800`) — Diagram width in pixels.
+- `height` (number, default `600`) — Diagram height in pixels.
+- `scale` (number, default `2`) — Scale factor for higher quality output.
+
+2. `mermaid_save` — save the current live diagram to a path
+
+- `save_path` (string, required) — Destination path (e.g., `./docs/diagram.svg`).
+- `preview_id` (string, required) — Must match the `preview_id` used in `mermaid_preview`.
+- `format` (string, default `svg`) — One of `svg`, `png`, `pdf`. If the live working file for this format doesn’t exist yet, it is rendered on demand before saving.
 
 ## 🎯 How Live Reload Works
 
-1. **First render:** Opens diagram in browser at `http://localhost:3737/{id}`
+1. **First render:** Opens diagram in browser at `http://localhost:3737/{preview_id}`
 2. **Make changes:** Edit the diagram through Claude Code
 3. **Auto-refresh:** Browser detects changes via WebSocket and reloads
 4. **Status indicator:** Green dot = connected, Red dot = reconnecting
 
 The live server uses ports 3737-3747 and automatically finds an available port.
+
+### Live Preview Controls
+
+- Zoom in/out via UI buttons or keyboard: `+` / `-`
+- Reset zoom: `0`
+- Zoom level persists per diagram (`preview_id`)
+
+### Notes
+
+- Live preview is available for `svg` format only; PNG/PDF are rendered without live reload.
+- For sequence diagrams, Mermaid does not support `style` directives inside `sequenceDiagram`.
 
 ## 🛠️ Development
 

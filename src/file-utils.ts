@@ -2,10 +2,15 @@ import { readdir, unlink, stat, mkdir, readFile, writeFile, rmdir } from "fs/pro
 import { join } from "path";
 import { tmpdir } from "os";
 
-export function getLiveDir(): string {
+export function getConfigDir(): string {
+  const xdg = process.env.XDG_CONFIG_HOME;
+  if (xdg && xdg.trim()) return xdg;
   const homeDir = process.env.HOME || process.env.USERPROFILE || tmpdir();
-  const configDir = join(homeDir, ".config");
-  return join(configDir, "claude-mermaid", "live");
+  return join(homeDir, ".config");
+}
+
+export function getLiveDir(): string {
+  return join(getConfigDir(), "claude-mermaid", "live");
 }
 
 export function getPreviewDir(previewId: string): string {
