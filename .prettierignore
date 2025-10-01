@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output
+build/
+dist/
+
+# Package files
+*.tgz
+package-lock.json
+
+# Git
+.git/
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# OS
+.DS_Store

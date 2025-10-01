@@ -20,18 +20,21 @@ Automatically renders diagrams in your browser with real-time updates as you ref
 <summary>Project Architecture Diagram</summary>
 
 ![Architecture Diagram](https://raw.githubusercontent.com/veelenga/claude-mermaid/main/assets/architecture.png)
+
 </details>
 
 <details>
 <summary>User Workflow Diagram</summary>
 
 ![User Workflow Diagram](https://raw.githubusercontent.com/veelenga/claude-mermaid/main/assets/workflow.png)
+
 </details>
 
 <details>
 <summary>Dependencies Diagram</summary>
 
 ![Dependencies Diagram](https://raw.githubusercontent.com/veelenga/claude-mermaid/main/assets/dependencies.png)
+
 </details>
 
 ## 🚀 Quick Start
@@ -39,11 +42,13 @@ Automatically renders diagrams in your browser with real-time updates as you ref
 ### 1. Install
 
 **From npm:**
+
 ```bash
 npm install -g claude-mermaid
 ```
 
 **From source:**
+
 ```bash
 git clone https://github.com/veelenga/claude-mermaid.git
 cd claude-mermaid
@@ -53,11 +58,13 @@ npm install && npm run build && npm install -g .
 ### 2. Configure Claude Code
 
 **Global setup** (recommended - works in all projects):
+
 ```bash
 claude mcp add --scope user mermaid claude-mermaid
 ```
 
 **Project-specific setup:**
+
 ```bash
 claude mcp add mermaid claude-mermaid
 ```
@@ -65,6 +72,7 @@ claude mcp add mermaid claude-mermaid
 **Manual configuration:**
 
 Add to your MCP config file (`.claude.json` or `.mcp.json`):
+
 ```json
 {
   "mcpServers": {
@@ -86,6 +94,7 @@ You should see `mermaid: claude-mermaid - ✓ Connected`
 ## 💡 Usage
 
 Simply ask Claude Code to create Mermaid diagrams. The server will:
+
 1. ✅ Render the diagram
 2. 🌐 Open it in your browser with live reload
 3. 💾 Save it to disk (default: `~/.config/claude-mermaid/`)
@@ -102,19 +111,23 @@ Simply ask Claude Code to create Mermaid diagrams. The server will:
 ### Advanced Examples
 
 **With custom formatting:**
+
 ```
 "Create a dark theme architecture diagram with transparent background"
 "Generate a forest theme flowchart and save to ./docs/flow.svg"
 ```
 
 **With specific output format:**
+
 ```
 "Create an ER diagram and save as PDF to ./docs/schema.pdf"
 "Save the flowchart as PNG to ./docs/flow.png"
 ```
-*Note: Browser always shows SVG for live preview, while saving to your chosen format.*
+
+_Note: Browser always shows SVG for live preview, while saving to your chosen format._
 
 **Iterative refinement:**
+
 ```
 "Create a class diagram for the User module"
 // Browser opens with live preview
@@ -146,16 +159,16 @@ The diagram will be saved to `./docs/auth-flow.svg` and opened in your browser w
 
 The `render_mermaid` tool accepts these parameters:
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `diagram` | string | *required* | The Mermaid diagram code |
-| `format` | string | `svg` (or `png` if `save_path` provided) | Output format: `svg`, `png`, or `pdf` |
-| `theme` | string | `default` | Theme: `default`, `forest`, `dark`, `neutral` |
-| `background` | string | `white` | Background color (e.g., `transparent`, `white`, `#F0F0F0`) |
-| `width` | number | `800` | Diagram width in pixels |
-| `height` | number | `600` | Diagram height in pixels |
-| `scale` | number | `2` | Scale factor for higher quality |
-| `save_path` | string | `~/.config/claude-mermaid/live-diagram.{format}` | Where to save the file |
+| Parameter    | Type   | Default                                          | Description                                                |
+| ------------ | ------ | ------------------------------------------------ | ---------------------------------------------------------- |
+| `diagram`    | string | _required_                                       | The Mermaid diagram code                                   |
+| `format`     | string | `svg` (or `png` if `save_path` provided)         | Output format: `svg`, `png`, or `pdf`                      |
+| `theme`      | string | `default`                                        | Theme: `default`, `forest`, `dark`, `neutral`              |
+| `background` | string | `white`                                          | Background color (e.g., `transparent`, `white`, `#F0F0F0`) |
+| `width`      | number | `800`                                            | Diagram width in pixels                                    |
+| `height`     | number | `600`                                            | Diagram height in pixels                                   |
+| `scale`      | number | `2`                                              | Scale factor for higher quality                            |
+| `save_path`  | string | `~/.config/claude-mermaid/live-diagram.{format}` | Where to save the file                                     |
 
 ## 🎯 How Live Reload Works
 
@@ -188,6 +201,7 @@ npm start
 ## 📝 Troubleshooting
 
 **Server not connecting:**
+
 ```bash
 # Check if server is installed
 claude-mermaid -v
@@ -200,12 +214,14 @@ claude mcp list
 ```
 
 **Permission denied error:**
+
 ```bash
 # Make sure the binary is executable
 chmod +x $(which claude-mermaid)
 ```
 
 **Port already in use:**
+
 - The server uses ports 3737-3747
 - It will automatically find an available port
 - Check if another process is using these ports: `lsof -i :3737-3747`

@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - `-v` and `--version` CLI flags to display version
 - Theme support (`default`, `forest`, `dark`, `neutral`)
 - Custom background color support (transparent, custom colors)
@@ -18,14 +19,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.1] - 2025-09-30
 
 ### Added
+
 - Documentation for global MCP server installation using `--scope user` flag
 
 ### Fixed
+
 - NPM package now excludes unnecessary files (src, assets, config files)
 
 ## [1.0.0] - 2025-09-30
 
 ### Added
+
 - Initial release of Claude Mermaid MCP Server
 - Preview Mermaid diagrams directly in Claude Code
 - Support for multiple output formats (PNG, SVG, PDF)

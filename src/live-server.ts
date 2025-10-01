@@ -16,13 +16,16 @@ let wss: WebSocketServer | null = null;
 const diagrams = new Map<string, DiagramState>(); // diagramId -> state
 
 // Find available port starting from 3737
-async function findAvailablePort(startPort: number = 3737, maxPort: number = 3747): Promise<number> {
+async function findAvailablePort(
+  startPort: number = 3737,
+  maxPort: number = 3747
+): Promise<number> {
   for (let port = startPort; port <= maxPort; port++) {
     try {
       await new Promise<void>((resolve, reject) => {
         const testServer = createServer();
-        testServer.once('error', reject);
-        testServer.once('listening', () => {
+        testServer.once("error", reject);
+        testServer.once("listening", () => {
           testServer.close(() => resolve());
         });
         testServer.listen(port);
@@ -47,36 +50,36 @@ export async function ensureLiveServer(): Promise<number> {
     const diagramId = req.url?.substring(1); // Remove leading '/'
 
     if (!diagramId || !diagrams.has(diagramId)) {
-      res.writeHead(404, { 'Content-Type': 'text/plain' });
-      res.end('Diagram not found');
+      res.writeHead(404, { "Content-Type": "text/plain" });
+      res.end("Diagram not found");
       return;
     }
 
     const state = diagrams.get(diagramId)!;
 
     // Read and serve the diagram file
-    readFile(state.filePath, 'utf-8')
-      .then(content => {
+    readFile(state.filePath, "utf-8")
+      .then((content) => {
         const html = createLiveHtmlWrapper(content, diagramId, port);
-        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.writeHead(200, { "Content-Type": "text/html" });
         res.end(html);
       })
-      .catch(error => {
-        res.writeHead(500, { 'Content-Type': 'text/plain' });
+      .catch((error) => {
+        res.writeHead(500, { "Content-Type": "text/plain" });
         res.end(`Error reading diagram: ${error.message}`);
       });
   });
 
   wss = new WebSocketServer({ server: liveServer });
 
-  wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
+  wss.on("connection", (ws: WebSocket, req: IncomingMessage) => {
     const diagramId = req.url?.substring(1);
 
     if (diagramId && diagrams.has(diagramId)) {
       const state = diagrams.get(diagramId)!;
       state.clients.add(ws);
 
-      ws.on('close', () => {
+      ws.on("close", () => {
         state.clients.delete(ws);
       });
     }
@@ -94,7 +97,11 @@ export async function ensureLiveServer(): Promise<number> {
 }
 
 // Add or update a diagram in live mode
-export async function addLiveDiagram(diagramId: string, filePath: string, format: string = "svg"): Promise<void> {
+export async function addLiveDiagram(
+  diagramId: string,
+  filePath: string,
+  format: string = "svg"
+): Promise<void> {
   // Clean up existing watcher if any
   if (diagrams.has(diagramId)) {
     const existing = diagrams.get(diagramId)!;
@@ -103,7 +110,7 @@ export async function addLiveDiagram(diagramId: string, filePath: string, format
 
   // Create file watcher
   const watcher = watch(filePath, (eventType) => {
-    if (eventType === 'change') {
+    if (eventType === "change") {
       notifyClients(diagramId);
     }
   });
@@ -126,9 +133,9 @@ function notifyClients(diagramId: string): void {
   const state = diagrams.get(diagramId);
   if (!state) return;
 
-  state.clients.forEach(client => {
+  state.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
-      client.send('reload');
+      client.send("reload");
     }
   });
 }

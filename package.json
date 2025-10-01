@@ -16,6 +16,8 @@
     "start": "node build/index.js",
     "dev": "tsc --watch",
     "test": "vitest",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
@@ -42,6 +44,7 @@
   "devDependencies": {
     "@types/node": "^24.6.0",
     "@types/ws": "^8.18.1",
+    "prettier": "^3.6.2",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }

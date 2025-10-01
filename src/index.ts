@@ -13,19 +13,16 @@ import { fileURLToPath } from "url";
 import { cleanupOldDiagrams } from "./file-utils.js";
 import { handleMermaidPreview, handleMermaidSave } from "./handlers.js";
 
-// Read version from package.json
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const packageJson = JSON.parse(await readFile(join(__dirname, '../package.json'), 'utf-8'));
+const packageJson = JSON.parse(await readFile(join(__dirname, "../package.json"), "utf-8"));
 const VERSION = packageJson.version;
 
-// Check for version flag
-if (process.argv.includes('-v') || process.argv.includes('--version')) {
+if (process.argv.includes("-v") || process.argv.includes("--version")) {
   console.log(VERSION);
   process.exit(0);
 }
 
-// Tool definitions
 const TOOL_DEFINITIONS: Tool[] = [
   {
     name: "mermaid_preview",
@@ -45,7 +42,8 @@ const TOOL_DEFINITIONS: Tool[] = [
         },
         preview_id: {
           type: "string",
-          description: "ID for this preview session. Use different IDs for multiple diagrams (e.g., 'architecture', 'flow', 'sequence').",
+          description:
+            "ID for this preview session. Use different IDs for multiple diagrams (e.g., 'architecture', 'flow', 'sequence').",
         },
         format: {
           type: "string",
@@ -61,7 +59,8 @@ const TOOL_DEFINITIONS: Tool[] = [
         },
         background: {
           type: "string",
-          description: "Background color for pngs/svgs. Example: transparent, red, '#F0F0F0' (default: white)",
+          description:
+            "Background color for pngs/svgs. Example: transparent, red, '#F0F0F0' (default: white)",
           default: "white",
         },
         width: {
@@ -98,12 +97,14 @@ const TOOL_DEFINITIONS: Tool[] = [
         },
         preview_id: {
           type: "string",
-          description: "ID of the preview to save. Must match the preview_id used in mermaid_preview.",
+          description:
+            "ID of the preview to save. Must match the preview_id used in mermaid_preview.",
         },
         format: {
           type: "string",
           enum: ["png", "svg", "pdf"],
-          description: "Output format (default: svg). Must match the format used in mermaid_preview.",
+          description:
+            "Output format (default: svg). Must match the format used in mermaid_preview.",
           default: "svg",
         },
       },
@@ -124,12 +125,10 @@ const server = new Server(
   }
 );
 
-// Handle tool listing
 server.setRequestHandler(ListToolsRequestSchema, async () => {
   return { tools: TOOL_DEFINITIONS };
 });
 
-// Handle tool execution
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   switch (request.params.name) {
     case "mermaid_preview":
@@ -141,9 +140,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-// Start the server
 async function main() {
-  // Clean up old diagram files on startup
   await cleanupOldDiagrams();
 
   const transport = new StdioServerTransport();

@@ -23,7 +23,9 @@ export function getDiagramFilePath(previewId: string, format: string): string {
  * Clean up old diagram files (older than specified max age)
  * @param maxAgeMs Maximum age in milliseconds (default: 7 days)
  */
-export async function cleanupOldDiagrams(maxAgeMs: number = 7 * 24 * 60 * 60 * 1000): Promise<number> {
+export async function cleanupOldDiagrams(
+  maxAgeMs: number = 7 * 24 * 60 * 60 * 1000
+): Promise<number> {
   try {
     const liveDir = getLiveDir();
 
@@ -35,7 +37,11 @@ export async function cleanupOldDiagrams(maxAgeMs: number = 7 * 24 * 60 * 60 * 1
     let cleanedCount = 0;
 
     for (const file of files) {
-      if (file.endsWith('-diagram.svg') || file.endsWith('-diagram.png') || file.endsWith('-diagram.pdf')) {
+      if (
+        file.endsWith("-diagram.svg") ||
+        file.endsWith("-diagram.png") ||
+        file.endsWith("-diagram.pdf")
+      ) {
         const filePath = join(liveDir, file);
         try {
           const stats = await stat(filePath);
@@ -55,7 +61,7 @@ export async function cleanupOldDiagrams(maxAgeMs: number = 7 * 24 * 60 * 60 * 1
     return cleanedCount;
   } catch (error) {
     // Ignore cleanup errors - don't fail operations
-    console.error('Cleanup warning:', error instanceof Error ? error.message : String(error));
+    console.error("Cleanup warning:", error instanceof Error ? error.message : String(error));
     return 0;
   }
 }

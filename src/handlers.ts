@@ -9,8 +9,11 @@ import { getDiagramFilePath, getLiveDir } from "./file-utils.js";
 const execAsync = promisify(exec);
 
 function getOpenCommand(): string {
-  return process.platform === "darwin" ? "open" :
-         process.platform === "win32" ? "start" : "xdg-open";
+  return process.platform === "darwin"
+    ? "open"
+    : process.platform === "win32"
+      ? "start"
+      : "xdg-open";
 }
 
 /**
@@ -52,7 +55,7 @@ export async function handleMermaidPreview(args: any) {
     // Build mermaid CLI command with all parameters
     const fitFlag = format === "pdf" ? "--pdfFit" : "";
     const cmd = [
-      'npx -y mmdc',
+      "npx -y mmdc",
       `-i "${inputFile}"`,
       `-o "${outputFile}"`,
       `-t ${theme}`,
@@ -60,8 +63,10 @@ export async function handleMermaidPreview(args: any) {
       `-w ${width}`,
       `-H ${height}`,
       `-s ${scale}`,
-      fitFlag
-    ].filter(Boolean).join(' ');
+      fitFlag,
+    ]
+      .filter(Boolean)
+      .join(" ");
 
     await execAsync(cmd);
 
