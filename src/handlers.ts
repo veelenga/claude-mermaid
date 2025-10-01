@@ -1,12 +1,29 @@
 import { exec } from "child_process";
 import { promisify } from "util";
-import { writeFile, mkdir, copyFile } from "fs/promises";
+import { writeFile, mkdir, copyFile, access } from "fs/promises";
 import { join, dirname } from "path";
 import { tmpdir } from "os";
 import { ensureLiveServer, addLiveDiagram, hasActiveConnections } from "./live-server.js";
-import { getDiagramFilePath, getLiveDir } from "./file-utils.js";
+import {
+  getDiagramFilePath,
+  getPreviewDir,
+  saveDiagramSource,
+  loadDiagramSource,
+  loadDiagramOptions,
+} from "./file-utils.js";
 
 const execAsync = promisify(exec);
+
+interface RenderOptions {
+  diagram: string;
+  previewId: string;
+  format: string;
+  theme: string;
+  background: string;
+  width: number;
+  height: number;
+  scale: number;
+}
 
 function getOpenCommand(): string {
   return process.platform === "darwin"
@@ -16,9 +33,90 @@ function getOpenCommand(): string {
       : "xdg-open";
 }
 
-/**
- * Handler for mermaid_preview tool
- */
+async function renderDiagram(options: RenderOptions, liveFilePath: string): Promise<void> {
+  const { diagram, previewId, format, theme, background, width, height, scale } = options;
+
+  const tempDir = join(tmpdir(), "claude-mermaid");
+  await mkdir(tempDir, { recursive: true });
+
+  const inputFile = join(tempDir, `diagram-${previewId}.mmd`);
+  const outputFile = join(tempDir, `diagram-${previewId}.${format}`);
+
+  await writeFile(inputFile, diagram, "utf-8");
+
+  const fitFlag = format === "pdf" ? "--pdfFit" : "";
+  const cmd = [
+    "npx -y mmdc",
+    `-i "${inputFile}"`,
+    `-o "${outputFile}"`,
+    `-t ${theme}`,
+    `-b ${background}`,
+    `-w ${width}`,
+    `-H ${height}`,
+    `-s ${scale}`,
+    fitFlag,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  await execAsync(cmd);
+  await copyFile(outputFile, liveFilePath);
+}
+
+async function setupLivePreview(
+  previewId: string,
+  liveFilePath: string,
+  format: string
+): Promise<{ serverUrl: string; hasConnections: boolean }> {
+  const port = await ensureLiveServer();
+  const hasConnections = hasActiveConnections(previewId);
+
+  await addLiveDiagram(previewId, liveFilePath, format);
+  const serverUrl = `http://localhost:${port}/${previewId}`;
+
+  if (!hasConnections) {
+    const openCommand = getOpenCommand();
+    await execAsync(`${openCommand} "${serverUrl}"`);
+  }
+
+  return { serverUrl, hasConnections };
+}
+
+function createLivePreviewResponse(
+  liveFilePath: string,
+  format: string,
+  serverUrl: string,
+  hasConnections: boolean
+): any {
+  const actionMessage = hasConnections
+    ? `Mermaid diagram updated successfully.`
+    : `Mermaid diagram rendered successfully and opened in browser.`;
+
+  const liveMessage = hasConnections
+    ? `\nDiagram updated. Browser will refresh automatically.`
+    : `\nLive reload URL: ${serverUrl}\nThe diagram will auto-refresh when you update it.`;
+
+  return {
+    content: [
+      {
+        type: "text",
+        text: `${actionMessage}\nWorking file: ${liveFilePath} (${format.toUpperCase()})${liveMessage}`,
+      },
+    ],
+  };
+}
+
+function createStaticRenderResponse(liveFilePath: string, format: string): any {
+  return {
+    content: [
+      {
+        type: "text",
+        text: `Mermaid diagram rendered successfully.\nWorking file: ${liveFilePath} (${format.toUpperCase()})\n\nNote: Live preview is only available for SVG format. Use mermaid_save to save this diagram to a permanent location.`,
+      },
+    ],
+  };
+}
+
 export async function handleMermaidPreview(args: any) {
   const diagram = args.diagram as string;
   const previewId = args.preview_id as string;
@@ -36,74 +134,23 @@ export async function handleMermaidPreview(args: any) {
     throw new Error("preview_id parameter is required");
   }
 
-  // Get live directory and file path
-  const liveDir = getLiveDir();
-  await mkdir(liveDir, { recursive: true });
+  const previewDir = getPreviewDir(previewId);
+  await mkdir(previewDir, { recursive: true });
   const liveFilePath = getDiagramFilePath(previewId, format);
 
   try {
-    // Create temp directory for output
-    const tempDir = join(tmpdir(), "claude-mermaid");
-    await mkdir(tempDir, { recursive: true });
+    await saveDiagramSource(previewId, diagram, { theme, background, width, height, scale });
+    await renderDiagram(
+      { diagram, previewId, format, theme, background, width, height, scale },
+      liveFilePath
+    );
 
-    const inputFile = join(tempDir, `diagram-${previewId}.mmd`);
-    const outputFile = join(tempDir, `diagram-${previewId}.${format}`);
-
-    // Write diagram to temp file
-    await writeFile(inputFile, diagram, "utf-8");
-
-    // Build mermaid CLI command with all parameters
-    const fitFlag = format === "pdf" ? "--pdfFit" : "";
-    const cmd = [
-      "npx -y mmdc",
-      `-i "${inputFile}"`,
-      `-o "${outputFile}"`,
-      `-t ${theme}`,
-      `-b ${background}`,
-      `-w ${width}`,
-      `-H ${height}`,
-      `-s ${scale}`,
-      fitFlag,
-    ]
-      .filter(Boolean)
-      .join(" ");
-
-    await execAsync(cmd);
-
-    // Save to live directory for live reload
-    await copyFile(outputFile, liveFilePath);
-
-    // Start live server and serve diagram
-    const port = await ensureLiveServer();
-
-    // Check if there are active connections before adding the diagram
-    const hasConnections = hasActiveConnections(previewId);
-
-    await addLiveDiagram(previewId, liveFilePath, format);
-    const serverUrl = `http://localhost:${port}/${previewId}`;
-
-    // Only open browser if there are no active connections
-    if (!hasConnections) {
-      const openCommand = getOpenCommand();
-      await execAsync(`${openCommand} "${serverUrl}"`);
+    if (format === "svg") {
+      const { serverUrl, hasConnections } = await setupLivePreview(previewId, liveFilePath, format);
+      return createLivePreviewResponse(liveFilePath, format, serverUrl, hasConnections);
+    } else {
+      return createStaticRenderResponse(liveFilePath, format);
     }
-
-    const actionMessage = hasConnections
-      ? `Mermaid diagram updated successfully.`
-      : `Mermaid diagram rendered successfully and opened in browser.`;
-
-    const liveMessage = hasConnections
-      ? `\nDiagram updated. Browser will refresh automatically.`
-      : `\nLive reload URL: ${serverUrl}\nThe diagram will auto-refresh when you update it.`;
-
-    return {
-      content: [
-        {
-          type: "text",
-          text: `${actionMessage}\nWorking file: ${liveFilePath} (${format.toUpperCase()})${liveMessage}`,
-        },
-      ],
-    };
   } catch (error) {
     return {
       content: [
@@ -117,9 +164,6 @@ export async function handleMermaidPreview(args: any) {
   }
 }
 
-/**
- * Handler for mermaid_save tool
- */
 export async function handleMermaidSave(args: any) {
   const savePath = args.save_path as string;
   const previewId = args.preview_id as string;
@@ -133,14 +177,26 @@ export async function handleMermaidSave(args: any) {
   }
 
   try {
-    // Get the live diagram file path
     const liveFilePath = getDiagramFilePath(previewId, format);
 
-    // Create save directory if needed
+    try {
+      await access(liveFilePath);
+    } catch {
+      const diagram = await loadDiagramSource(previewId);
+      const options = await loadDiagramOptions(previewId);
+      await renderDiagram(
+        {
+          diagram,
+          previewId,
+          format,
+          ...options,
+        },
+        liveFilePath
+      );
+    }
+
     const saveDir = dirname(savePath);
     await mkdir(saveDir, { recursive: true });
-
-    // Copy live file to save path
     await copyFile(liveFilePath, savePath);
 
     return {

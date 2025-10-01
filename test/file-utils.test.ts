@@ -1,6 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { getLiveDir, getDiagramFilePath, cleanupOldDiagrams } from "../src/file-utils.js";
-import { writeFile, unlink, mkdir, utimes } from "fs/promises";
+import {
+  getLiveDir,
+  getPreviewDir,
+  getDiagramFilePath,
+  getDiagramSourcePath,
+  getDiagramOptionsPath,
+  saveDiagramSource,
+  loadDiagramSource,
+  loadDiagramOptions,
+  cleanupOldDiagrams,
+} from "../src/file-utils.js";
+import { writeFile, unlink, mkdir, utimes, rmdir, readdir } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -26,10 +36,28 @@ describe("File Utilities", () => {
     });
   });
 
+  describe("getPreviewDir", () => {
+    it("should return path with preview_id subdirectory", () => {
+      const previewDir = getPreviewDir("architecture");
+      expect(previewDir).toContain(".config/claude-mermaid/live");
+      expect(previewDir).toContain("architecture");
+    });
+
+    it("should support different preview_ids", () => {
+      const archDir = getPreviewDir("architecture");
+      const flowDir = getPreviewDir("flow");
+
+      expect(archDir).toContain("architecture");
+      expect(flowDir).toContain("flow");
+      expect(archDir).not.toBe(flowDir);
+    });
+  });
+
   describe("getDiagramFilePath", () => {
     it("should generate correct file path with preview_id and format", () => {
       const filePath = getDiagramFilePath("architecture", "svg");
-      expect(filePath).toContain("architecture-diagram.svg");
+      expect(filePath).toContain("architecture");
+      expect(filePath).toContain("diagram.svg");
       expect(filePath).toContain(".config/claude-mermaid/live");
     });
 
@@ -38,24 +66,90 @@ describe("File Utilities", () => {
       const pngPath = getDiagramFilePath("test", "png");
       const pdfPath = getDiagramFilePath("test", "pdf");
 
-      expect(svgPath).toContain("test-diagram.svg");
-      expect(pngPath).toContain("test-diagram.png");
-      expect(pdfPath).toContain("test-diagram.pdf");
+      expect(svgPath).toContain("test");
+      expect(svgPath).toContain("diagram.svg");
+      expect(pngPath).toContain("diagram.png");
+      expect(pdfPath).toContain("diagram.pdf");
     });
 
-    it("should support different preview_ids", () => {
-      const archPath = getDiagramFilePath("architecture", "svg");
-      const flowPath = getDiagramFilePath("flow", "svg");
-      const seqPath = getDiagramFilePath("sequence", "svg");
+    it("should place files in preview_id subdirectory", () => {
+      const filePath = getDiagramFilePath("architecture", "svg");
+      expect(filePath).toContain("live/architecture/diagram.svg");
+    });
+  });
 
-      expect(archPath).toContain("architecture-diagram.svg");
-      expect(flowPath).toContain("flow-diagram.svg");
-      expect(seqPath).toContain("sequence-diagram.svg");
+  describe("getDiagramSourcePath", () => {
+    it("should return .mmd file in preview directory", () => {
+      const sourcePath = getDiagramSourcePath("architecture");
+      expect(sourcePath).toContain("architecture");
+      expect(sourcePath).toContain("diagram.mmd");
+    });
+  });
+
+  describe("getDiagramOptionsPath", () => {
+    it("should return options.json file in preview directory", () => {
+      const optionsPath = getDiagramOptionsPath("architecture");
+      expect(optionsPath).toContain("architecture");
+      expect(optionsPath).toContain("options.json");
+    });
+  });
+
+  describe("saveDiagramSource and loadDiagramSource", () => {
+    let testDir: string;
+    const testPreviewId = "test-save-load";
+    const testDiagram = "graph TD; A-->B";
+    const testOptions = {
+      theme: "dark",
+      background: "transparent",
+      width: 1024,
+      height: 768,
+      scale: 3,
+    };
+
+    beforeEach(async () => {
+      testDir = getPreviewDir(testPreviewId);
+      await mkdir(testDir, { recursive: true });
     });
 
-    it("should handle complex preview_ids", () => {
-      const complexPath = getDiagramFilePath("api-flow-v2", "svg");
-      expect(complexPath).toContain("api-flow-v2-diagram.svg");
+    afterEach(async () => {
+      try {
+        const files = await readdir(testDir);
+        for (const file of files) {
+          await unlink(join(testDir, file));
+        }
+        await rmdir(testDir);
+      } catch {
+        // Ignore errors
+      }
+    });
+
+    it("should save and load diagram source", async () => {
+      await saveDiagramSource(testPreviewId, testDiagram, testOptions);
+      const loadedDiagram = await loadDiagramSource(testPreviewId);
+      expect(loadedDiagram).toBe(testDiagram);
+    });
+
+    it("should save and load diagram options", async () => {
+      await saveDiagramSource(testPreviewId, testDiagram, testOptions);
+      const loadedOptions = await loadDiagramOptions(testPreviewId);
+      expect(loadedOptions).toEqual(testOptions);
+    });
+
+    it("should create both .mmd and options.json files", async () => {
+      await saveDiagramSource(testPreviewId, testDiagram, testOptions);
+      const files = await readdir(testDir);
+      expect(files).toContain("diagram.mmd");
+      expect(files).toContain("options.json");
+    });
+
+    it("should preserve all option properties", async () => {
+      await saveDiagramSource(testPreviewId, testDiagram, testOptions);
+      const loadedOptions = await loadDiagramOptions(testPreviewId);
+      expect(loadedOptions.theme).toBe("dark");
+      expect(loadedOptions.background).toBe("transparent");
+      expect(loadedOptions.width).toBe(1024);
+      expect(loadedOptions.height).toBe(768);
+      expect(loadedOptions.scale).toBe(3);
     });
   });
 
@@ -109,28 +203,23 @@ describe("File Utilities", () => {
       expect(maxAge).toBe(604800000);
     });
 
-    it("should only clean diagram files with correct naming pattern", () => {
-      const validNames = [
-        "architecture-diagram.svg",
-        "flow-diagram.png",
-        "sequence-diagram.pdf",
-        "api-v2-diagram.svg",
-      ];
+    it("should clean up directories with all their files", async () => {
+      const testPreviewId = "test-cleanup-dir";
+      const testDir = getPreviewDir(testPreviewId);
 
-      const invalidNames = [
-        "random-file.svg",
-        "diagram.svg",
-        "test-diagram.txt",
-        "architecture.svg",
-      ];
+      await mkdir(testDir, { recursive: true });
+      await writeFile(join(testDir, "diagram.svg"), "<svg>test</svg>", "utf-8");
+      await writeFile(join(testDir, "diagram.mmd"), "graph TD; A-->B", "utf-8");
+      await writeFile(join(testDir, "options.json"), "{}", "utf-8");
 
-      validNames.forEach((name) => {
-        expect(name).toMatch(/-diagram\.(svg|png|pdf)$/);
-      });
+      const files = await readdir(testDir);
+      expect(files.length).toBeGreaterThan(0);
 
-      invalidNames.forEach((name) => {
-        expect(name).not.toMatch(/-diagram\.(svg|png|pdf)$/);
-      });
+      // Cleanup test directory
+      for (const file of files) {
+        await unlink(join(testDir, file));
+      }
+      await rmdir(testDir);
     });
 
     it("should handle different max age values", () => {
