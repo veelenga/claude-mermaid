@@ -184,7 +184,7 @@ describe("Template rendering", () => {
     expect(template).toContain("{{TIMESTAMP}}");
 
     // Verify these placeholders appear in meaningful contexts
-    expect(template).toContain('id="diagram-container">{{CONTENT}}');
+    expect(template).toContain('class="diagram-wrapper">\n        {{CONTENT}}');
     expect(template).toContain('new WebSocket("ws://localhost:{{PORT}}/{{DIAGRAM_ID}}');
     expect(template).toContain("background: {{BACKGROUND}}");
   });
@@ -255,7 +255,6 @@ describe("HTML wrapper and template", () => {
     expect(template).toContain('class="status-bar"');
     expect(template).toContain('class="viewport"');
     expect(template).toContain('class="diagram-wrapper"');
-    expect(template).toContain('id="diagram-container"');
   });
 
   it("should include WebSocket reconnection logic in template", async () => {

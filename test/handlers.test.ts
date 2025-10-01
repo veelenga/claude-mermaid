@@ -47,22 +47,6 @@ describe("handleMermaidPreview", () => {
   });
 
   afterEach(async () => {
-    try {
-      const files = await readdir(testDir);
-      for (const file of files) {
-        await unlink(`${testDir}/${file}`);
-      }
-      await rmdir(testDir);
-
-      // Clean up parent directories
-      const liveDir = join(process.env.HOME!, ".config", "claude-mermaid", "live");
-      await rmdir(join(process.env.HOME!, ".config", "claude-mermaid"));
-      await rmdir(join(process.env.HOME!, ".config"));
-      await rmdir(process.env.HOME!);
-    } catch {
-      // Ignore errors
-    }
-
     // Restore original HOME
     if (originalHome) {
       process.env.HOME = originalHome;
@@ -182,22 +166,6 @@ describe("handleMermaidSave", () => {
   });
 
   afterEach(async () => {
-    try {
-      const files = await readdir(testDir);
-      for (const file of files) {
-        await unlink(`${testDir}/${file}`);
-      }
-      await rmdir(testDir);
-
-      // Clean up parent directories
-      await rmdir(join(process.env.HOME!, ".config", "claude-mermaid", "live"));
-      await rmdir(join(process.env.HOME!, ".config", "claude-mermaid"));
-      await rmdir(join(process.env.HOME!, ".config"));
-      await rmdir(process.env.HOME!);
-    } catch {
-      // Ignore errors
-    }
-
     // Restore original HOME
     if (originalHome) {
       process.env.HOME = originalHome;
