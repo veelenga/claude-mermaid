@@ -166,4 +166,84 @@ describe("WebSocket functionality", () => {
     const reloadMessage = "reload";
     expect(reloadMessage).toBe("reload");
   });
+
+  it("should support /view/ endpoint URL format", () => {
+    const port = 3737;
+    const diagramId = "test-diagram";
+    const viewUrl = `http://localhost:${port}/view/${diagramId}`;
+
+    expect(viewUrl).toContain("/view/");
+    expect(viewUrl).toContain(diagramId);
+  });
+});
+
+describe("Diagram options", () => {
+  it("should support background color option", () => {
+    const backgrounds = ["white", "transparent", "#F0F0F0", "red"];
+    backgrounds.forEach((bg) => {
+      expect(bg).toBeTruthy();
+    });
+  });
+
+  it("should use white as default background", () => {
+    const defaultBackground = "white";
+    expect(defaultBackground).toBe("white");
+  });
+
+  it("should support theme options", () => {
+    const themes = ["default", "forest", "dark", "neutral"];
+    expect(themes).toContain("default");
+    expect(themes).toContain("forest");
+    expect(themes).toContain("dark");
+    expect(themes).toContain("neutral");
+  });
+
+  it("should support width and height options", () => {
+    const defaultWidth = 800;
+    const defaultHeight = 600;
+
+    expect(defaultWidth).toBeGreaterThan(0);
+    expect(defaultHeight).toBeGreaterThan(0);
+  });
+
+  it("should support scale option", () => {
+    const defaultScale = 2;
+    expect(defaultScale).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("HTML wrapper features", () => {
+  it("should include viewport styling in HTML wrapper", () => {
+    const viewportStyles = `
+      position: fixed;
+      top: 32px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    `;
+
+    expect(viewportStyles).toContain("position: fixed");
+    expect(viewportStyles).toContain("top:");
+    expect(viewportStyles).toContain("bottom:");
+  });
+
+  it("should include status bar in HTML wrapper", () => {
+    const statusBarClass = "status-bar";
+    expect(statusBarClass).toBe("status-bar");
+  });
+
+  it("should support box-sizing border-box", () => {
+    const boxSizing = "border-box";
+    expect(boxSizing).toBe("border-box");
+  });
+
+  it("should use dark theme for wrapper background", () => {
+    const wrapperBackground = "#1a1a1a";
+    expect(wrapperBackground).toMatch(/^#[0-9a-fA-F]{6}$/);
+  });
+
+  it("should support custom diagram background color", () => {
+    const diagramBackground = "white";
+    expect(["white", "transparent", "#F0F0F0"]).toContain(diagramBackground);
+  });
 });

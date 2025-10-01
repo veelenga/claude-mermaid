@@ -71,7 +71,7 @@ async function setupLivePreview(
   const port = await ensureLiveServer();
   const hasConnections = hasActiveConnections(previewId);
 
-  await addLiveDiagram(previewId, liveFilePath, format);
+  await addLiveDiagram(previewId, liveFilePath);
   const serverUrl = `http://localhost:${port}/${previewId}`;
 
   if (!hasConnections) {

@@ -8,7 +8,6 @@ import { loadDiagramOptions } from "./file-utils.js";
 const CONFIG_DIR = process.env.XDG_CONFIG_HOME || `${homedir()}/.config`;
 const LIVE_DIR = `${CONFIG_DIR}/claude-mermaid/live`;
 
-// Live reload server state
 interface DiagramState {
   filePath: string;
   watcher: FSWatcher;
@@ -18,9 +17,8 @@ interface DiagramState {
 let liveServer: HttpServer | null = null;
 let liveServerPort: number | null = null;
 let wss: WebSocketServer | null = null;
-const diagrams = new Map<string, DiagramState>(); // diagramId -> state
+const diagrams = new Map<string, DiagramState>();
 
-// Find available port starting from 3737
 async function findAvailablePort(
   startPort: number = 3737,
   maxPort: number = 3747
@@ -43,7 +41,51 @@ async function findAvailablePort(
   throw new Error(`No available ports found between ${startPort} and ${maxPort}`);
 }
 
-// Start live reload server if not already running
+async function handleViewRequest(url: string, res: ServerResponse, port: number): Promise<void> {
+  const diagramId = url.substring(6);
+  const filePath = `${LIVE_DIR}/${diagramId}/diagram.svg`;
+
+  try {
+    const content = await readFile(filePath, "utf-8");
+    const html = createLiveHtmlWrapper(content, diagramId, port, "white");
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(html);
+  } catch (error) {
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end(`Diagram not found: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+async function handleLivePreviewRequest(
+  url: string,
+  res: ServerResponse,
+  port: number
+): Promise<void> {
+  const diagramId = url.substring(1);
+
+  if (!diagramId || !diagrams.has(diagramId)) {
+    res.writeHead(404, { "Content-Type": "text/plain" });
+    res.end("Diagram not found");
+    return;
+  }
+
+  const state = diagrams.get(diagramId)!;
+
+  try {
+    const [content, options] = await Promise.all([
+      readFile(state.filePath, "utf-8"),
+      loadDiagramOptions(diagramId),
+    ]);
+
+    const html = createLiveHtmlWrapper(content, diagramId, port, options.background);
+    res.writeHead(200, { "Content-Type": "text/html" });
+    res.end(html);
+  } catch (error) {
+    res.writeHead(500, { "Content-Type": "text/plain" });
+    res.end(`Error reading diagram: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
 export async function ensureLiveServer(): Promise<number> {
   if (liveServer && liveServerPort) {
     return liveServerPort;
@@ -51,47 +93,20 @@ export async function ensureLiveServer(): Promise<number> {
 
   const port = await findAvailablePort();
 
-  liveServer = createServer((req: IncomingMessage, res: ServerResponse) => {
+  liveServer = createServer(async (req: IncomingMessage, res: ServerResponse) => {
     const url = req.url || "/";
 
-    // Test endpoint with file from live storage
-    if (url.startsWith("/file/")) {
-      const fileName = url.substring(6); // Remove '/file/'
-      const filePath = `${LIVE_DIR}/${fileName}/diagram.svg`;
+    try {
+      if (url.startsWith("/view/")) {
+        await handleViewRequest(url, res, port);
+        return;
+      }
 
-      readFile(filePath, "utf-8")
-        .then((content) => {
-          const html = createLiveHtmlWrapper(content, fileName, port, "white");
-          res.writeHead(200, { "Content-Type": "text/html" });
-          res.end(html);
-        })
-        .catch((error) => {
-          res.writeHead(500, { "Content-Type": "text/plain" });
-          res.end(`Error reading file: ${error.message}`);
-        });
-      return;
+      await handleLivePreviewRequest(url, res, port);
+    } catch (error) {
+      res.writeHead(500, { "Content-Type": "text/plain" });
+      res.end(`Server error: ${error instanceof Error ? error.message : String(error)}`);
     }
-
-    const diagramId = url.substring(1); // Remove leading '/'
-
-    if (!diagramId || !diagrams.has(diagramId)) {
-      res.writeHead(404, { "Content-Type": "text/plain" });
-      res.end("Diagram not found");
-      return;
-    }
-
-    const state = diagrams.get(diagramId)!;
-
-    Promise.all([readFile(state.filePath, "utf-8"), loadDiagramOptions(diagramId)])
-      .then(([content, options]) => {
-        const html = createLiveHtmlWrapper(content, diagramId, port, options.background);
-        res.writeHead(200, { "Content-Type": "text/html" });
-        res.end(html);
-      })
-      .catch((error) => {
-        res.writeHead(500, { "Content-Type": "text/plain" });
-        res.end(`Error reading diagram: ${error.message}`);
-      });
   });
 
   wss = new WebSocketServer({ server: liveServer });
@@ -120,19 +135,12 @@ export async function ensureLiveServer(): Promise<number> {
   return port;
 }
 
-// Add or update a diagram in live mode
-export async function addLiveDiagram(
-  diagramId: string,
-  filePath: string,
-  format: string = "svg"
-): Promise<void> {
-  // Clean up existing watcher if any
+export async function addLiveDiagram(diagramId: string, filePath: string): Promise<void> {
   if (diagrams.has(diagramId)) {
     const existing = diagrams.get(diagramId)!;
     existing.watcher.close();
   }
 
-  // Create file watcher
   const watcher = watch(filePath, (eventType) => {
     if (eventType === "change") {
       notifyClients(diagramId);
@@ -146,13 +154,11 @@ export async function addLiveDiagram(
   });
 }
 
-// Check if there are active connections viewing this diagram
 export function hasActiveConnections(diagramId: string): boolean {
   const state = diagrams.get(diagramId);
   return state ? state.clients.size > 0 : false;
 }
 
-// Notify all connected clients for a diagram to reload
 function notifyClients(diagramId: string): void {
   const state = diagrams.get(diagramId);
   if (!state) return;
