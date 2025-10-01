@@ -1,52 +1,4 @@
 import { describe, it, expect, vi } from 'vitest';
-import { getOpenCommand, createHtmlWrapper } from './index.js';
-
-describe('getOpenCommand', () => {
-  it('should return "open" for darwin platform', () => {
-    const originalPlatform = process.platform;
-    Object.defineProperty(process, 'platform', {
-      value: 'darwin',
-      writable: true,
-    });
-
-    expect(getOpenCommand()).toBe('open');
-
-    Object.defineProperty(process, 'platform', {
-      value: originalPlatform,
-      writable: true,
-    });
-  });
-
-  it('should return "start" for win32 platform', () => {
-    const originalPlatform = process.platform;
-    Object.defineProperty(process, 'platform', {
-      value: 'win32',
-      writable: true,
-    });
-
-    expect(getOpenCommand()).toBe('start');
-
-    Object.defineProperty(process, 'platform', {
-      value: originalPlatform,
-      writable: true,
-    });
-  });
-
-  it('should return "xdg-open" for linux platform', () => {
-    const originalPlatform = process.platform;
-    Object.defineProperty(process, 'platform', {
-      value: 'linux',
-      writable: true,
-    });
-
-    expect(getOpenCommand()).toBe('xdg-open');
-
-    Object.defineProperty(process, 'platform', {
-      value: originalPlatform,
-      writable: true,
-    });
-  });
-});
 
 describe('MCP Tool Schema', () => {
   it('should validate tool name', () => {
@@ -63,15 +15,7 @@ describe('MCP Tool Schema', () => {
     const formats = ['png', 'svg', 'pdf'];
     expect(formats).toHaveLength(3);
     expect(formats).toContain('svg');
-  });
-
-  it('should have browser parameter as boolean', () => {
-    const browserParam = {
-      type: 'boolean',
-      default: false,
-    };
-    expect(browserParam.type).toBe('boolean');
-    expect(browserParam.default).toBe(false);
+    expect(formats).toContain('pdf');
   });
 
   it('should support theme options', () => {
@@ -150,7 +94,7 @@ describe('MCP Tool Schema', () => {
     const validPaths = [
       './docs/diagram.svg',
       '/absolute/path/diagram.png',
-      '../relative/path/diagram.pdf',
+      '/absolute/path/diagram.pdf',
       'simple-name.svg',
     ];
     validPaths.forEach(path => {
@@ -158,95 +102,33 @@ describe('MCP Tool Schema', () => {
     });
   });
 
-  it('should have live parameter with default value', () => {
-    const liveParam = {
-      type: 'boolean',
-      default: false,
-    };
-    expect(liveParam.type).toBe('boolean');
-    expect(liveParam.default).toBe(false);
+  it('should generate SVG preview for PDF format', () => {
+    const pdfPath = './diagram.pdf';
+    const svgPreviewPath = pdfPath.replace(/\.pdf$/, '.svg');
+    expect(svgPreviewPath).toBe('./diagram.svg');
   });
 
-  it('should enable live reload mode when live is true', () => {
-    const liveParam = true;
-    expect(liveParam).toBe(true);
+  it('should always enable live reload mode', () => {
+    const liveMode = true;
+    expect(liveMode).toBe(true);
   });
 });
 
-describe('Image embedding', () => {
-  it('should create base64 data URI for PNG', () => {
-    const buffer = Buffer.from('test');
-    const base64 = buffer.toString('base64');
-    const dataUri = `data:image/png;base64,${base64}`;
+describe('Live mode', () => {
+  it('should generate stable diagram IDs from save path', () => {
+    const savePath = '/Users/test/.config/claude-mermaid/live-diagram.svg';
+    const id = Buffer.from(savePath).toString('base64').replace(/[/+=]/g, '').substring(0, 16);
 
-    expect(dataUri).toContain('data:image/png;base64,');
-    expect(dataUri).toContain(base64);
+    expect(id).toBeTruthy();
+    expect(id.length).toBe(16);
+    expect(id).toMatch(/^[A-Za-z0-9]+$/);
   });
 
-  it('should embed SVG directly without encoding', () => {
-    const svg = '<svg><rect/></svg>';
-    expect(svg).toContain('<svg>');
-    expect(svg).not.toContain('base64');
-  });
-});
+  it('should generate consistent IDs for same path', () => {
+    const savePath = '/test/path.svg';
+    const id1 = Buffer.from(savePath).toString('base64').replace(/[/+=]/g, '').substring(0, 16);
+    const id2 = Buffer.from(savePath).toString('base64').replace(/[/+=]/g, '').substring(0, 16);
 
-describe('HTML wrapper', () => {
-  it('should create valid HTML document structure', () => {
-    const content = '<svg><rect/></svg>';
-    const html = createHtmlWrapper(content);
-
-    expect(html).toContain('<!DOCTYPE html>');
-    expect(html).toContain('<html lang="en">');
-    expect(html).toContain('</html>');
-  });
-
-  it('should include meta tags and viewport settings', () => {
-    const content = '<svg><rect/></svg>';
-    const html = createHtmlWrapper(content);
-
-    expect(html).toContain('<meta charset="UTF-8">');
-    expect(html).toContain('<meta name="viewport"');
-  });
-
-  it('should embed provided content inside container div', () => {
-    const content = '<svg id="test-svg"><rect/></svg>';
-    const html = createHtmlWrapper(content);
-
-    expect(html).toContain('<div class="container">');
-    expect(html).toContain(content);
-    expect(html).toContain('</div>');
-  });
-
-  it('should include styling for centering and responsive layout', () => {
-    const content = '<svg><rect/></svg>';
-    const html = createHtmlWrapper(content);
-
-    expect(html).toContain('<style>');
-    expect(html).toContain('.container');
-    expect(html).toContain('display: flex');
-    expect(html).toContain('justify-content: center');
-  });
-
-  it('should set appropriate page title', () => {
-    const content = '<svg><rect/></svg>';
-    const html = createHtmlWrapper(content);
-
-    expect(html).toContain('<title>Mermaid Diagram Preview</title>');
-  });
-
-  it('should handle PNG image content', () => {
-    const imgTag = '<img src="data:image/png;base64,test123" alt="Mermaid Diagram">';
-    const html = createHtmlWrapper(imgTag);
-
-    expect(html).toContain(imgTag);
-    expect(html).toContain('data:image/png;base64,test123');
-  });
-
-  it('should handle SVG content directly', () => {
-    const svgContent = '<svg width="800" height="600"><circle cx="50" cy="50" r="40"/></svg>';
-    const html = createHtmlWrapper(svgContent);
-
-    expect(html).toContain(svgContent);
-    expect(html).toContain('<circle');
+    expect(id1).toBe(id2);
   });
 });

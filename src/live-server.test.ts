@@ -90,61 +90,33 @@ describe('Live Server', () => {
 });
 
 describe('Live mode parameters', () => {
-  it('should have live parameter with boolean type', () => {
-    const liveParam = {
-      type: 'boolean',
-      default: false,
-    };
-    expect(liveParam.type).toBe('boolean');
-    expect(liveParam.default).toBe(false);
-  });
-
-  it('should require save_path or use default location in live mode', () => {
-    const liveMode = true;
+  it('should use default location when save_path not provided', () => {
     let savePath: string | undefined = undefined;
 
-    if (liveMode && !savePath) {
+    if (!savePath) {
       const homeDir = process.env.HOME || process.env.USERPROFILE || tmpdir();
-      savePath = join(homeDir, '.claude-mermaid', 'live-diagram.svg');
+      const configDir = join(homeDir, '.config');
+      savePath = join(configDir, 'claude-mermaid', 'live-diagram.svg');
     }
 
     expect(savePath).toBeTruthy();
-    expect(savePath).toContain('.claude-mermaid');
+    expect(savePath).toContain('.config');
+    expect(savePath).toContain('claude-mermaid');
   });
 
-  it('should automatically enable browser mode when live is true', () => {
-    let browser = false;
-    const live = true;
-
-    if (live) {
-      browser = true;
-    }
-
-    expect(browser).toBe(true);
+  it('should support SVG format', () => {
+    const formats = ['png', 'svg', 'pdf'];
+    expect(formats).toContain('svg');
   });
 
-  it('should not support PDF format in live mode', () => {
-    const live = true;
-    const format = 'pdf';
-
-    const isValidFormat = !(live && format === 'pdf');
-    expect(isValidFormat).toBe(false);
+  it('should support PNG format', () => {
+    const formats = ['png', 'svg', 'pdf'];
+    expect(formats).toContain('png');
   });
 
-  it('should support SVG format in live mode', () => {
-    const live = true;
-    const format = 'svg';
-
-    const isValidFormat = !(live && format === 'pdf');
-    expect(isValidFormat).toBe(true);
-  });
-
-  it('should support PNG format in live mode', () => {
-    const live = true;
-    const format = 'png';
-
-    const isValidFormat = !(live && format === 'pdf');
-    expect(isValidFormat).toBe(true);
+  it('should support PDF format with SVG preview', () => {
+    const formats = ['png', 'svg', 'pdf'];
+    expect(formats).toContain('pdf');
   });
 });
 

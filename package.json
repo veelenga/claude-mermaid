@@ -8,11 +8,11 @@
     "claude-mermaid": "./build/index.js"
   },
   "files": [
-    "build/index.js",
+    "build/**/*.js",
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && chmod +x build/index.js",
     "start": "node build/index.js",
     "dev": "tsc --watch",
     "test": "vitest",

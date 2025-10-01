@@ -12,12 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Theme support (`default`, `forest`, `dark`, `neutral`)
 - Custom background color support (transparent, custom colors)
 - Configurable diagram dimensions (`width`, `height`) and scale factor
-- `save_path` parameter to save diagrams to project location
-- `live` parameter for live reload mode with automatic diagram refresh via WebSocket
-
-### Changed
-- Tool renamed from `preview_mermaid` to `render_mermaid`
-- Default output format changed from `png` to `svg`
+- Live reload mode with automatic diagram refresh via WebSocket
+- Default save location changed to `~/.config/claude-mermaid/`
 
 ## [1.0.1] - 2025-09-30
 
