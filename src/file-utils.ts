@@ -1,5 +1,5 @@
 import { readdir, unlink, stat, mkdir, readFile, writeFile, rmdir } from "fs/promises";
-import { join } from "path";
+import { join, resolve, relative } from "path";
 import { tmpdir } from "os";
 
 const APP_NAME = "claude-mermaid";
@@ -67,6 +67,48 @@ export async function loadDiagramOptions(previewId: string): Promise<DiagramOpti
   const optionsPath = getDiagramOptionsPath(previewId);
   const content = await readFile(optionsPath, "utf-8");
   return JSON.parse(content);
+}
+
+/**
+ * Validates a save path to prevent path traversal and writing to sensitive locations
+ * @param savePath - The path where the user wants to save the file
+ * @throws Error if the path is invalid or dangerous
+ */
+export function validateSavePath(savePath: string): void {
+  // Check for null bytes (potential security issue)
+  if (savePath.includes("\0")) {
+    throw new Error("Path contains null bytes");
+  }
+
+  // Resolve to absolute path
+  const absolutePath = resolve(savePath);
+
+  // Prevent writing to sensitive system directories (Unix/Linux/macOS)
+  const unixDangerousPaths = [
+    "/etc",
+    "/bin",
+    "/sbin",
+    "/usr/bin",
+    "/usr/sbin",
+    "/boot",
+    "/sys",
+    "/proc",
+  ];
+  if (
+    process.platform !== "win32" &&
+    unixDangerousPaths.some((danger) => absolutePath.startsWith(danger))
+  ) {
+    throw new Error("Cannot write to system directories");
+  }
+
+  // Prevent writing to Windows system directories
+  if (process.platform === "win32") {
+    const windowsDangerousPaths = ["C:\\Windows", "C:\\Program Files"];
+    const normalizedPath = absolutePath.replace(/\//g, "\\");
+    if (windowsDangerousPaths.some((danger) => normalizedPath.startsWith(danger))) {
+      throw new Error("Cannot write to system directories");
+    }
+  }
 }
 
 export async function cleanupOldDiagrams(

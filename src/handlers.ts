@@ -10,6 +10,7 @@ import {
   saveDiagramSource,
   loadDiagramSource,
   loadDiagramOptions,
+  validateSavePath,
 } from "./file-utils.js";
 import { mcpLogger } from "./logger.js";
 
@@ -200,6 +201,25 @@ export async function handleMermaidSave(args: any) {
   }
   if (!previewId) {
     throw new Error("preview_id parameter is required");
+  }
+
+  // Validate save path to prevent path traversal attacks
+  try {
+    validateSavePath(savePath);
+  } catch (error) {
+    mcpLogger.error("Save path validation failed", {
+      savePath,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Invalid save path: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+      isError: true,
+    };
   }
 
   try {
