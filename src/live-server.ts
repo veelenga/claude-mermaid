@@ -14,6 +14,15 @@ const TEMPLATE_PATH = join(PREVIEW_DIR, "template.html");
 const STYLE_PATH = join(PREVIEW_DIR, "style.css");
 const SCRIPT_PATH = join(PREVIEW_DIR, "script.js");
 
+// Content Security Policy header
+// - default-src 'none': Deny all by default
+// - script-src 'self': Only allow scripts from same origin
+// - style-src 'self' 'unsafe-inline': Allow CSS from same origin and inline styles (for background color)
+// - img-src 'self' data:: Allow images from same origin and data URIs (SVG may contain embedded images)
+// - connect-src 'self' ws://localhost:*: Allow WebSocket connections to localhost for live reload
+const CSP_HEADER =
+  "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws://localhost:*";
+
 // Live directories are resolved via shared utils (respects XDG_CONFIG_HOME/HOME)
 
 interface DiagramState {
@@ -59,7 +68,10 @@ async function handleViewRequest(url: string, res: ServerResponse, port: number)
     const content = await readFile(filePath, "utf-8");
     // For /view/* pages we explicitly disable live reload/WebSocket
     const html = await createLiveHtmlWrapper(content, diagramId, port, "white", false);
-    res.writeHead(200, { "Content-Type": "text/html" });
+    res.writeHead(200, {
+      "Content-Type": "text/html",
+      "Content-Security-Policy": CSP_HEADER,
+    });
     res.end(html);
     webLogger.info(`Served view for diagram: ${diagramId}`);
   } catch (error) {
@@ -96,7 +108,10 @@ async function handleLivePreviewRequest(
     ]);
 
     const html = await createLiveHtmlWrapper(content, diagramId, port, options.background, true);
-    res.writeHead(200, { "Content-Type": "text/html" });
+    res.writeHead(200, {
+      "Content-Type": "text/html",
+      "Content-Security-Policy": CSP_HEADER,
+    });
     res.end(html);
     webLogger.info(`Served live preview for: ${diagramId}`, {
       clientCount: state.clients.size,

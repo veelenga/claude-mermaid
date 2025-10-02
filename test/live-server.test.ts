@@ -46,6 +46,42 @@ describe("Live Server", () => {
       expect(port).toBeGreaterThanOrEqual(3737);
       expect(port).toBeLessThanOrEqual(3747);
     });
+
+    it("should include CSP headers in HTML responses", async () => {
+      const { getLiveDir } = await import("../src/file-utils.js");
+      const port = await ensureLiveServer();
+      const diagramId = "csp-test";
+
+      // Setup diagram directory with options file
+      const diagramDir = join(getLiveDir(), diagramId);
+      await mkdir(diagramDir, { recursive: true });
+      const diagramPath = join(diagramDir, "diagram.svg");
+      const optionsPath = join(diagramDir, "options.json");
+
+      await writeFile(diagramPath, "<svg>test</svg>", "utf-8");
+      await writeFile(
+        optionsPath,
+        JSON.stringify({
+          theme: "default",
+          background: "white",
+          width: 800,
+          height: 600,
+          scale: 2,
+        }),
+        "utf-8"
+      );
+
+      await addLiveDiagram(diagramId, diagramPath);
+
+      const response = await fetch(`http://localhost:${port}/${diagramId}`);
+      const cspHeader = response.headers.get("content-security-policy");
+
+      expect(cspHeader).toBeTruthy();
+      expect(cspHeader).toContain("default-src 'none'");
+      expect(cspHeader).toContain("script-src 'self'");
+      expect(cspHeader).toContain("style-src 'self' 'unsafe-inline'");
+      expect(cspHeader).toContain("connect-src 'self' ws://localhost:*");
+    });
   });
 
   describe("addLiveDiagram", () => {
