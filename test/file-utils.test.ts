@@ -70,6 +70,52 @@ describe("File Utilities", () => {
       expect(flowDir).toContain("flow");
       expect(archDir).not.toBe(flowDir);
     });
+
+    describe("previewId validation", () => {
+      it("should accept valid alphanumeric IDs", () => {
+        expect(() => getPreviewDir("diagram123")).not.toThrow();
+        expect(() => getPreviewDir("flow-chart")).not.toThrow();
+        expect(() => getPreviewDir("my_diagram")).not.toThrow();
+        expect(() => getPreviewDir("Diagram-123_test")).not.toThrow();
+      });
+
+      it("should reject empty or whitespace-only IDs", () => {
+        expect(() => getPreviewDir("")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("   ")).toThrow("Invalid preview ID format");
+      });
+
+      it("should reject path traversal attempts", () => {
+        expect(() => getPreviewDir("../etc/passwd")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("..")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("foo/../bar")).toThrow("Invalid preview ID format");
+      });
+
+      it("should reject absolute paths", () => {
+        expect(() => getPreviewDir("/etc/passwd")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("/tmp/diagram")).toThrow("Invalid preview ID format");
+      });
+
+      it("should reject IDs with path separators", () => {
+        expect(() => getPreviewDir("foo/bar")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("foo\\bar")).toThrow("Invalid preview ID format");
+      });
+
+      it("should reject IDs with special characters", () => {
+        expect(() => getPreviewDir("diagram@123")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("test$diagram")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("my diagram")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("test;ls")).toThrow("Invalid preview ID format");
+      });
+
+      it("should reject IDs with null bytes", () => {
+        expect(() => getPreviewDir("test\0diagram")).toThrow("Invalid preview ID format");
+      });
+
+      it("should reject IDs starting with dot", () => {
+        expect(() => getPreviewDir(".hidden")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("..secret")).toThrow("Invalid preview ID format");
+      });
+    });
   });
 
   describe("getConfigDir precedence", () => {

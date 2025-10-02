@@ -23,7 +23,20 @@ export function getLogsDir(): string {
   return join(getAppDir(), "logs");
 }
 
+/**
+ * Validates that previewId is safe to use in file paths
+ * Only allows alphanumeric characters, hyphens, and underscores
+ */
+export function validatePreviewId(previewId: string): void {
+  if (!previewId || !/^[a-zA-Z0-9_-]+$/.test(previewId)) {
+    throw new Error(
+      "Invalid preview ID format. Only alphanumeric characters, hyphens, and underscores are allowed."
+    );
+  }
+}
+
 export function getPreviewDir(previewId: string): string {
+  validatePreviewId(previewId);
   return join(getLiveDir(), previewId);
 }
 
