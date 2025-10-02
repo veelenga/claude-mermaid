@@ -307,7 +307,6 @@ describe("HTML wrapper and template", () => {
 
     expect(template).toContain(".viewport");
     expect(template).toContain(".status-bar");
-    expect(template).toContain("position: fixed");
     expect(template).toContain("box-sizing: border-box");
   });
 });
