@@ -5,13 +5,13 @@ import { mkdir, readdir, unlink, rmdir, access, writeFile, mkdtemp } from "fs/pr
 import { join } from "path";
 import { tmpdir } from "os";
 
-// Mock exec to avoid actually running mmdc and create fake output files
+// Mock execFile to avoid actually running mmdc and create fake output files
 vi.mock("child_process", () => ({
-  exec: vi.fn((cmd: string, callback: Function) => {
-    // Extract output file from command
-    const match = cmd.match(/-o "([^"]+)"/);
-    if (match) {
-      const outputFile = match[1];
+  execFile: vi.fn((file: string, args: string[], callback: Function) => {
+    // Find the output file from args array
+    const outputIndex = args.indexOf("-o");
+    if (outputIndex !== -1 && outputIndex + 1 < args.length) {
+      const outputFile = args[outputIndex + 1];
       // Create a fake output file
       import("fs/promises").then(({ writeFile }) => {
         writeFile(outputFile, "<svg>test</svg>", "utf-8").then(() => {
