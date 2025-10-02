@@ -12,6 +12,7 @@ import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { cleanupOldDiagrams } from "./file-utils.js";
 import { handleMermaidPreview, handleMermaidSave } from "./handlers.js";
+import { mcpLogger } from "./logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -126,29 +127,58 @@ const server = new Server(
 );
 
 server.setRequestHandler(ListToolsRequestSchema, async () => {
+  mcpLogger.debug("ListTools request received");
   return { tools: TOOL_DEFINITIONS };
 });
 
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  switch (request.params.name) {
-    case "mermaid_preview":
-      return await handleMermaidPreview(request.params.arguments);
-    case "mermaid_save":
-      return await handleMermaidSave(request.params.arguments);
-    default:
-      throw new Error(`Unknown tool: ${request.params.name}`);
+  const toolName = request.params.name;
+  const args = request.params.arguments;
+
+  mcpLogger.info(`CallTool request: ${toolName}`);
+
+  try {
+    let result;
+    switch (toolName) {
+      case "mermaid_preview":
+        result = await handleMermaidPreview(args);
+        mcpLogger.info(`CallTool completed: ${toolName}`);
+        return result;
+      case "mermaid_save":
+        result = await handleMermaidSave(args);
+        mcpLogger.info(`CallTool completed: ${toolName}`);
+        return result;
+      default:
+        mcpLogger.error(`Unknown tool: ${toolName}`);
+        throw new Error(`Unknown tool: ${toolName}`);
+    }
+  } catch (error) {
+    mcpLogger.error(`Tool ${toolName} failed`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
   }
 });
 
 async function main() {
-  await cleanupOldDiagrams();
+  mcpLogger.info("MCP Server starting", { version: VERSION });
+
+  const cleanedCount = await cleanupOldDiagrams();
+  if (cleanedCount > 0) {
+    mcpLogger.info(`Cleaned up ${cleanedCount} old diagrams`);
+  }
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
+  mcpLogger.info("MCP Server connected via stdio");
   console.error("Claude Mermaid MCP Server running on stdio");
 }
 
 main().catch((error) => {
+  mcpLogger.error("Fatal error during startup", {
+    error: error instanceof Error ? error.message : String(error),
+    stack: error instanceof Error ? error.stack : undefined,
+  });
   console.error("Fatal error:", error);
   process.exit(1);
 });

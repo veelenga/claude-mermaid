@@ -245,6 +245,40 @@ chmod +x $(which claude-mermaid)
 - It will automatically find an available port
 - Check if another process is using these ports: `lsof -i :3737-3747`
 
+**Diagrams not rendering or live reload not working:**
+
+The server logs to `~/.config/claude-mermaid/logs/`:
+
+- `mcp.log` - Tool requests and diagram rendering
+- `web.log` - HTTP/WebSocket connections and live reload
+
+Enable debug logging in your MCP config:
+
+```json
+{
+  "mcpServers": {
+    "mermaid": {
+      "command": "claude-mermaid",
+      "env": {
+        "CLAUDE_MERMAID_LOG_LEVEL": "DEBUG"
+      }
+    }
+  }
+}
+```
+
+Then check the logs:
+
+```bash
+# View MCP operations
+tail -f ~/.config/claude-mermaid/logs/mcp.log
+
+# View WebSocket connections
+tail -f ~/.config/claude-mermaid/logs/web.log
+```
+
+Available log levels: `DEBUG`, `INFO` (default), `WARN`, `ERROR`, `OFF`
+
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
