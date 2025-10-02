@@ -13,6 +13,7 @@ const PREVIEW_DIR = join(__dirname, "preview");
 const TEMPLATE_PATH = join(PREVIEW_DIR, "template.html");
 const STYLE_PATH = join(PREVIEW_DIR, "style.css");
 const SCRIPT_PATH = join(PREVIEW_DIR, "script.js");
+const FAVICON_PATH = join(PREVIEW_DIR, "favicon.svg");
 
 // Content Security Policy header
 // - default-src 'none': Deny all by default
@@ -150,6 +151,23 @@ export async function ensureLiveServer(): Promise<number> {
         const js = await readFile(SCRIPT_PATH, "utf-8");
         res.writeHead(200, { "Content-Type": "application/javascript" });
         res.end(js);
+        return;
+      }
+
+      if (url === "/favicon.svg") {
+        const icon = await readFile(FAVICON_PATH);
+        res.writeHead(200, {
+          "Content-Type": "image/svg+xml",
+          "Cache-Control": "public, max-age=86400", // Cache for 24 hours
+        });
+        res.end(icon);
+        return;
+      }
+
+      if (url === "/favicon.ico") {
+        // Redirect common .ico requests to SVG favicon
+        res.writeHead(302, { Location: "/favicon.svg" });
+        res.end();
         return;
       }
 

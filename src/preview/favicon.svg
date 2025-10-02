@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff3670"/>
+      <stop offset="100%" stop-color="#ff7c9c"/>
+    </linearGradient>
+  </defs>
+  <!-- Flowchart-inspired design -->
+  <rect x="6" y="12" width="52" height="40" rx="4" fill="url(#g)"/>
+  <!-- Flow arrows -->
+  <path d="M18 26h10m8 0h10M32 32v8" stroke="white" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="32" cy="26" r="3" fill="white"/>
+  <circle cx="32" cy="40" r="3" fill="white"/>
+  <!-- Node boxes -->
+  <rect x="14" y="22" width="8" height="8" rx="1" fill="white" opacity="0.7"/>
+  <rect x="42" y="22" width="8" height="8" rx="1" fill="white" opacity="0.7"/>
+</svg>
+
