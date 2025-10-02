@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configurable diagram dimensions (`width`, `height`) and scale factor
 - Live reload mode with automatic diagram refresh via WebSocket
 - Default save location changed to `~/.config/claude-mermaid/`
+- Interactive diagram preview with drag-to-pan functionality
+- Reset position button to recenter dragged diagrams
 
 ## [1.0.1] - 2025-09-30
 

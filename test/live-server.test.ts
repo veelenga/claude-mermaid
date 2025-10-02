@@ -276,7 +276,7 @@ describe("HTML wrapper and template", () => {
     expect(template).toContain('event.data === "reload"');
   });
 
-  it("should include diagram scaling logic in template", async () => {
+  it("should include diagram pan and reset logic in template", async () => {
     const { readFile } = await import("fs/promises");
     const { join } = await import("path");
     const { fileURLToPath } = await import("url");
@@ -288,9 +288,9 @@ describe("HTML wrapper and template", () => {
 
     const template = await readFile(templatePath, "utf-8");
 
-    expect(template).toContain("function scaleDiagram");
-    expect(template).toContain("viewBox");
-    expect(template).toContain("classList.add");
+    expect(template).toContain("function resetPan");
+    expect(template).toContain("isDragging");
+    expect(template).toContain("reset-pan-btn");
   });
 
   it("should have viewport and status bar styles in template", async () => {
