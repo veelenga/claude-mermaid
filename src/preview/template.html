@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mermaid Diagram Preview (Live)</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body data-diagram-id="{{DIAGRAM_ID}}" data-port="{{PORT}}" data-live-enabled="{{LIVE_ENABLED}}">
+    <div class="status-bar">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <div>
+          <span class="status-indicator" id="status-indicator"></span>
+          <span id="status-text">Live Reload Active</span>
+        </div>
+        <button class="reset-pan-btn" id="reset-pan" title="Reset position">⊙</button>
+      </div>
+      <div id="last-update">Last updated: {{TIMESTAMP}}</div>
+    </div>
+
+    <div class="viewport" style="background: {{BACKGROUND}}">
+      <div class="diagram-wrapper">{{CONTENT}}</div>
+    </div>
+
+    <script src="/script.js"></script>
+  </body>
+</html>

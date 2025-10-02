@@ -10,10 +10,11 @@
   "files": [
     "build/**/*.js",
     "build/**/*.html",
+    "build/**/*.css",
     "CHANGELOG.md"
   ],
   "scripts": {
-    "build": "tsc && cp src/preview-template.html build/ && chmod +x build/index.js",
+    "build": "tsc && cp -r src/preview build/ && chmod +x build/index.js",
     "start": "node build/index.js",
     "dev": "tsc --watch",
     "test": "vitest",

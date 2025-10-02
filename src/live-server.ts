@@ -9,7 +9,10 @@ import { webLogger } from "./logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const TEMPLATE_PATH = join(__dirname, "preview-template.html");
+const PREVIEW_DIR = join(__dirname, "preview");
+const TEMPLATE_PATH = join(PREVIEW_DIR, "template.html");
+const STYLE_PATH = join(PREVIEW_DIR, "style.css");
+const SCRIPT_PATH = join(PREVIEW_DIR, "script.js");
 
 // Live directories are resolved via shared utils (respects XDG_CONFIG_HOME/HOME)
 
@@ -120,6 +123,21 @@ export async function ensureLiveServer(): Promise<number> {
     const url = req.url || "/";
 
     try {
+      // Serve static assets (CSS and JS)
+      if (url === "/style.css") {
+        const css = await readFile(STYLE_PATH, "utf-8");
+        res.writeHead(200, { "Content-Type": "text/css" });
+        res.end(css);
+        return;
+      }
+
+      if (url === "/script.js") {
+        const js = await readFile(SCRIPT_PATH, "utf-8");
+        res.writeHead(200, { "Content-Type": "application/javascript" });
+        res.end(js);
+        return;
+      }
+
       if (url.startsWith("/view/")) {
         await handleViewRequest(url, res, port);
         return;
@@ -241,6 +259,18 @@ async function loadTemplate(): Promise<string> {
   return templateCache;
 }
 
+/**
+ * Escapes HTML special characters to prevent XSS attacks
+ */
+export function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 async function createLiveHtmlWrapper(
   content: string,
   diagramId: string,
@@ -250,11 +280,14 @@ async function createLiveHtmlWrapper(
 ): Promise<string> {
   const template = await loadTemplate();
 
+  // Escape user-controlled values
+  // CONTENT is SVG from mermaid-cli - trusted
+  // DIAGRAM_ID, BACKGROUND, TIMESTAMP need escaping
   return template
     .replaceAll("{{CONTENT}}", content)
-    .replaceAll("{{DIAGRAM_ID}}", diagramId)
+    .replaceAll("{{DIAGRAM_ID}}", escapeHtml(diagramId))
     .replaceAll("{{PORT}}", port.toString())
-    .replaceAll("{{BACKGROUND}}", background)
-    .replaceAll("{{TIMESTAMP}}", new Date().toLocaleTimeString())
+    .replaceAll("{{BACKGROUND}}", escapeHtml(background))
+    .replaceAll("{{TIMESTAMP}}", escapeHtml(new Date().toLocaleTimeString()))
     .replaceAll("{{LIVE_ENABLED}}", liveEnabled ? "true" : "false");
 }
