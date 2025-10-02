@@ -11,6 +11,7 @@ import {
   loadDiagramSource,
   loadDiagramOptions,
 } from "./file-utils.js";
+import { mcpLogger } from "./logger.js";
 
 const execAsync = promisify(exec);
 
@@ -36,6 +37,8 @@ function getOpenCommand(): string {
 async function renderDiagram(options: RenderOptions, liveFilePath: string): Promise<void> {
   const { diagram, previewId, format, theme, background, width, height, scale } = options;
 
+  mcpLogger.info(`Rendering diagram: ${previewId}`, { format, theme, width, height });
+
   const tempDir = join(tmpdir(), "claude-mermaid");
   await mkdir(tempDir, { recursive: true });
 
@@ -59,14 +62,26 @@ async function renderDiagram(options: RenderOptions, liveFilePath: string): Prom
     .filter(Boolean)
     .join(" ");
 
-  await execAsync(cmd);
-  await copyFile(outputFile, liveFilePath);
+  mcpLogger.debug(`Executing mermaid-cli`, { cmd });
+
+  try {
+    const { stdout, stderr } = await execAsync(cmd);
+    if (stderr) {
+      mcpLogger.debug(`mermaid-cli stderr`, { stderr });
+    }
+    await copyFile(outputFile, liveFilePath);
+    mcpLogger.info(`Diagram rendered successfully: ${previewId}`);
+  } catch (error) {
+    mcpLogger.error(`Diagram rendering failed: ${previewId}`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
 }
 
 async function setupLivePreview(
   previewId: string,
-  liveFilePath: string,
-  format: string
+  liveFilePath: string
 ): Promise<{ serverUrl: string; hasConnections: boolean }> {
   const port = await ensureLiveServer();
   const hasConnections = hasActiveConnections(previewId);
@@ -75,8 +90,11 @@ async function setupLivePreview(
   const serverUrl = `http://localhost:${port}/${previewId}`;
 
   if (!hasConnections) {
+    mcpLogger.info(`Opening browser for new diagram: ${previewId}`, { serverUrl });
     const openCommand = getOpenCommand();
     await execAsync(`${openCommand} "${serverUrl}"`);
+  } else {
+    mcpLogger.info(`Reusing existing browser tab for diagram: ${previewId}`);
   }
 
   return { serverUrl, hasConnections };
@@ -146,7 +164,7 @@ export async function handleMermaidPreview(args: any) {
     );
 
     if (format === "svg") {
-      const { serverUrl, hasConnections } = await setupLivePreview(previewId, liveFilePath, format);
+      const { serverUrl, hasConnections } = await setupLivePreview(previewId, liveFilePath);
       return createLivePreviewResponse(liveFilePath, format, serverUrl, hasConnections);
     } else {
       return createStaticRenderResponse(liveFilePath, format);

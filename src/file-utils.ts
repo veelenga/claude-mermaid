@@ -2,6 +2,8 @@ import { readdir, unlink, stat, mkdir, readFile, writeFile, rmdir } from "fs/pro
 import { join } from "path";
 import { tmpdir } from "os";
 
+const APP_NAME = "claude-mermaid";
+
 export function getConfigDir(): string {
   const xdg = process.env.XDG_CONFIG_HOME;
   if (xdg && xdg.trim()) return xdg;
@@ -9,8 +11,16 @@ export function getConfigDir(): string {
   return join(homeDir, ".config");
 }
 
+export function getAppDir(): string {
+  return join(getConfigDir(), APP_NAME);
+}
+
 export function getLiveDir(): string {
-  return join(getConfigDir(), "claude-mermaid", "live");
+  return join(getAppDir(), "live");
+}
+
+export function getLogsDir(): string {
+  return join(getAppDir(), "logs");
 }
 
 export function getPreviewDir(previewId: string): string {
