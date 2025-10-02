@@ -1,8 +1,21 @@
 import { readdir, unlink, stat, mkdir, readFile, writeFile, rmdir } from "fs/promises";
-import { join } from "path";
+import { join, resolve } from "path";
 import { tmpdir } from "os";
 
 const APP_NAME = "claude-mermaid";
+const PREVIEW_ID_REGEX = /^[a-zA-Z0-9_-]+$/;
+const UNIX_SYSTEM_PATHS = [
+  "/etc",
+  "/bin",
+  "/sbin",
+  "/usr/bin",
+  "/usr/sbin",
+  "/boot",
+  "/sys",
+  "/proc",
+];
+
+const WINDOWS_SYSTEM_PATHS = ["C:\\Windows", "C:\\Program Files"];
 
 export function getConfigDir(): string {
   const xdg = process.env.XDG_CONFIG_HOME;
@@ -23,7 +36,20 @@ export function getLogsDir(): string {
   return join(getAppDir(), "logs");
 }
 
+/**
+ * Validates that previewId is safe to use in file paths
+ * Only allows alphanumeric characters, hyphens, and underscores
+ */
+export function validatePreviewId(previewId: string): void {
+  if (!previewId || !PREVIEW_ID_REGEX.test(previewId)) {
+    throw new Error(
+      "Invalid preview ID format. Only alphanumeric characters, hyphens, and underscores are allowed."
+    );
+  }
+}
+
 export function getPreviewDir(previewId: string): string {
+  validatePreviewId(previewId);
   return join(getLiveDir(), previewId);
 }
 
@@ -67,6 +93,37 @@ export async function loadDiagramOptions(previewId: string): Promise<DiagramOpti
   const optionsPath = getDiagramOptionsPath(previewId);
   const content = await readFile(optionsPath, "utf-8");
   return JSON.parse(content);
+}
+
+/**
+ * Validates a save path to prevent path traversal and writing to sensitive locations
+ * @param savePath - The path where the user wants to save the file
+ * @throws Error if the path is invalid or dangerous
+ */
+export function validateSavePath(savePath: string): void {
+  // Check for null bytes (potential security issue)
+  if (savePath.includes("\0")) {
+    throw new Error("Path contains null bytes");
+  }
+
+  // Resolve to absolute path
+  const absolutePath = resolve(savePath);
+
+  // Prevent writing to sensitive system directories (Unix/Linux/macOS)
+  if (
+    process.platform !== "win32" &&
+    UNIX_SYSTEM_PATHS.some((danger) => absolutePath.startsWith(danger))
+  ) {
+    throw new Error("Cannot write to system directories");
+  }
+
+  // Prevent writing to Windows system directories
+  if (process.platform === "win32") {
+    const normalizedPath = absolutePath.replace(/\//g, "\\");
+    if (WINDOWS_SYSTEM_PATHS.some((danger) => normalizedPath.startsWith(danger))) {
+      throw new Error("Cannot write to system directories");
+    }
+  }
 }
 
 export async function cleanupOldDiagrams(

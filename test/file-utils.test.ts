@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, beforeAll, afterAll, vi } from "vitest";
 import {
   getLiveDir,
   getPreviewDir,
@@ -10,6 +10,7 @@ import {
   loadDiagramOptions,
   cleanupOldDiagrams,
   getConfigDir,
+  validateSavePath,
 } from "../src/file-utils.js";
 import { writeFile, unlink, mkdir, utimes, rmdir, readdir, mkdtemp } from "fs/promises";
 import { tmpdir } from "os";
@@ -68,6 +69,52 @@ describe("File Utilities", () => {
       expect(archDir).toContain("architecture");
       expect(flowDir).toContain("flow");
       expect(archDir).not.toBe(flowDir);
+    });
+
+    describe("previewId validation", () => {
+      it("should accept valid alphanumeric IDs", () => {
+        expect(() => getPreviewDir("diagram123")).not.toThrow();
+        expect(() => getPreviewDir("flow-chart")).not.toThrow();
+        expect(() => getPreviewDir("my_diagram")).not.toThrow();
+        expect(() => getPreviewDir("Diagram-123_test")).not.toThrow();
+      });
+
+      it("should reject empty or whitespace-only IDs", () => {
+        expect(() => getPreviewDir("")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("   ")).toThrow("Invalid preview ID format");
+      });
+
+      it("should reject path traversal attempts", () => {
+        expect(() => getPreviewDir("../etc/passwd")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("..")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("foo/../bar")).toThrow("Invalid preview ID format");
+      });
+
+      it("should reject absolute paths", () => {
+        expect(() => getPreviewDir("/etc/passwd")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("/tmp/diagram")).toThrow("Invalid preview ID format");
+      });
+
+      it("should reject IDs with path separators", () => {
+        expect(() => getPreviewDir("foo/bar")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("foo\\bar")).toThrow("Invalid preview ID format");
+      });
+
+      it("should reject IDs with special characters", () => {
+        expect(() => getPreviewDir("diagram@123")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("test$diagram")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("my diagram")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("test;ls")).toThrow("Invalid preview ID format");
+      });
+
+      it("should reject IDs with null bytes", () => {
+        expect(() => getPreviewDir("test\0diagram")).toThrow("Invalid preview ID format");
+      });
+
+      it("should reject IDs starting with dot", () => {
+        expect(() => getPreviewDir(".hidden")).toThrow("Invalid preview ID format");
+        expect(() => getPreviewDir("..secret")).toThrow("Invalid preview ID format");
+      });
     });
   });
 
@@ -308,6 +355,84 @@ describe("File Utilities", () => {
       const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
 
       expect(age).toBeGreaterThan(sevenDaysMs);
+    });
+  });
+
+  describe("validateSavePath", () => {
+    it("should allow valid relative paths", () => {
+      expect(() => validateSavePath("./diagrams/test.svg")).not.toThrow();
+      expect(() => validateSavePath("docs/diagram.png")).not.toThrow();
+      expect(() => validateSavePath("../output/diagram.pdf")).not.toThrow();
+    });
+
+    it("should allow valid absolute paths", () => {
+      expect(() => validateSavePath("/tmp/diagram.svg")).not.toThrow();
+      expect(() => validateSavePath("/home/user/diagrams/test.svg")).not.toThrow();
+    });
+
+    it("should reject paths with null bytes", () => {
+      expect(() => validateSavePath("diagram\0.svg")).toThrow("Path contains null bytes");
+      expect(() => validateSavePath("/tmp/\0file.svg")).toThrow("Path contains null bytes");
+    });
+
+    it("should reject Unix system directories", () => {
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, "platform", { value: "linux" });
+
+      expect(() => validateSavePath("/etc/diagram.svg")).toThrow(
+        "Cannot write to system directories"
+      );
+      expect(() => validateSavePath("/bin/diagram.svg")).toThrow(
+        "Cannot write to system directories"
+      );
+      expect(() => validateSavePath("/sbin/diagram.svg")).toThrow(
+        "Cannot write to system directories"
+      );
+      expect(() => validateSavePath("/usr/bin/diagram.svg")).toThrow(
+        "Cannot write to system directories"
+      );
+      expect(() => validateSavePath("/usr/sbin/diagram.svg")).toThrow(
+        "Cannot write to system directories"
+      );
+      expect(() => validateSavePath("/boot/diagram.svg")).toThrow(
+        "Cannot write to system directories"
+      );
+      expect(() => validateSavePath("/sys/diagram.svg")).toThrow(
+        "Cannot write to system directories"
+      );
+      expect(() => validateSavePath("/proc/diagram.svg")).toThrow(
+        "Cannot write to system directories"
+      );
+
+      Object.defineProperty(process, "platform", { value: originalPlatform });
+    });
+
+    it("should allow paths in user directories", () => {
+      expect(() => validateSavePath("/home/user/docs/diagram.svg")).not.toThrow();
+      expect(() => validateSavePath("/Users/john/projects/diagram.svg")).not.toThrow();
+    });
+
+    it("should allow paths in tmp directory", () => {
+      expect(() => validateSavePath("/tmp/diagram.svg")).not.toThrow();
+      expect(() => validateSavePath("/var/tmp/test.svg")).not.toThrow();
+    });
+
+    it("should handle path traversal attempts in cwd", () => {
+      // These should not throw - they resolve to valid paths
+      expect(() => validateSavePath("../../diagram.svg")).not.toThrow();
+      expect(() => validateSavePath("./../../output/test.svg")).not.toThrow();
+    });
+
+    it("should normalize paths before validation", () => {
+      const originalPlatform = process.platform;
+      Object.defineProperty(process, "platform", { value: "linux" });
+
+      // Path traversal that tries to reach /etc
+      expect(() => validateSavePath("/tmp/../etc/passwd")).toThrow(
+        "Cannot write to system directories"
+      );
+
+      Object.defineProperty(process, "platform", { value: originalPlatform });
     });
   });
 });

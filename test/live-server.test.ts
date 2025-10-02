@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { ensureLiveServer, addLiveDiagram, hasActiveConnections } from "../src/live-server.js";
+import {
+  ensureLiveServer,
+  addLiveDiagram,
+  hasActiveConnections,
+  escapeHtml,
+} from "../src/live-server.js";
 import { writeFile, unlink, mkdir, mkdtemp, readdir, rmdir } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
@@ -40,6 +45,42 @@ describe("Live Server", () => {
       const port = await ensureLiveServer();
       expect(port).toBeGreaterThanOrEqual(3737);
       expect(port).toBeLessThanOrEqual(3747);
+    });
+
+    it("should include CSP headers in HTML responses", async () => {
+      const { getLiveDir } = await import("../src/file-utils.js");
+      const port = await ensureLiveServer();
+      const diagramId = "csp-test";
+
+      // Setup diagram directory with options file
+      const diagramDir = join(getLiveDir(), diagramId);
+      await mkdir(diagramDir, { recursive: true });
+      const diagramPath = join(diagramDir, "diagram.svg");
+      const optionsPath = join(diagramDir, "options.json");
+
+      await writeFile(diagramPath, "<svg>test</svg>", "utf-8");
+      await writeFile(
+        optionsPath,
+        JSON.stringify({
+          theme: "default",
+          background: "white",
+          width: 800,
+          height: 600,
+          scale: 2,
+        }),
+        "utf-8"
+      );
+
+      await addLiveDiagram(diagramId, diagramPath);
+
+      const response = await fetch(`http://localhost:${port}/${diagramId}`);
+      const cspHeader = response.headers.get("content-security-policy");
+
+      expect(cspHeader).toBeTruthy();
+      expect(cspHeader).toContain("default-src 'none'");
+      expect(cspHeader).toContain("script-src 'self'");
+      expect(cspHeader).toContain("style-src 'self' 'unsafe-inline'");
+      expect(cspHeader).toContain("connect-src 'self' ws://localhost:*");
     });
   });
 
@@ -133,7 +174,7 @@ describe("Template rendering", () => {
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const templatePath = join(__dirname, "../src/preview-template.html");
+    const templatePath = join(__dirname, "../src/preview/template.html");
 
     const template = await readFile(templatePath, "utf-8");
     expect(template).toBeTruthy();
@@ -150,7 +191,7 @@ describe("Template rendering", () => {
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const templatePath = join(__dirname, "../src/preview-template.html");
+    const templatePath = join(__dirname, "../src/preview/template.html");
 
     // Verify template can be read
     const template = await readFile(templatePath, "utf-8");
@@ -172,7 +213,7 @@ describe("Template rendering", () => {
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const templatePath = join(__dirname, "../src/preview-template.html");
+    const templatePath = join(__dirname, "../src/preview/template.html");
 
     const template = await readFile(templatePath, "utf-8");
 
@@ -182,10 +223,14 @@ describe("Template rendering", () => {
     expect(template).toContain("{{PORT}}");
     expect(template).toContain("{{BACKGROUND}}");
     expect(template).toContain("{{TIMESTAMP}}");
+    expect(template).toContain("{{LIVE_ENABLED}}");
 
-    // Verify these placeholders appear in meaningful contexts
-    expect(template).toContain('class="diagram-wrapper">{{CONTENT}}');
-    expect(template).toContain('new WebSocket("ws://localhost:{{PORT}}/{{DIAGRAM_ID}}');
+    // Verify data attributes for passing config to JS
+    expect(template).toContain('data-diagram-id="{{DIAGRAM_ID}}"');
+    expect(template).toContain('data-port="{{PORT}}"');
+    expect(template).toContain('data-live-enabled="{{LIVE_ENABLED}}"');
+
+    // Verify background in inline style
     expect(template).toContain("background: {{BACKGROUND}}");
   });
 
@@ -197,7 +242,7 @@ describe("Template rendering", () => {
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const templatePath = join(__dirname, "../src/preview-template.html");
+    const templatePath = join(__dirname, "../src/preview/template.html");
 
     const template = await readFile(templatePath, "utf-8");
 
@@ -205,18 +250,16 @@ describe("Template rendering", () => {
     expect(template).toMatch(/<!doctype html>/i);
     expect(template).toContain("<html");
     expect(template).toContain("<head>");
-    expect(template).toContain("<body>");
+    expect(template).toContain("<body");
     expect(template).toContain("</html>");
 
     // Verify has proper meta tags
     expect(template).toContain('charset="UTF-8"');
     expect(template).toContain('name="viewport"');
 
-    // Verify has style and script tags
-    expect(template).toContain("<style>");
-    expect(template).toContain("</style>");
-    expect(template).toContain("<script>");
-    expect(template).toContain("</script>");
+    // Verify links to external CSS and script with absolute paths
+    expect(template).toContain('<link rel="stylesheet" href="/style.css"');
+    expect(template).toContain('<script src="/script.js"></script>');
   });
 });
 
@@ -229,7 +272,7 @@ describe("HTML wrapper and template", () => {
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const templatePath = join(__dirname, "../src/preview-template.html");
+    const templatePath = join(__dirname, "../src/preview/template.html");
 
     const template = await readFile(templatePath, "utf-8");
 
@@ -248,7 +291,7 @@ describe("HTML wrapper and template", () => {
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const templatePath = join(__dirname, "../src/preview-template.html");
+    const templatePath = join(__dirname, "../src/preview/template.html");
 
     const template = await readFile(templatePath, "utf-8");
 
@@ -257,7 +300,7 @@ describe("HTML wrapper and template", () => {
     expect(template).toContain('class="diagram-wrapper"');
   });
 
-  it("should include WebSocket reconnection logic in template", async () => {
+  it("should include WebSocket reconnection logic in script", async () => {
     const { readFile } = await import("fs/promises");
     const { join } = await import("path");
     const { fileURLToPath } = await import("url");
@@ -265,18 +308,18 @@ describe("HTML wrapper and template", () => {
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const templatePath = join(__dirname, "../src/preview-template.html");
+    const scriptPath = join(__dirname, "../src/preview/script.js");
 
-    const template = await readFile(templatePath, "utf-8");
+    const script = await readFile(scriptPath, "utf-8");
 
-    expect(template).toContain("new WebSocket");
-    expect(template).toContain("ws.onopen");
-    expect(template).toContain("ws.onclose");
-    expect(template).toContain("ws.onmessage");
-    expect(template).toContain('event.data === "reload"');
+    expect(script).toContain("new WebSocket");
+    expect(script).toContain("handleWebSocketOpen");
+    expect(script).toContain("handleWebSocketClose");
+    expect(script).toContain("handleWebSocketMessage");
+    expect(script).toContain('event.data === "reload"');
   });
 
-  it("should include diagram pan and reset logic in template", async () => {
+  it("should include diagram pan and reset logic in script", async () => {
     const { readFile } = await import("fs/promises");
     const { join } = await import("path");
     const { fileURLToPath } = await import("url");
@@ -284,16 +327,16 @@ describe("HTML wrapper and template", () => {
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const templatePath = join(__dirname, "../src/preview-template.html");
+    const scriptPath = join(__dirname, "../src/preview/script.js");
 
-    const template = await readFile(templatePath, "utf-8");
+    const script = await readFile(scriptPath, "utf-8");
 
-    expect(template).toContain("function resetPan");
-    expect(template).toContain("isDragging");
-    expect(template).toContain("reset-pan-btn");
+    expect(script).toContain("function resetPan");
+    expect(script).toContain("isDragging");
+    expect(script).toContain("reset-pan");
   });
 
-  it("should have viewport and status bar styles in template", async () => {
+  it("should have viewport and status bar styles in CSS", async () => {
     const { readFile } = await import("fs/promises");
     const { join } = await import("path");
     const { fileURLToPath } = await import("url");
@@ -301,13 +344,110 @@ describe("HTML wrapper and template", () => {
 
     const __filename = fileURLToPath(import.meta.url);
     const __dirname = dirname(__filename);
-    const templatePath = join(__dirname, "../src/preview-template.html");
+    const stylePath = join(__dirname, "../src/preview/style.css");
 
-    const template = await readFile(templatePath, "utf-8");
+    const style = await readFile(stylePath, "utf-8");
 
-    expect(template).toContain(".viewport");
-    expect(template).toContain(".status-bar");
-    expect(template).toContain("position: fixed");
-    expect(template).toContain("box-sizing: border-box");
+    expect(style).toContain(".viewport");
+    expect(style).toContain(".status-bar");
+    expect(style).toContain("box-sizing: border-box");
+  });
+
+  it("should read config from data attributes in script", async () => {
+    const { readFile } = await import("fs/promises");
+    const { join } = await import("path");
+    const { fileURLToPath } = await import("url");
+    const { dirname } = await import("path");
+
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
+    const scriptPath = join(__dirname, "../src/preview/script.js");
+
+    const script = await readFile(scriptPath, "utf-8");
+
+    // Verify script reads from data attributes
+    expect(script).toContain("body.dataset.diagramId");
+    expect(script).toContain("body.dataset.port");
+    expect(script).toContain("body.dataset.liveEnabled");
+  });
+});
+
+describe("HTML Escaping", () => {
+  describe("escapeHtml", () => {
+    it("should escape ampersands", () => {
+      expect(escapeHtml("foo & bar")).toBe("foo &amp; bar");
+      expect(escapeHtml("&&&")).toBe("&amp;&amp;&amp;");
+    });
+
+    it("should escape less-than signs", () => {
+      expect(escapeHtml("a < b")).toBe("a &lt; b");
+      expect(escapeHtml("<script>")).toBe("&lt;script&gt;");
+    });
+
+    it("should escape greater-than signs", () => {
+      expect(escapeHtml("a > b")).toBe("a &gt; b");
+      expect(escapeHtml("</script>")).toBe("&lt;/script&gt;");
+    });
+
+    it("should escape double quotes", () => {
+      expect(escapeHtml('say "hello"')).toBe("say &quot;hello&quot;");
+      expect(escapeHtml('"')).toBe("&quot;");
+    });
+
+    it("should escape single quotes", () => {
+      expect(escapeHtml("it's")).toBe("it&#039;s");
+      expect(escapeHtml("'")).toBe("&#039;");
+    });
+
+    it("should escape multiple special characters", () => {
+      expect(escapeHtml('<div class="test">A & B</div>')).toBe(
+        "&lt;div class=&quot;test&quot;&gt;A &amp; B&lt;/div&gt;"
+      );
+    });
+
+    it("should handle empty strings", () => {
+      expect(escapeHtml("")).toBe("");
+    });
+
+    it("should handle strings without special characters", () => {
+      expect(escapeHtml("hello world")).toBe("hello world");
+      expect(escapeHtml("123")).toBe("123");
+    });
+
+    it("should prevent XSS via script tags", () => {
+      const xss = '<script>alert("XSS")</script>';
+      const escaped = escapeHtml(xss);
+      expect(escaped).toBe("&lt;script&gt;alert(&quot;XSS&quot;)&lt;/script&gt;");
+      expect(escaped).not.toContain("<script>");
+      expect(escaped).not.toContain("</script>");
+    });
+
+    it("should prevent XSS via img onerror", () => {
+      const xss = '<img src=x onerror="alert(1)">';
+      const escaped = escapeHtml(xss);
+      expect(escaped).toBe("&lt;img src=x onerror=&quot;alert(1)&quot;&gt;");
+      expect(escaped).not.toContain("<img");
+      expect(escaped).not.toContain('onerror="alert');
+    });
+
+    it("should prevent XSS via event handlers", () => {
+      const xss = 'x" onclick="alert(1)"';
+      const escaped = escapeHtml(xss);
+      expect(escaped).toBe("x&quot; onclick=&quot;alert(1)&quot;");
+      expect(escaped).not.toContain('onclick="');
+    });
+
+    it("should prevent XSS via style injection", () => {
+      const xss = "red</style><script>alert(1)</script>";
+      const escaped = escapeHtml(xss);
+      expect(escaped).toBe("red&lt;/style&gt;&lt;script&gt;alert(1)&lt;/script&gt;");
+      expect(escaped).not.toContain("</style>");
+      expect(escaped).not.toContain("<script>");
+    });
+
+    it("should escape in correct order (ampersand first)", () => {
+      // If we don't escape & first, we could double-escape
+      expect(escapeHtml("&lt;")).toBe("&amp;lt;");
+    });
   });
 });

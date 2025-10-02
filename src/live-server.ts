@@ -9,7 +9,20 @@ import { webLogger } from "./logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const TEMPLATE_PATH = join(__dirname, "preview-template.html");
+const PREVIEW_DIR = join(__dirname, "preview");
+const TEMPLATE_PATH = join(PREVIEW_DIR, "template.html");
+const STYLE_PATH = join(PREVIEW_DIR, "style.css");
+const SCRIPT_PATH = join(PREVIEW_DIR, "script.js");
+const FAVICON_PATH = join(PREVIEW_DIR, "favicon.svg");
+
+// Content Security Policy header
+// - default-src 'none': Deny all by default
+// - script-src 'self': Only allow scripts from same origin
+// - style-src 'self' 'unsafe-inline': Allow CSS from same origin and inline styles (for background color)
+// - img-src 'self' data:: Allow images from same origin and data URIs (SVG may contain embedded images)
+// - connect-src 'self' ws://localhost:*: Allow WebSocket connections to localhost for live reload
+const CSP_HEADER =
+  "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws://localhost:*";
 
 // Live directories are resolved via shared utils (respects XDG_CONFIG_HOME/HOME)
 
@@ -56,7 +69,10 @@ async function handleViewRequest(url: string, res: ServerResponse, port: number)
     const content = await readFile(filePath, "utf-8");
     // For /view/* pages we explicitly disable live reload/WebSocket
     const html = await createLiveHtmlWrapper(content, diagramId, port, "white", false);
-    res.writeHead(200, { "Content-Type": "text/html" });
+    res.writeHead(200, {
+      "Content-Type": "text/html",
+      "Content-Security-Policy": CSP_HEADER,
+    });
     res.end(html);
     webLogger.info(`Served view for diagram: ${diagramId}`);
   } catch (error) {
@@ -93,7 +109,10 @@ async function handleLivePreviewRequest(
     ]);
 
     const html = await createLiveHtmlWrapper(content, diagramId, port, options.background, true);
-    res.writeHead(200, { "Content-Type": "text/html" });
+    res.writeHead(200, {
+      "Content-Type": "text/html",
+      "Content-Security-Policy": CSP_HEADER,
+    });
     res.end(html);
     webLogger.info(`Served live preview for: ${diagramId}`, {
       clientCount: state.clients.size,
@@ -120,6 +139,38 @@ export async function ensureLiveServer(): Promise<number> {
     const url = req.url || "/";
 
     try {
+      // Serve static assets (CSS and JS)
+      if (url === "/style.css") {
+        const css = await readFile(STYLE_PATH, "utf-8");
+        res.writeHead(200, { "Content-Type": "text/css" });
+        res.end(css);
+        return;
+      }
+
+      if (url === "/script.js") {
+        const js = await readFile(SCRIPT_PATH, "utf-8");
+        res.writeHead(200, { "Content-Type": "application/javascript" });
+        res.end(js);
+        return;
+      }
+
+      if (url === "/favicon.svg") {
+        const icon = await readFile(FAVICON_PATH);
+        res.writeHead(200, {
+          "Content-Type": "image/svg+xml",
+          "Cache-Control": "public, max-age=86400", // Cache for 24 hours
+        });
+        res.end(icon);
+        return;
+      }
+
+      if (url === "/favicon.ico") {
+        // Redirect common .ico requests to SVG favicon
+        res.writeHead(302, { Location: "/favicon.svg" });
+        res.end();
+        return;
+      }
+
       if (url.startsWith("/view/")) {
         await handleViewRequest(url, res, port);
         return;
@@ -241,6 +292,18 @@ async function loadTemplate(): Promise<string> {
   return templateCache;
 }
 
+/**
+ * Escapes HTML special characters to prevent XSS attacks
+ */
+export function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 async function createLiveHtmlWrapper(
   content: string,
   diagramId: string,
@@ -250,11 +313,14 @@ async function createLiveHtmlWrapper(
 ): Promise<string> {
   const template = await loadTemplate();
 
+  // Escape user-controlled values
+  // CONTENT is SVG from mermaid-cli - trusted
+  // DIAGRAM_ID, BACKGROUND, TIMESTAMP need escaping
   return template
     .replaceAll("{{CONTENT}}", content)
-    .replaceAll("{{DIAGRAM_ID}}", diagramId)
+    .replaceAll("{{DIAGRAM_ID}}", escapeHtml(diagramId))
     .replaceAll("{{PORT}}", port.toString())
-    .replaceAll("{{BACKGROUND}}", background)
-    .replaceAll("{{TIMESTAMP}}", new Date().toLocaleTimeString())
+    .replaceAll("{{BACKGROUND}}", escapeHtml(background))
+    .replaceAll("{{TIMESTAMP}}", escapeHtml(new Date().toLocaleTimeString()))
     .replaceAll("{{LIVE_ENABLED}}", liveEnabled ? "true" : "false");
 }

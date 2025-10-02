@@ -1,4 +1,4 @@
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 import { writeFile, mkdir, copyFile, access } from "fs/promises";
 import { join, dirname } from "path";
@@ -10,10 +10,11 @@ import {
   saveDiagramSource,
   loadDiagramSource,
   loadDiagramOptions,
+  validateSavePath,
 } from "./file-utils.js";
 import { mcpLogger } from "./logger.js";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 interface RenderOptions {
   diagram: string;
@@ -47,25 +48,33 @@ async function renderDiagram(options: RenderOptions, liveFilePath: string): Prom
 
   await writeFile(inputFile, diagram, "utf-8");
 
-  const fitFlag = format === "pdf" ? "--pdfFit" : "";
-  const cmd = [
-    "npx -y mmdc",
-    `-i "${inputFile}"`,
-    `-o "${outputFile}"`,
-    `-t ${theme}`,
-    `-b ${background}`,
-    `-w ${width}`,
-    `-H ${height}`,
-    `-s ${scale}`,
-    fitFlag,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  const args = [
+    "-y",
+    "mmdc",
+    "-i",
+    inputFile,
+    "-o",
+    outputFile,
+    "-t",
+    theme,
+    "-b",
+    background,
+    "-w",
+    width.toString(),
+    "-H",
+    height.toString(),
+    "-s",
+    scale.toString(),
+  ];
 
-  mcpLogger.debug(`Executing mermaid-cli`, { cmd });
+  if (format === "pdf") {
+    args.push("--pdfFit");
+  }
+
+  mcpLogger.debug(`Executing mermaid-cli`, { args });
 
   try {
-    const { stdout, stderr } = await execAsync(cmd);
+    const { stdout, stderr } = await execFileAsync("npx", args);
     if (stderr) {
       mcpLogger.debug(`mermaid-cli stderr`, { stderr });
     }
@@ -92,7 +101,7 @@ async function setupLivePreview(
   if (!hasConnections) {
     mcpLogger.info(`Opening browser for new diagram: ${previewId}`, { serverUrl });
     const openCommand = getOpenCommand();
-    await execAsync(`${openCommand} "${serverUrl}"`);
+    await execFileAsync(openCommand, [serverUrl]);
   } else {
     mcpLogger.info(`Reusing existing browser tab for diagram: ${previewId}`);
   }
@@ -192,6 +201,25 @@ export async function handleMermaidSave(args: any) {
   }
   if (!previewId) {
     throw new Error("preview_id parameter is required");
+  }
+
+  // Validate save path to prevent path traversal attacks
+  try {
+    validateSavePath(savePath);
+  } catch (error) {
+    mcpLogger.error("Save path validation failed", {
+      savePath,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Invalid save path: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+      isError: true,
+    };
   }
 
   try {
