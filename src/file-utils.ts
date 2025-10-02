@@ -1,8 +1,21 @@
 import { readdir, unlink, stat, mkdir, readFile, writeFile, rmdir } from "fs/promises";
-import { join, resolve, relative } from "path";
+import { join, resolve } from "path";
 import { tmpdir } from "os";
 
 const APP_NAME = "claude-mermaid";
+const PREVIEW_ID_REGEX = /^[a-zA-Z0-9_-]+$/;
+const UNIX_SYSTEM_PATHS = [
+  "/etc",
+  "/bin",
+  "/sbin",
+  "/usr/bin",
+  "/usr/sbin",
+  "/boot",
+  "/sys",
+  "/proc",
+];
+
+const WINDOWS_SYSTEM_PATHS = ["C:\\Windows", "C:\\Program Files"];
 
 export function getConfigDir(): string {
   const xdg = process.env.XDG_CONFIG_HOME;
@@ -28,7 +41,7 @@ export function getLogsDir(): string {
  * Only allows alphanumeric characters, hyphens, and underscores
  */
 export function validatePreviewId(previewId: string): void {
-  if (!previewId || !/^[a-zA-Z0-9_-]+$/.test(previewId)) {
+  if (!previewId || !PREVIEW_ID_REGEX.test(previewId)) {
     throw new Error(
       "Invalid preview ID format. Only alphanumeric characters, hyphens, and underscores are allowed."
     );
@@ -97,28 +110,17 @@ export function validateSavePath(savePath: string): void {
   const absolutePath = resolve(savePath);
 
   // Prevent writing to sensitive system directories (Unix/Linux/macOS)
-  const unixDangerousPaths = [
-    "/etc",
-    "/bin",
-    "/sbin",
-    "/usr/bin",
-    "/usr/sbin",
-    "/boot",
-    "/sys",
-    "/proc",
-  ];
   if (
     process.platform !== "win32" &&
-    unixDangerousPaths.some((danger) => absolutePath.startsWith(danger))
+    UNIX_SYSTEM_PATHS.some((danger) => absolutePath.startsWith(danger))
   ) {
     throw new Error("Cannot write to system directories");
   }
 
   // Prevent writing to Windows system directories
   if (process.platform === "win32") {
-    const windowsDangerousPaths = ["C:\\Windows", "C:\\Program Files"];
     const normalizedPath = absolutePath.replace(/\//g, "\\");
-    if (windowsDangerousPaths.some((danger) => normalizedPath.startsWith(danger))) {
+    if (WINDOWS_SYSTEM_PATHS.some((danger) => normalizedPath.startsWith(danger))) {
       throw new Error("Cannot write to system directories");
     }
   }
