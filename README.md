@@ -12,7 +12,7 @@ Automatically renders diagrams in your browser with real-time updates as you ref
 - 🎨 **Multiple Save Formats** - Export to SVG, PNG, or PDF
 - 🌈 **Themes** - Choose from default, forest, dark, or neutral themes
 - 📐 **Customizable** - Control dimensions, scale, and background colors
-- 🪄 **Zoom Controls** - Zoom in/out and reset via UI or keyboard (`+`, `-`, `0`)
+- 🪄 **Interactive Preview** - Pan diagrams by dragging, zoom with browser controls, reset position with one click
 - 🗂️ **Multiple Previews** - Use `preview_id` to work on multiple diagrams simultaneously
 - 💾 **Persistent Working Files** - Live previews are stored under `~/.config/claude-mermaid/live`
 
@@ -189,9 +189,9 @@ The live server uses ports 3737-3747 and automatically finds an available port.
 
 ### Live Preview Controls
 
-- Zoom in/out via UI buttons or keyboard: `+` / `-`
-- Reset zoom: `0`
-- Zoom level persists per diagram (`preview_id`)
+- **Pan:** Click and drag the diagram to move it around
+- **Zoom:** Use browser zoom (Ctrl/Cmd + +/- or pinch-to-zoom on trackpad)
+- **Reset Position:** Click the ⊙ button in the status bar to recenter the diagram
 
 ### Notes
 

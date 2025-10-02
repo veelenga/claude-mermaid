@@ -54,7 +54,8 @@ async function handleViewRequest(url: string, res: ServerResponse, port: number)
 
   try {
     const content = await readFile(filePath, "utf-8");
-    const html = await createLiveHtmlWrapper(content, diagramId, port, "white");
+    // For /view/* pages we explicitly disable live reload/WebSocket
+    const html = await createLiveHtmlWrapper(content, diagramId, port, "white", false);
     res.writeHead(200, { "Content-Type": "text/html" });
     res.end(html);
     webLogger.info(`Served view for diagram: ${diagramId}`);
@@ -91,7 +92,7 @@ async function handleLivePreviewRequest(
       loadDiagramOptions(diagramId),
     ]);
 
-    const html = await createLiveHtmlWrapper(content, diagramId, port, options.background);
+    const html = await createLiveHtmlWrapper(content, diagramId, port, options.background, true);
     res.writeHead(200, { "Content-Type": "text/html" });
     res.end(html);
     webLogger.info(`Served live preview for: ${diagramId}`, {
@@ -244,7 +245,8 @@ async function createLiveHtmlWrapper(
   content: string,
   diagramId: string,
   port: number,
-  background: string = "white"
+  background: string = "white",
+  liveEnabled: boolean = true
 ): Promise<string> {
   const template = await loadTemplate();
 
@@ -253,5 +255,6 @@ async function createLiveHtmlWrapper(
     .replaceAll("{{DIAGRAM_ID}}", diagramId)
     .replaceAll("{{PORT}}", port.toString())
     .replaceAll("{{BACKGROUND}}", background)
-    .replaceAll("{{TIMESTAMP}}", new Date().toLocaleTimeString());
+    .replaceAll("{{TIMESTAMP}}", new Date().toLocaleTimeString())
+    .replaceAll("{{LIVE_ENABLED}}", liveEnabled ? "true" : "false");
 }
