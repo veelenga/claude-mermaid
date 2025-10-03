@@ -1,6 +1,6 @@
 {
   "name": "claude-mermaid",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "MCP server for previewing Mermaid diagrams in Claude Code",
   "main": "build/index.js",
   "type": "module",
