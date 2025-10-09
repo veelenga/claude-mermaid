@@ -136,6 +136,7 @@ Add to your Cursor MCP config file (`.cursor/mcp.json` or settings):
 ```
 
 Or use Cursor's settings UI:
+
 1. Open Cursor Settings (Cmd/Ctrl + ,)
 2. Navigate to MCP Servers
 3. Add a new server with command: `claude-mermaid`
@@ -179,6 +180,7 @@ Add to Windsurf's MCP configuration file:
 ```
 
 Configuration location varies by platform:
+
 - **macOS:** `~/Library/Application Support/Windsurf/mcp.json`
 - **Linux:** `~/.config/windsurf/mcp.json`
 - **Windows:** `%APPDATA%\Windsurf\mcp.json`
@@ -226,6 +228,7 @@ For any MCP-compatible client, use the standard configuration:
 The command `claude-mermaid` should be available in your PATH after installation.
 
 **Note:** Some clients may require the full path to the executable:
+
 - Find the path: `which claude-mermaid` (Unix/macOS) or `where claude-mermaid` (Windows)
 - Use absolute path in config: `"command": "/path/to/claude-mermaid"`
 
