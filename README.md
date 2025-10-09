@@ -93,6 +93,144 @@ claude mcp list
 
 You should see `mermaid: claude-mermaid - ✓ Connected`
 
+## 🔌 Other MCP Client Configurations
+
+While this server is optimized for Claude Code, it can work with any MCP-compatible client. Here's how to configure it for other popular tools:
+
+<details>
+<summary><strong>Codex</strong></summary>
+
+Add to your Codex MCP settings file (`~/.codex/mcp_settings.json`):
+
+```json
+{
+  "mcpServers": {
+    "mermaid": {
+      "command": "claude-mermaid"
+    }
+  }
+}
+```
+
+Or configure via Codex CLI:
+
+```bash
+codex mcp add mermaid claude-mermaid
+```
+
+</details>
+
+<details>
+<summary><strong>Cursor</strong></summary>
+
+Add to your Cursor MCP config file (`.cursor/mcp.json` or settings):
+
+```json
+{
+  "mcpServers": {
+    "mermaid": {
+      "command": "claude-mermaid"
+    }
+  }
+}
+```
+
+Or use Cursor's settings UI:
+1. Open Cursor Settings (Cmd/Ctrl + ,)
+2. Navigate to MCP Servers
+3. Add a new server with command: `claude-mermaid`
+
+</details>
+
+<details>
+<summary><strong>VSCode with Cline Extension</strong></summary>
+
+If using the [Cline extension](https://github.com/cline/cline) for VSCode:
+
+1. Open VSCode settings (Cmd/Ctrl + ,)
+2. Search for "Cline MCP"
+3. Add to MCP Settings JSON:
+
+```json
+{
+  "mcpServers": {
+    "mermaid": {
+      "command": "claude-mermaid"
+    }
+  }
+}
+```
+
+</details>
+
+<details>
+<summary><strong>Windsurf</strong></summary>
+
+Add to Windsurf's MCP configuration file:
+
+```json
+{
+  "mcpServers": {
+    "mermaid": {
+      "command": "claude-mermaid"
+    }
+  }
+}
+```
+
+Configuration location varies by platform:
+- **macOS:** `~/Library/Application Support/Windsurf/mcp.json`
+- **Linux:** `~/.config/windsurf/mcp.json`
+- **Windows:** `%APPDATA%\Windsurf\mcp.json`
+
+</details>
+
+<details>
+<summary><strong>Gemini CLI</strong></summary>
+
+Add to Gemini CLI's MCP configuration file (`~/.gemini/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "mermaid": {
+      "command": "claude-mermaid"
+    }
+  }
+}
+```
+
+Or use the Gemini CLI to configure:
+
+```bash
+gemini config mcp add mermaid --command claude-mermaid
+```
+
+</details>
+
+<details>
+<summary><strong>Other MCP Clients</strong></summary>
+
+For any MCP-compatible client, use the standard configuration:
+
+```json
+{
+  "mcpServers": {
+    "mermaid": {
+      "command": "claude-mermaid"
+    }
+  }
+}
+```
+
+The command `claude-mermaid` should be available in your PATH after installation.
+
+**Note:** Some clients may require the full path to the executable:
+- Find the path: `which claude-mermaid` (Unix/macOS) or `where claude-mermaid` (Windows)
+- Use absolute path in config: `"command": "/path/to/claude-mermaid"`
+
+</details>
+
 ## 💡 Usage
 
 Simply ask Claude Code to create Mermaid diagrams. The server will:
