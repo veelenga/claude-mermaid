@@ -5,7 +5,12 @@ import { readFile } from "fs/promises";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { deflate } from "pako";
-import { loadDiagramOptions, getLiveDir, loadDiagramSource } from "./file-utils.js";
+import {
+  loadDiagramOptions,
+  getLiveDir,
+  loadDiagramSource,
+  validatePreviewId,
+} from "./file-utils.js";
 import { webLogger } from "./logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -148,15 +153,29 @@ async function handleLivePreviewRequest(
 }
 
 async function handleMermaidLiveRequest(url: string, res: ServerResponse): Promise<void> {
-  const diagramId = url.substring("/mermaid-live/".length);
+  const rawId = url.substring("/mermaid-live/".length);
 
-  webLogger.debug(`Mermaid Live export request for: ${diagramId}`);
-
-  if (!diagramId) {
+  if (!rawId) {
     res.writeHead(400, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Diagram ID is required" }));
     return;
   }
+
+  let diagramId: string;
+  try {
+    diagramId = decodeURIComponent(rawId);
+    validatePreviewId(diagramId);
+  } catch (error) {
+    webLogger.warn("Invalid Mermaid Live request", {
+      rawId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Invalid diagram ID" }));
+    return;
+  }
+
+  webLogger.debug(`Mermaid Live export request for: ${diagramId}`);
 
   try {
     const [code, options] = await Promise.all([
