@@ -26,7 +26,13 @@ body {
   flex-shrink: 0;
 }
 
-.reset-pan-btn {
+.toolbar-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-btn {
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.7);
@@ -38,9 +44,15 @@ body {
     transform 0.2s;
 }
 
-.reset-pan-btn:hover {
+.toolbar-btn:hover {
   color: white;
   transform: scale(1.1);
+}
+
+.toolbar-btn.is-loading {
+  opacity: 0.6;
+  cursor: wait;
+  transform: none;
 }
 
 .status-indicator {

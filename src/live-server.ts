@@ -4,7 +4,8 @@ import { watch, FSWatcher } from "fs";
 import { readFile } from "fs/promises";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { loadDiagramOptions, getLiveDir } from "./file-utils.js";
+import { deflate } from "pako";
+import { loadDiagramOptions, getLiveDir, loadDiagramSource } from "./file-utils.js";
 import { webLogger } from "./logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -66,9 +67,22 @@ async function handleViewRequest(url: string, res: ServerResponse, port: number)
   webLogger.debug(`View request for diagram: ${diagramId}`);
 
   try {
-    const content = await readFile(filePath, "utf-8");
+    const [content, options] = await Promise.all([
+      readFile(filePath, "utf-8"),
+      loadDiagramOptions(diagramId).catch(() => ({
+        theme: "default",
+        background: "white",
+        width: 800,
+        height: 600,
+        scale: 2,
+      })),
+    ]);
+
+    const background = options.background ?? "white";
+    const theme = options.theme ?? "default";
+
     // For /view/* pages we explicitly disable live reload/WebSocket
-    const html = await createLiveHtmlWrapper(content, diagramId, port, "white", false);
+    const html = await createLiveHtmlWrapper(content, diagramId, port, background, false, theme);
     res.writeHead(200, {
       "Content-Type": "text/html",
       "Content-Security-Policy": CSP_HEADER,
@@ -108,7 +122,14 @@ async function handleLivePreviewRequest(
       loadDiagramOptions(diagramId),
     ]);
 
-    const html = await createLiveHtmlWrapper(content, diagramId, port, options.background, true);
+    const html = await createLiveHtmlWrapper(
+      content,
+      diagramId,
+      port,
+      options.background,
+      true,
+      options.theme
+    );
     res.writeHead(200, {
       "Content-Type": "text/html",
       "Content-Security-Policy": CSP_HEADER,
@@ -123,6 +144,47 @@ async function handleLivePreviewRequest(
     });
     res.writeHead(500, { "Content-Type": "text/plain" });
     res.end(`Error reading diagram: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+async function handleMermaidLiveRequest(url: string, res: ServerResponse): Promise<void> {
+  const diagramId = url.substring("/mermaid-live/".length);
+
+  webLogger.debug(`Mermaid Live export request for: ${diagramId}`);
+
+  if (!diagramId) {
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Diagram ID is required" }));
+    return;
+  }
+
+  try {
+    const [code, options] = await Promise.all([
+      loadDiagramSource(diagramId),
+      loadDiagramOptions(diagramId).catch(() => ({ theme: "default" })),
+    ]);
+
+    const payload = JSON.stringify({
+      code,
+      mermaid: { theme: options?.theme ?? "default" },
+    });
+
+    const compressed = deflate(payload);
+    const base64 = Buffer.from(compressed).toString("base64");
+    const urlPayload = `https://mermaid.live/edit#pako:${base64}`;
+
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+    });
+    res.end(JSON.stringify({ url: urlPayload }));
+    webLogger.info(`Served Mermaid Live payload for: ${diagramId}`);
+  } catch (error) {
+    webLogger.warn(`Mermaid Live export failed for: ${diagramId}`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Diagram not found" }));
   }
 }
 
@@ -151,6 +213,11 @@ export async function ensureLiveServer(): Promise<number> {
         const js = await readFile(SCRIPT_PATH, "utf-8");
         res.writeHead(200, { "Content-Type": "application/javascript" });
         res.end(js);
+        return;
+      }
+
+      if (url.startsWith("/mermaid-live/")) {
+        await handleMermaidLiveRequest(url, res);
         return;
       }
 
@@ -309,7 +376,8 @@ async function createLiveHtmlWrapper(
   diagramId: string,
   port: number,
   background: string = "white",
-  liveEnabled: boolean = true
+  liveEnabled: boolean = true,
+  theme: string = "default"
 ): Promise<string> {
   const template = await loadTemplate();
 
@@ -322,5 +390,6 @@ async function createLiveHtmlWrapper(
     .replaceAll("{{PORT}}", port.toString())
     .replaceAll("{{BACKGROUND}}", escapeHtml(background))
     .replaceAll("{{TIMESTAMP}}", escapeHtml(new Date().toLocaleTimeString()))
-    .replaceAll("{{LIVE_ENABLED}}", liveEnabled ? "true" : "false");
+    .replaceAll("{{LIVE_ENABLED}}", liveEnabled ? "true" : "false")
+    .replaceAll("{{THEME}}", escapeHtml(theme));
 }

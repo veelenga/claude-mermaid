@@ -82,6 +82,40 @@ describe("Live Server", () => {
       expect(cspHeader).toContain("style-src 'self' 'unsafe-inline'");
       expect(cspHeader).toContain("connect-src 'self' ws://localhost:*");
     });
+
+    it("should provide Mermaid Live URL via API", async () => {
+      const { getLiveDir } = await import("../src/file-utils.js");
+      const port = await ensureLiveServer();
+      const diagramId = "data-test";
+
+      const diagramDir = join(getLiveDir(), diagramId);
+      await mkdir(diagramDir, { recursive: true });
+      const svgPath = join(diagramDir, "diagram.svg");
+      const sourcePath = join(diagramDir, "diagram.mmd");
+      const optionsPath = join(diagramDir, "options.json");
+
+      await writeFile(svgPath, "<svg>diagram</svg>", "utf-8");
+      await writeFile(sourcePath, "graph TD;A-->B;", "utf-8");
+      await writeFile(
+        optionsPath,
+        JSON.stringify({
+          theme: "forest",
+          background: "white",
+          width: 800,
+          height: 600,
+          scale: 2,
+        }),
+        "utf-8"
+      );
+
+      await addLiveDiagram(diagramId, svgPath);
+
+      const response = await fetch(`http://localhost:${port}/mermaid-live/${diagramId}`);
+      expect(response.status).toBe(200);
+
+      const payload = await response.json();
+      expect(payload.url).toMatch(/^https:\/\/mermaid\.live\/edit#pako:/);
+    });
   });
 
   describe("addLiveDiagram", () => {
@@ -224,11 +258,13 @@ describe("Template rendering", () => {
     expect(template).toContain("{{BACKGROUND}}");
     expect(template).toContain("{{TIMESTAMP}}");
     expect(template).toContain("{{LIVE_ENABLED}}");
+    expect(template).toContain("{{THEME}}");
 
     // Verify data attributes for passing config to JS
     expect(template).toContain('data-diagram-id="{{DIAGRAM_ID}}"');
     expect(template).toContain('data-port="{{PORT}}"');
     expect(template).toContain('data-live-enabled="{{LIVE_ENABLED}}"');
+    expect(template).toContain('data-theme="{{THEME}}"');
 
     // Verify background in inline style
     expect(template).toContain("background: {{BACKGROUND}}");

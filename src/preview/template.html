@@ -7,14 +7,24 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/style.css" />
   </head>
-  <body data-diagram-id="{{DIAGRAM_ID}}" data-port="{{PORT}}" data-live-enabled="{{LIVE_ENABLED}}">
+  <body
+    data-diagram-id="{{DIAGRAM_ID}}"
+    data-port="{{PORT}}"
+    data-live-enabled="{{LIVE_ENABLED}}"
+    data-theme="{{THEME}}"
+  >
     <div class="status-bar">
       <div style="display: flex; align-items: center; gap: 12px">
         <div>
           <span class="status-indicator" id="status-indicator"></span>
           <span id="status-text">Live Reload Active</span>
         </div>
-        <button class="reset-pan-btn" id="reset-pan" title="Reset position">⊙</button>
+        <div class="toolbar-buttons">
+          <button class="toolbar-btn" id="reset-pan" title="Reset position">⊙</button>
+          <button class="toolbar-btn" id="open-mermaid-live" title="Open in Mermaid Live">
+            ↗
+          </button>
+        </div>
       </div>
       <div id="last-update">Last updated: {{TIMESTAMP}}</div>
     </div>
