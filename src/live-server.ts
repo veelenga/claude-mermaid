@@ -383,6 +383,17 @@ export function escapeHtml(unsafe: string): string {
     .replace(/'/g, "&#039;");
 }
 
+// Test helper to reset singleton state
+export function __resetLiveServerForTests() {
+  liveServer?.close?.();
+  liveServer = null;
+  liveServerPort = null;
+  wss?.close?.();
+  wss = null;
+  diagrams.forEach((state) => state.watcher.close());
+  diagrams.clear();
+}
+
 async function createLiveHtmlWrapper(
   content: string,
   diagramId: string,

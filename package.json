@@ -49,6 +49,7 @@
     "@types/node": "^24.6.0",
     "@types/pako": "^2.0.4",
     "@types/ws": "^8.18.1",
+    "jsdom": "^27.0.0",
     "prettier": "^3.6.2",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
