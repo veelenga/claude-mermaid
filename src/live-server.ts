@@ -377,15 +377,45 @@ export function escapeHtml(unsafe: string): string {
     .replace(/'/g, "&#039;");
 }
 
-// Test helper to reset singleton state
-export function __resetLiveServerForTests() {
-  liveServer?.close?.();
-  liveServer = null;
-  liveServerPort = null;
-  wss?.close?.();
-  wss = null;
-  diagrams.forEach((state) => state.watcher.close());
+/**
+ * Closes the live server and cleans up all resources.
+ * This is safe to call multiple times and useful for graceful shutdown.
+ */
+export async function closeLiveServer(): Promise<void> {
+  // Close all file watchers
+  diagrams.forEach((state) => {
+    try {
+      state.watcher.close();
+    } catch (error) {
+      webLogger.debug("Error closing watcher", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
   diagrams.clear();
+
+  // Close WebSocket server
+  if (wss) {
+    await new Promise<void>((resolve) => {
+      wss!.close(() => {
+        webLogger.debug("WebSocket server closed");
+        resolve();
+      });
+    });
+    wss = null;
+  }
+
+  // Close HTTP server
+  if (liveServer) {
+    await new Promise<void>((resolve) => {
+      liveServer!.close(() => {
+        webLogger.info(`Live server closed (was on port ${liveServerPort})`);
+        resolve();
+      });
+    });
+    liveServer = null;
+    liveServerPort = null;
+  }
 }
 
 async function createLiveHtmlWrapper(

@@ -3,11 +3,7 @@ import { mkdtemp, writeFile, mkdir, rm } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
 import { resetServerState, mockFetch } from "./server-setup.js";
-import {
-  ensureLiveServer,
-  addLiveDiagram,
-  __resetLiveServerForTests,
-} from "../../src/live-server.js";
+import { ensureLiveServer, addLiveDiagram, closeLiveServer } from "../../src/live-server.js";
 import { DEFAULT_DIAGRAM_OPTIONS } from "../../src/file-utils.js";
 
 let configDir: string;
@@ -19,15 +15,15 @@ describe("Live server responses", () => {
     process.env.XDG_CONFIG_HOME = configDir;
 
     tempDir = await mkdtemp(join(tmpdir(), "claude-mermaid-test-"));
-    __resetLiveServerForTests();
+    await closeLiveServer();
     resetServerState();
   });
 
   afterEach(async () => {
+    await closeLiveServer();
     await rm(tempDir, { recursive: true, force: true }).catch(() => {});
     await rm(configDir, { recursive: true, force: true }).catch(() => {});
     delete process.env.XDG_CONFIG_HOME;
-    __resetLiveServerForTests();
     resetServerState();
   });
 

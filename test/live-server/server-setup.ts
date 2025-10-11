@@ -45,6 +45,9 @@ vi.mock("http", () => ({
 vi.mock("ws", () => ({
   WebSocketServer: class {
     on() {}
+    close(callback?: () => void) {
+      callback?.();
+    }
   },
 }));
 

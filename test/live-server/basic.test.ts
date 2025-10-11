@@ -8,7 +8,7 @@ import {
   addLiveDiagram,
   hasActiveConnections,
   escapeHtml,
-  __resetLiveServerForTests,
+  closeLiveServer,
 } from "../../src/live-server.js";
 
 let configDir: string;
@@ -24,11 +24,13 @@ describe("Live server basics", () => {
     testFilePath = join(tempDir, "test-diagram.svg");
     await writeFile(testFilePath, "<svg>test</svg>", "utf-8");
 
-    __resetLiveServerForTests();
+    await closeLiveServer();
     resetServerState();
   });
 
   afterEach(async () => {
+    await closeLiveServer();
+
     try {
       await unlink(testFilePath);
     } catch {}
@@ -37,7 +39,6 @@ describe("Live server basics", () => {
     await rm(configDir, { recursive: true, force: true }).catch(() => {});
 
     delete process.env.XDG_CONFIG_HOME;
-    __resetLiveServerForTests();
     resetServerState();
   });
 
@@ -83,7 +84,6 @@ describe("Live server basics", () => {
   });
 
   it("escapes HTML entities", () => {
-    expect(escapeHtml("<script>"))
-      .toBe("&lt;script&gt;");
+    expect(escapeHtml("<script>")).toBe("&lt;script&gt;");
   });
 });

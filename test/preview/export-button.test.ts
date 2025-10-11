@@ -21,11 +21,11 @@ describe("Preview export button", () => {
   let alertMock: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
-    vi.resetModules();
-
+    // Create JSDOM instance with runScripts enabled
     dom = new JSDOM(HTML_TEMPLATE, {
       url: "http://localhost:3737/preview",
       pretendToBeVisual: true,
+      runScripts: "dangerously",
     });
 
     const { window } = dom;
@@ -34,19 +34,10 @@ describe("Preview export button", () => {
     openMock = vi.fn();
     alertMock = vi.fn();
 
-    Object.assign(globalThis, {
-      window,
-      document: window.document,
-      HTMLElement: window.HTMLElement,
-      Event: window.Event,
-      fetch: fetchMock,
-    });
-
+    // Set up mocks in the window context
     window.fetch = fetchMock as any;
     window.open = openMock as any;
     window.alert = alertMock as any;
-    (globalThis as any).alert = alertMock as any;
-    (globalThis as any).fetch = fetchMock as any;
 
     class MockWebSocket {
       onopen?: () => void;
@@ -67,20 +58,20 @@ describe("Preview export button", () => {
     }
 
     window.WebSocket = MockWebSocket as any;
-    (globalThis as any).WebSocket = window.WebSocket;
 
-    await import("../../src/preview/script.js");
+    // Load and execute the script in the JSDOM window context
+    const { readFileSync } = await import("fs");
+    const scriptContent = readFileSync("./src/preview/script.js", "utf-8");
+    const scriptEl = window.document.createElement("script");
+    scriptEl.textContent = scriptContent;
+    window.document.head.appendChild(scriptEl);
+
+    // Give time for script to initialize
+    await new Promise((resolve) => setTimeout(resolve, 10));
   });
 
   afterEach(() => {
     dom.window.close();
-    delete (globalThis as any).window;
-    delete (globalThis as any).document;
-    delete (globalThis as any).HTMLElement;
-    delete (globalThis as any).Event;
-    delete (globalThis as any).fetch;
-    delete (globalThis as any).alert;
-    delete (globalThis as any).WebSocket;
     vi.restoreAllMocks();
   });
 
