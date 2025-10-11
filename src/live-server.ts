@@ -87,7 +87,7 @@ async function handleViewRequest(url: string, res: ServerResponse, port: number)
     const theme = options.theme ?? "default";
 
     // For /view/* pages we explicitly disable live reload/WebSocket
-    const html = await createLiveHtmlWrapper(content, diagramId, port, background, false, theme);
+    const html = await createLiveHtmlWrapper(content, diagramId, port, background, false);
     res.writeHead(200, {
       "Content-Type": "text/html",
       "Content-Security-Policy": CSP_HEADER,
@@ -127,14 +127,7 @@ async function handleLivePreviewRequest(
       loadDiagramOptions(diagramId),
     ]);
 
-    const html = await createLiveHtmlWrapper(
-      content,
-      diagramId,
-      port,
-      options.background,
-      true,
-      options.theme
-    );
+    const html = await createLiveHtmlWrapper(content, diagramId, port, options.background, true);
     res.writeHead(200, {
       "Content-Type": "text/html",
       "Content-Security-Policy": CSP_HEADER,
@@ -395,8 +388,7 @@ async function createLiveHtmlWrapper(
   diagramId: string,
   port: number,
   background: string = "white",
-  liveEnabled: boolean = true,
-  theme: string = "default"
+  liveEnabled: boolean = true
 ): Promise<string> {
   const template = await loadTemplate();
 
@@ -409,6 +401,5 @@ async function createLiveHtmlWrapper(
     .replaceAll("{{PORT}}", port.toString())
     .replaceAll("{{BACKGROUND}}", escapeHtml(background))
     .replaceAll("{{TIMESTAMP}}", escapeHtml(new Date().toLocaleTimeString()))
-    .replaceAll("{{LIVE_ENABLED}}", liveEnabled ? "true" : "false")
-    .replaceAll("{{THEME}}", escapeHtml(theme));
+    .replaceAll("{{LIVE_ENABLED}}", liveEnabled ? "true" : "false");
 }

@@ -258,13 +258,11 @@ describe("Template rendering", () => {
     expect(template).toContain("{{BACKGROUND}}");
     expect(template).toContain("{{TIMESTAMP}}");
     expect(template).toContain("{{LIVE_ENABLED}}");
-    expect(template).toContain("{{THEME}}");
 
     // Verify data attributes for passing config to JS
     expect(template).toContain('data-diagram-id="{{DIAGRAM_ID}}"');
     expect(template).toContain('data-port="{{PORT}}"');
     expect(template).toContain('data-live-enabled="{{LIVE_ENABLED}}"');
-    expect(template).toContain('data-theme="{{THEME}}"');
 
     // Verify background in inline style
     expect(template).toContain("background: {{BACKGROUND}}");

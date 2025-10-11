@@ -7,7 +7,6 @@
     diagramId: document.body.dataset.diagramId,
     port: document.body.dataset.port,
     liveEnabled: document.body.dataset.liveEnabled === "true",
-    theme: document.body.dataset.theme || "default",
   };
 
   // ===== DOM Elements =====
