@@ -10,6 +10,7 @@ import {
   getLiveDir,
   loadDiagramSource,
   validatePreviewId,
+  DEFAULT_DIAGRAM_OPTIONS,
 } from "./file-utils.js";
 import { webLogger } from "./logger.js";
 
@@ -74,17 +75,10 @@ async function handleViewRequest(url: string, res: ServerResponse, port: number)
   try {
     const [content, options] = await Promise.all([
       readFile(filePath, "utf-8"),
-      loadDiagramOptions(diagramId).catch(() => ({
-        theme: "default",
-        background: "white",
-        width: 800,
-        height: 600,
-        scale: 2,
-      })),
+      loadDiagramOptions(diagramId).catch(() => DEFAULT_DIAGRAM_OPTIONS),
     ]);
 
     const background = options.background ?? "white";
-    const theme = options.theme ?? "default";
 
     // For /view/* pages we explicitly disable live reload/WebSocket
     const html = await createLiveHtmlWrapper(content, diagramId, port, background, false);

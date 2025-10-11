@@ -8,6 +8,7 @@ import {
   addLiveDiagram,
   __resetLiveServerForTests,
 } from "../../src/live-server.js";
+import { DEFAULT_DIAGRAM_OPTIONS } from "../../src/file-utils.js";
 
 let configDir: string;
 let tempDir: string;
@@ -40,17 +41,7 @@ describe("Live server responses", () => {
     const optionsPath = join(diagramDir, "options.json");
 
     await writeFile(diagramPath, "<svg>test</svg>", "utf-8");
-    await writeFile(
-      optionsPath,
-      JSON.stringify({
-        theme: "default",
-        background: "white",
-        width: 800,
-        height: 600,
-        scale: 2,
-      }),
-      "utf-8"
-    );
+    await writeFile(optionsPath, JSON.stringify(DEFAULT_DIAGRAM_OPTIONS), "utf-8");
 
     await addLiveDiagram(diagramId, diagramPath);
 
@@ -78,13 +69,7 @@ describe("Live server responses", () => {
     await writeFile(sourcePath, "graph TD;A-->B;", "utf-8");
     await writeFile(
       optionsPath,
-      JSON.stringify({
-        theme: "forest",
-        background: "white",
-        width: 800,
-        height: 600,
-        scale: 2,
-      }),
+      JSON.stringify({ ...DEFAULT_DIAGRAM_OPTIONS, theme: "forest" }),
       "utf-8"
     );
 

@@ -32,6 +32,8 @@
   const wsState = {
     connection: null,
     reconnectInterval: null,
+    reconnectAttempts: 0,
+    maxReconnectAttempts: 30,
   };
 
   // ===== Pan/Zoom Functions =====
@@ -88,6 +90,7 @@
   function handleWebSocketOpen() {
     console.log("WebSocket connected");
     setStatus("Live Reload Active", true);
+    wsState.reconnectAttempts = 0;
     if (wsState.reconnectInterval) {
       clearInterval(wsState.reconnectInterval);
       wsState.reconnectInterval = null;
@@ -103,11 +106,29 @@
 
   function handleWebSocketClose() {
     console.log("WebSocket disconnected");
+
+    if (wsState.reconnectAttempts >= wsState.maxReconnectAttempts) {
+      setStatus("Connection failed - Reload page to retry", false);
+      console.warn(
+        `Max reconnection attempts (${wsState.maxReconnectAttempts}) reached. Stop reconnecting.`
+      );
+      return;
+    }
+
     setStatus("Disconnected - Reconnecting...", false);
 
     if (!wsState.reconnectInterval) {
       wsState.reconnectInterval = setInterval(() => {
-        console.log("Attempting to reconnect...");
+        if (wsState.reconnectAttempts >= wsState.maxReconnectAttempts) {
+          clearInterval(wsState.reconnectInterval);
+          wsState.reconnectInterval = null;
+          setStatus("Connection failed - Reload page to retry", false);
+          return;
+        }
+        wsState.reconnectAttempts++;
+        console.log(
+          `Attempting to reconnect... (${wsState.reconnectAttempts}/${wsState.maxReconnectAttempts})`
+        );
         connectWebSocket();
       }, 2000);
     }
@@ -137,7 +158,6 @@
     }
 
     const button = elements.openLiveButton;
-    const wasDisabled = button?.disabled ?? false;
     if (button) {
       button.disabled = true;
       button.classList.add("is-loading");
@@ -149,7 +169,7 @@
     fetch(requestUrl)
       .then((response) => {
         if (!response.ok) {
-          throw new Error(`Unexpected response: ${response.status}`);
+          throw new Error(`Server returned ${response.status}: ${response.statusText}`);
         }
         return response.json();
       })
@@ -162,11 +182,12 @@
       })
       .catch((error) => {
         console.error("Failed to open Mermaid Live editor", error);
-        alert("Unable to open Mermaid Live editor. Check the console for details.");
+        const message = error.message || "Unknown error occurred";
+        alert(`Unable to open Mermaid Live editor: ${message}`);
       })
       .finally(() => {
         if (button) {
-          button.disabled = wasDisabled;
+          button.disabled = false;
           button.classList.remove("is-loading");
         }
       });
