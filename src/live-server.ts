@@ -4,7 +4,14 @@ import { watch, FSWatcher } from "fs";
 import { readFile } from "fs/promises";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { loadDiagramOptions, getLiveDir } from "./file-utils.js";
+import { deflate } from "pako";
+import {
+  loadDiagramOptions,
+  getLiveDir,
+  loadDiagramSource,
+  validatePreviewId,
+  DEFAULT_DIAGRAM_OPTIONS,
+} from "./file-utils.js";
 import { webLogger } from "./logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -66,9 +73,15 @@ async function handleViewRequest(url: string, res: ServerResponse, port: number)
   webLogger.debug(`View request for diagram: ${diagramId}`);
 
   try {
-    const content = await readFile(filePath, "utf-8");
+    const [content, options] = await Promise.all([
+      readFile(filePath, "utf-8"),
+      loadDiagramOptions(diagramId).catch(() => DEFAULT_DIAGRAM_OPTIONS),
+    ]);
+
+    const background = options.background ?? "white";
+
     // For /view/* pages we explicitly disable live reload/WebSocket
-    const html = await createLiveHtmlWrapper(content, diagramId, port, "white", false);
+    const html = await createLiveHtmlWrapper(content, diagramId, port, background, false);
     res.writeHead(200, {
       "Content-Type": "text/html",
       "Content-Security-Policy": CSP_HEADER,
@@ -126,6 +139,61 @@ async function handleLivePreviewRequest(
   }
 }
 
+async function handleMermaidLiveRequest(url: string, res: ServerResponse): Promise<void> {
+  const rawId = url.substring("/mermaid-live/".length);
+
+  if (!rawId) {
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Diagram ID is required" }));
+    return;
+  }
+
+  let diagramId: string;
+  try {
+    diagramId = decodeURIComponent(rawId);
+    validatePreviewId(diagramId);
+  } catch (error) {
+    webLogger.warn("Invalid Mermaid Live request", {
+      rawId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Invalid diagram ID" }));
+    return;
+  }
+
+  webLogger.debug(`Mermaid Live export request for: ${diagramId}`);
+
+  try {
+    const [code, options] = await Promise.all([
+      loadDiagramSource(diagramId),
+      loadDiagramOptions(diagramId).catch(() => ({ theme: "default" })),
+    ]);
+
+    const payload = JSON.stringify({
+      code,
+      mermaid: { theme: options?.theme ?? "default" },
+    });
+
+    const compressed = deflate(payload);
+    const base64 = Buffer.from(compressed).toString("base64");
+    const urlPayload = `https://mermaid.live/edit#pako:${base64}`;
+
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store",
+    });
+    res.end(JSON.stringify({ url: urlPayload }));
+    webLogger.info(`Served Mermaid Live payload for: ${diagramId}`);
+  } catch (error) {
+    webLogger.warn(`Mermaid Live export failed for: ${diagramId}`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Diagram not found" }));
+  }
+}
+
 export async function ensureLiveServer(): Promise<number> {
   if (liveServer && liveServerPort) {
     webLogger.debug(`Reusing existing server on port ${liveServerPort}`);
@@ -151,6 +219,11 @@ export async function ensureLiveServer(): Promise<number> {
         const js = await readFile(SCRIPT_PATH, "utf-8");
         res.writeHead(200, { "Content-Type": "application/javascript" });
         res.end(js);
+        return;
+      }
+
+      if (url.startsWith("/mermaid-live/")) {
+        await handleMermaidLiveRequest(url, res);
         return;
       }
 
@@ -302,6 +375,47 @@ export function escapeHtml(unsafe: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+/**
+ * Closes the live server and cleans up all resources.
+ * This is safe to call multiple times and useful for graceful shutdown.
+ */
+export async function closeLiveServer(): Promise<void> {
+  // Close all file watchers
+  diagrams.forEach((state) => {
+    try {
+      state.watcher.close();
+    } catch (error) {
+      webLogger.debug("Error closing watcher", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+  diagrams.clear();
+
+  // Close WebSocket server
+  if (wss) {
+    await new Promise<void>((resolve) => {
+      wss!.close(() => {
+        webLogger.debug("WebSocket server closed");
+        resolve();
+      });
+    });
+    wss = null;
+  }
+
+  // Close HTTP server
+  if (liveServer) {
+    await new Promise<void>((resolve) => {
+      liveServer!.close(() => {
+        webLogger.info(`Live server closed (was on port ${liveServerPort})`);
+        resolve();
+      });
+    });
+    liveServer = null;
+    liveServerPort = null;
+  }
 }
 
 async function createLiveHtmlWrapper(

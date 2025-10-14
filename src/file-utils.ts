@@ -73,6 +73,14 @@ export interface DiagramOptions {
   scale: number;
 }
 
+export const DEFAULT_DIAGRAM_OPTIONS: DiagramOptions = {
+  theme: "default",
+  background: "white",
+  width: 800,
+  height: 600,
+  scale: 2,
+};
+
 export async function saveDiagramSource(
   previewId: string,
   diagram: string,

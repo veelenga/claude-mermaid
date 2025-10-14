@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added ability to open a diagram in mermaid live preview
+
 ## [1.1.1] - 2025-10-03
 
 ### Security

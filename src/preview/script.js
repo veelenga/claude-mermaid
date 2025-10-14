@@ -16,6 +16,7 @@
     statusText: document.getElementById("status-text"),
     statusIndicator: document.getElementById("status-indicator"),
     resetButton: document.getElementById("reset-pan"),
+    openLiveButton: document.getElementById("open-mermaid-live"),
   };
 
   // ===== Pan/Zoom State =====
@@ -31,6 +32,8 @@
   const wsState = {
     connection: null,
     reconnectInterval: null,
+    reconnectAttempts: 0,
+    maxReconnectAttempts: 30,
   };
 
   // ===== Pan/Zoom Functions =====
@@ -49,7 +52,7 @@
   }
 
   function handleMouseDown(e) {
-    if (e.target.closest(".status-bar")) return;
+    if (!elements.viewport || e.target.closest(".status-bar")) return;
     panState.isDragging = true;
     panState.dragStartX = e.clientX - panState.x;
     panState.dragStartY = e.clientY - panState.y;
@@ -59,10 +62,13 @@
 
   function handleMouseUp() {
     panState.isDragging = false;
-    elements.viewport.style.cursor = "grab";
+    if (elements.viewport) {
+      elements.viewport.style.cursor = "grab";
+    }
   }
 
   function handleMouseMove(e) {
+    if (!elements.viewport) return;
     if (panState.isDragging && elements.svg) {
       panState.x = e.clientX - panState.dragStartX;
       panState.y = e.clientY - panState.dragStartY;
@@ -72,11 +78,11 @@
 
   // ===== Status Update Functions =====
   function setStatus(text, isConnected) {
-    elements.statusText.textContent = text;
-    if (isConnected) {
-      elements.statusIndicator.classList.remove("disconnected");
-    } else {
-      elements.statusIndicator.classList.add("disconnected");
+    if (elements.statusText) {
+      elements.statusText.textContent = text;
+    }
+    if (elements.statusIndicator) {
+      elements.statusIndicator.classList.toggle("disconnected", !isConnected);
     }
   }
 
@@ -84,6 +90,7 @@
   function handleWebSocketOpen() {
     console.log("WebSocket connected");
     setStatus("Live Reload Active", true);
+    wsState.reconnectAttempts = 0;
     if (wsState.reconnectInterval) {
       clearInterval(wsState.reconnectInterval);
       wsState.reconnectInterval = null;
@@ -99,11 +106,29 @@
 
   function handleWebSocketClose() {
     console.log("WebSocket disconnected");
+
+    if (wsState.reconnectAttempts >= wsState.maxReconnectAttempts) {
+      setStatus("Connection failed - Reload page to retry", false);
+      console.warn(
+        `Max reconnection attempts (${wsState.maxReconnectAttempts}) reached. Stop reconnecting.`
+      );
+      return;
+    }
+
     setStatus("Disconnected - Reconnecting...", false);
 
     if (!wsState.reconnectInterval) {
       wsState.reconnectInterval = setInterval(() => {
-        console.log("Attempting to reconnect...");
+        if (wsState.reconnectAttempts >= wsState.maxReconnectAttempts) {
+          clearInterval(wsState.reconnectInterval);
+          wsState.reconnectInterval = null;
+          setStatus("Connection failed - Reload page to retry", false);
+          return;
+        }
+        wsState.reconnectAttempts++;
+        console.log(
+          `Attempting to reconnect... (${wsState.reconnectAttempts}/${wsState.maxReconnectAttempts})`
+        );
         connectWebSocket();
       }, 2000);
     }
@@ -117,6 +142,7 @@
   }
 
   function connectWebSocket() {
+    if (!config.port || !config.diagramId) return;
     wsState.connection = new WebSocket(`ws://localhost:${config.port}/${config.diagramId}`);
     wsState.connection.onopen = handleWebSocketOpen;
     wsState.connection.onmessage = handleWebSocketMessage;
@@ -124,12 +150,63 @@
     wsState.connection.onerror = handleWebSocketError;
   }
 
+  // ===== External Editor Functions =====
+  function handleOpenMermaidLive() {
+    if (!config.diagramId) {
+      alert("Diagram identifier is missing. Try rendering the diagram again.");
+      return;
+    }
+
+    const button = elements.openLiveButton;
+    if (button) {
+      button.disabled = true;
+      button.classList.add("is-loading");
+    }
+
+    const baseUrl = window.location.origin;
+    const requestUrl = `${baseUrl}/mermaid-live/${encodeURIComponent(config.diagramId)}`;
+
+    fetch(requestUrl)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        const url = data?.url;
+        if (!url) {
+          throw new Error("Mermaid Live URL missing in response");
+        }
+        window.open(url, "_blank", "noopener,noreferrer");
+      })
+      .catch((error) => {
+        console.error("Failed to open Mermaid Live editor", error);
+        const message = error.message || "Unknown error occurred";
+        alert(`Unable to open Mermaid Live editor: ${message}`);
+      })
+      .finally(() => {
+        if (button) {
+          button.disabled = false;
+          button.classList.remove("is-loading");
+        }
+      });
+  }
+
   // ===== Initialization =====
   function initializePanZoom() {
-    elements.viewport.addEventListener("mousedown", handleMouseDown);
-    document.addEventListener("mouseup", handleMouseUp);
-    elements.viewport.addEventListener("mousemove", handleMouseMove);
-    elements.resetButton.addEventListener("click", resetPan);
+    if (elements.viewport) {
+      elements.viewport.addEventListener("mousedown", handleMouseDown);
+      document.addEventListener("mouseup", handleMouseUp);
+      elements.viewport.addEventListener("mousemove", handleMouseMove);
+      elements.viewport.style.cursor = "grab";
+    }
+    if (elements.resetButton) {
+      elements.resetButton.addEventListener("click", resetPan);
+    }
+    if (elements.openLiveButton) {
+      elements.openLiveButton.addEventListener("click", handleOpenMermaidLive);
+    }
   }
 
   function initializeWebSocket() {

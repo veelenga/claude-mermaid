@@ -12,12 +12,31 @@ vi.mock("child_process", () => ({
     const outputIndex = args.indexOf("-o");
     if (outputIndex !== -1 && outputIndex + 1 < args.length) {
       const outputFile = args[outputIndex + 1];
-      // Create a fake output file
-      import("fs/promises").then(({ writeFile }) => {
-        writeFile(outputFile, "<svg>test</svg>", "utf-8").then(() => {
-          callback(null, { stdout: "", stderr: "" });
-        });
-      });
+      // Create a fake output file synchronously
+      const fs = require("fs");
+      const path = require("path");
+      const dir = path.dirname(outputFile);
+
+      // Ensure directory exists
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+
+      // Write fake content based on file extension
+      const ext = path.extname(outputFile);
+      if (ext === ".svg") {
+        fs.writeFileSync(outputFile, "<svg>test</svg>", "utf-8");
+      } else if (ext === ".png") {
+        // Write minimal PNG header
+        fs.writeFileSync(outputFile, Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
+      } else if (ext === ".pdf") {
+        // Write minimal PDF header
+        fs.writeFileSync(outputFile, "%PDF-1.4\n", "utf-8");
+      } else {
+        fs.writeFileSync(outputFile, "test", "utf-8");
+      }
+
+      callback(null, { stdout: "", stderr: "" });
     } else {
       callback(null, { stdout: "", stderr: "" });
     }
@@ -35,23 +54,34 @@ describe("handleMermaidPreview", () => {
   const testPreviewId = "test-preview";
   let testDir: string;
   let originalHome: string | undefined;
+  let originalXdgConfig: string | undefined;
 
   beforeEach(async () => {
-    // Override HOME to use temp directory
+    // Override config dirs to use a temp HOME/XDG path for isolation
     originalHome = process.env.HOME;
+    originalXdgConfig = process.env.XDG_CONFIG_HOME;
     const tempHome = await mkdtemp(join(tmpdir(), "claude-mermaid-test-home-"));
+    const tempConfigDir = join(tempHome, ".config");
     process.env.HOME = tempHome;
+    process.env.XDG_CONFIG_HOME = tempConfigDir;
 
+    await mkdir(tempConfigDir, { recursive: true });
     testDir = getPreviewDir(testPreviewId);
     await mkdir(testDir, { recursive: true });
   });
 
   afterEach(async () => {
-    // Restore original HOME
+    // Restore original config env vars
     if (originalHome) {
       process.env.HOME = originalHome;
     } else {
       delete process.env.HOME;
+    }
+
+    if (originalXdgConfig) {
+      process.env.XDG_CONFIG_HOME = originalXdgConfig;
+    } else {
+      delete process.env.XDG_CONFIG_HOME;
     }
   });
 
@@ -148,13 +178,18 @@ describe("handleMermaidSave", () => {
   const testPreviewId = "test-save";
   let testDir: string;
   let originalHome: string | undefined;
+  let originalXdgConfig: string | undefined;
 
   beforeEach(async () => {
-    // Override HOME to use temp directory
+    // Override config dirs to use a temp HOME/XDG path for isolation
     originalHome = process.env.HOME;
+    originalXdgConfig = process.env.XDG_CONFIG_HOME;
     const tempHome = await mkdtemp(join(tmpdir(), "claude-mermaid-test-home-"));
+    const tempConfigDir = join(tempHome, ".config");
     process.env.HOME = tempHome;
+    process.env.XDG_CONFIG_HOME = tempConfigDir;
 
+    await mkdir(tempConfigDir, { recursive: true });
     testDir = getPreviewDir(testPreviewId);
     await mkdir(testDir, { recursive: true });
 
@@ -166,11 +201,17 @@ describe("handleMermaidSave", () => {
   });
 
   afterEach(async () => {
-    // Restore original HOME
+    // Restore original config env vars
     if (originalHome) {
       process.env.HOME = originalHome;
     } else {
       delete process.env.HOME;
+    }
+
+    if (originalXdgConfig) {
+      process.env.XDG_CONFIG_HOME = originalXdgConfig;
+    } else {
+      delete process.env.XDG_CONFIG_HOME;
     }
   });
 
