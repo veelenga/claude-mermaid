@@ -12,11 +12,7 @@
     "build/**/*.html",
     "build/**/*.css",
     "build/**/*.svg",
-    ".claude-plugin/**/*",
-    ".mcp.json",
-    "CHANGELOG.md",
-    "README.md",
-    "LICENSE"
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsc && cp -r src/preview build/ && chmod +x build/index.js",
