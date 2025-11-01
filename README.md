@@ -51,10 +51,10 @@ In Claude Code, first add the marketplace:
 /plugin marketplace add veelenga/claude-mermaid
 ```
 
-Then install the plugin:
+Then enable the plugin:
 
 ```bash
-/plugin install claude-mermaid
+/plugin enable claude-mermaid
 ```
 
 **From npm:**
