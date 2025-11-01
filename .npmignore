@@ -1,0 +1,29 @@
+# Source files
+src/
+tsconfig.json
+vitest.config.ts
+
+# Development files
+.claude/
+node_modules/
+*.log
+
+# Build artifacts
+*.map
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Tests
+test/
+*.test.js
+*.test.ts
+
+# Misc
+.DS_Store
+.prettierrc
+.prettierignore
+start-server.js
+CHANGELOG.md

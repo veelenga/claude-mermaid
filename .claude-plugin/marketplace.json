@@ -1,0 +1,14 @@
+{
+  "name": "claude-mermaid",
+  "owner": {
+    "name": "veelenga",
+    "url": "https://github.com/veelenga"
+  },
+  "plugins": [
+    {
+      "name": "claude-mermaid",
+      "source": "./",
+      "description": "MCP server for previewing Mermaid diagrams in Claude Code"
+    }
+  ]
+}

@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Added ability to open a diagram in mermaid live preview
+## [1.2.0] - 2025-11-01
+
+### Added
+
+- Claude plugin system support for easy installation via `/plugin install`
+- Ability to open diagrams in Mermaid Live Editor
 
 ## [1.1.1] - 2025-10-03
 

@@ -1,6 +1,6 @@
 {
   "name": "claude-mermaid",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "MCP server for previewing Mermaid diagrams in Claude Code",
   "main": "build/index.js",
   "type": "module",
@@ -12,7 +12,11 @@
     "build/**/*.html",
     "build/**/*.css",
     "build/**/*.svg",
-    "CHANGELOG.md"
+    ".claude-plugin/**/*",
+    ".mcp.json",
+    "CHANGELOG.md",
+    "README.md",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc && cp -r src/preview build/ && chmod +x build/index.js",

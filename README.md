@@ -43,6 +43,20 @@ Automatically renders diagrams in your browser with real-time updates as you ref
 
 ### 1. Install
 
+**Plugin Install (Recommended)**
+
+In Claude Code, first add the marketplace:
+
+```bash
+/plugin marketplace add veelenga/claude-mermaid
+```
+
+Then install the plugin:
+
+```bash
+/plugin install claude-mermaid
+```
+
 **From npm:**
 
 ```bash
@@ -58,6 +72,8 @@ npm install && npm run build && npm install -g .
 ```
 
 ### 2. Configure Claude Code
+
+> **Note:** If you installed via the plugin system, configuration is handled automatically. Skip to step 3 to verify installation.
 
 **Global setup** (recommended - works in all projects):
 

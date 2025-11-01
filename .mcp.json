@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "mermaid": {
+      "command": "npx",
+      "args": ["-y", "claude-mermaid"]
+    }
+  }
+}
