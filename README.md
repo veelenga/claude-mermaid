@@ -1,6 +1,6 @@
 # Claude Mermaid MCP Server
 
-MCP server for rendering Mermaid diagrams in Claude Code with **live reload** functionality.
+MCP server for rendering Mermaid diagrams in Claude Code with **live reload** functionality and a built-in skill for expert guidance.
 
 Automatically renders diagrams in your browser with real-time updates as you refine them. Perfect for iterative diagram development and documentation workflows.
 
@@ -15,6 +15,7 @@ Automatically renders diagrams in your browser with real-time updates as you ref
 - 🪄 **Interactive Preview** - Pan diagrams by dragging, zoom with browser controls, reset position with one click
 - 🗂️ **Multiple Previews** - Use `preview_id` to work on multiple diagrams simultaneously
 - 💾 **Persistent Working Files** - Live previews are stored under `~/.config/claude-mermaid/live`
+- 🤖 **Built-in Skill** - Includes a Claude skill with best practices and expert guidance for creating diagrams
 
 ## Architecture
 
@@ -252,12 +253,7 @@ The command `claude-mermaid` should be available in your PATH after installation
 
 ## 💡 Usage
 
-Simply ask Claude Code to create Mermaid diagrams. The server will:
-
-1. ✅ Render the diagram
-2. 🌐 Open it in your browser with live reload
-3. 🔄 Auto-refresh when you make changes
-4. 💾 Save to your project path using the `mermaid_save` tool
+Simply ask Claude Code to create Mermaid diagrams naturally. When installed as a plugin, the built-in `mermaid-diagrams` skill provides expert guidance, best practices, and automatic workflow management.
 
 ### Basic Examples
 
