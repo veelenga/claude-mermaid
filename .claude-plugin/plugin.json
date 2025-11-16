@@ -7,5 +7,11 @@
     "url": "https://github.com/veelenga"
   },
   "repository": "https://github.com/veelenga/claude-mermaid.git",
-  "homepage": "https://github.com/veelenga/claude-mermaid#readme"
+  "homepage": "https://github.com/veelenga/claude-mermaid#readme",
+  "mcpServers": {
+    "mermaid": {
+      "command": "npx",
+      "args": ["-y", "claude-mermaid"]
+    }
+  }
 }
