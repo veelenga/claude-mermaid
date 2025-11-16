@@ -46,17 +46,14 @@ Automatically renders diagrams in your browser with real-time updates as you ref
 
 **Plugin Install (Recommended)**
 
-In Claude Code, first add the marketplace:
+In Claude Code, add the marketplace and install the plugin:
 
 ```bash
 /plugin marketplace add veelenga/claude-mermaid
+/plugin install claude-mermaid@claude-mermaid
 ```
 
-Then enable the plugin:
-
-```bash
-/plugin enable claude-mermaid
-```
+Then restart Claude Code to activate the plugin.
 
 **From npm:**
 
@@ -72,37 +69,23 @@ cd claude-mermaid
 npm install && npm run build && npm install -g .
 ```
 
-### 2. Configure Claude Code
+### 2. Verify Installation
 
-> **Note:** If you installed via the plugin system, configuration is handled automatically. Skip to step 3 to verify installation.
+**Plugin install:** The MCP server is configured automatically. Just verify:
 
-**Global setup** (recommended - works in all projects):
+```bash
+/mcp
+```
+
+You should see `mermaid` in the MCP server list.
+
+**npm install:** Configure the MCP server manually:
 
 ```bash
 claude mcp add --scope user mermaid claude-mermaid
 ```
 
-**Project-specific setup:**
-
-```bash
-claude mcp add mermaid claude-mermaid
-```
-
-**Manual configuration:**
-
-Add to your MCP config file (`.claude.json` or `.mcp.json`):
-
-```json
-{
-  "mcpServers": {
-    "mermaid": {
-      "command": "claude-mermaid"
-    }
-  }
-}
-```
-
-### 3. Verify Installation
+Then verify:
 
 ```bash
 claude mcp list
