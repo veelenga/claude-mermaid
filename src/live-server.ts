@@ -10,9 +10,21 @@ import {
   getLiveDir,
   loadDiagramSource,
   validatePreviewId,
-  DEFAULT_DIAGRAM_OPTIONS,
 } from "./file-utils.js";
 import { webLogger } from "./logger.js";
+import { matchRoute } from "./routes.js";
+import { DiagramState } from "./types.js";
+import {
+  CSP_HEADER,
+  SERVER_PORT_START,
+  SERVER_PORT_END,
+  ROUTES,
+  CONTENT_TYPES,
+  CACHE_CONTROL,
+  WS_MESSAGES,
+  DEFAULT_DIAGRAM_OPTIONS,
+  TEMPLATE_VARS,
+} from "./constants.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -22,31 +34,14 @@ const STYLE_PATH = join(PREVIEW_DIR, "style.css");
 const SCRIPT_PATH = join(PREVIEW_DIR, "script.js");
 const FAVICON_PATH = join(PREVIEW_DIR, "favicon.svg");
 
-// Content Security Policy header
-// - default-src 'none': Deny all by default
-// - script-src 'self': Only allow scripts from same origin
-// - style-src 'self' 'unsafe-inline': Allow CSS from same origin and inline styles (for background color)
-// - img-src 'self' data:: Allow images from same origin and data URIs (SVG may contain embedded images)
-// - connect-src 'self' ws://localhost:*: Allow WebSocket connections to localhost for live reload
-const CSP_HEADER =
-  "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws://localhost:*";
-
-// Live directories are resolved via shared utils (respects XDG_CONFIG_HOME/HOME)
-
-interface DiagramState {
-  filePath: string;
-  watcher: FSWatcher;
-  clients: Set<WebSocket>;
-}
-
 let liveServer: HttpServer | null = null;
 let liveServerPort: number | null = null;
 let wss: WebSocketServer | null = null;
 const diagrams = new Map<string, DiagramState>();
 
 async function findAvailablePort(
-  startPort: number = 3737,
-  maxPort: number = 3747
+  startPort: number = SERVER_PORT_START,
+  maxPort: number = SERVER_PORT_END
 ): Promise<number> {
   for (let port = startPort; port <= maxPort; port++) {
     try {
@@ -207,54 +202,62 @@ export async function ensureLiveServer(): Promise<number> {
     const url = req.url || "/";
 
     try {
-      // Serve static assets (CSS and JS)
-      if (url === "/style.css") {
+      // Try to match new route system first (gallery, API, new assets)
+      const route = matchRoute(url);
+      if (route) {
+        await route.handler({ req, res, url, port });
+        return;
+      }
+
+      // Legacy routes: static assets from diagram preview
+      if (url === ROUTES.STYLE) {
         const css = await readFile(STYLE_PATH, "utf-8");
-        res.writeHead(200, { "Content-Type": "text/css" });
+        res.writeHead(200, { "Content-Type": CONTENT_TYPES.CSS });
         res.end(css);
         return;
       }
 
-      if (url === "/script.js") {
+      if (url === ROUTES.SCRIPT) {
         const js = await readFile(SCRIPT_PATH, "utf-8");
-        res.writeHead(200, { "Content-Type": "application/javascript" });
+        res.writeHead(200, { "Content-Type": CONTENT_TYPES.JAVASCRIPT });
         res.end(js);
         return;
       }
 
-      if (url.startsWith("/mermaid-live/")) {
+      if (url.startsWith(ROUTES.MERMAID_LIVE)) {
         await handleMermaidLiveRequest(url, res);
         return;
       }
 
-      if (url === "/favicon.svg") {
+      if (url === ROUTES.FAVICON_SVG) {
         const icon = await readFile(FAVICON_PATH);
         res.writeHead(200, {
-          "Content-Type": "image/svg+xml",
-          "Cache-Control": "public, max-age=86400", // Cache for 24 hours
+          "Content-Type": CONTENT_TYPES.SVG,
+          "Cache-Control": CACHE_CONTROL.PUBLIC_24H,
         });
         res.end(icon);
         return;
       }
 
-      if (url === "/favicon.ico") {
+      if (url === ROUTES.FAVICON_ICO) {
         // Redirect common .ico requests to SVG favicon
-        res.writeHead(302, { Location: "/favicon.svg" });
+        res.writeHead(302, { Location: ROUTES.FAVICON_SVG });
         res.end();
         return;
       }
 
-      if (url.startsWith("/view/")) {
+      if (url.startsWith(ROUTES.VIEW)) {
         await handleViewRequest(url, res, port);
         return;
       }
 
+      // Default: try live preview (diagram ID)
       await handleLivePreviewRequest(url, res, port);
     } catch (error) {
       webLogger.error(`HTTP server error for ${url}`, {
         error: error instanceof Error ? error.message : String(error),
       });
-      res.writeHead(500, { "Content-Type": "text/plain" });
+      res.writeHead(500, { "Content-Type": CONTENT_TYPES.PLAIN });
       res.end(`Server error: ${error instanceof Error ? error.message : String(error)}`);
     }
   });
@@ -343,7 +346,7 @@ function notifyClients(diagramId: string): void {
   let notifiedCount = 0;
   state.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN) {
-      client.send("reload");
+      client.send(WS_MESSAGES.RELOAD);
       notifiedCount++;
     }
   });
@@ -431,10 +434,10 @@ async function createLiveHtmlWrapper(
   // CONTENT is SVG from mermaid-cli - trusted
   // DIAGRAM_ID, BACKGROUND, TIMESTAMP need escaping
   return template
-    .replaceAll("{{CONTENT}}", content)
-    .replaceAll("{{DIAGRAM_ID}}", escapeHtml(diagramId))
-    .replaceAll("{{PORT}}", port.toString())
-    .replaceAll("{{BACKGROUND}}", escapeHtml(background))
-    .replaceAll("{{TIMESTAMP}}", escapeHtml(new Date().toLocaleTimeString()))
-    .replaceAll("{{LIVE_ENABLED}}", liveEnabled ? "true" : "false");
+    .replaceAll(TEMPLATE_VARS.CONTENT, content)
+    .replaceAll(TEMPLATE_VARS.DIAGRAM_ID, escapeHtml(diagramId))
+    .replaceAll(TEMPLATE_VARS.PORT, port.toString())
+    .replaceAll(TEMPLATE_VARS.BACKGROUND, escapeHtml(background))
+    .replaceAll(TEMPLATE_VARS.TIMESTAMP, escapeHtml(new Date().toLocaleTimeString()))
+    .replaceAll(TEMPLATE_VARS.LIVE_ENABLED, liveEnabled ? "true" : "false");
 }

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{PAGE_TITLE}}</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/shared.css">
+  <link rel="stylesheet" href="/gallery.css">
+</head>
+<body>
+  {{NAV}}
+
+  <div class="container">
+    <header class="gallery-header">
+      <h1 class="gallery-title">Diagram Gallery</h1>
+      <p class="gallery-subtitle">Browse and open your Mermaid diagrams</p>
+
+      <div class="search-bar mt-lg">
+        <span class="search-icon">🔍</span>
+        <input
+          type="text"
+          id="searchInput"
+          class="input search-input"
+          placeholder="Search diagrams by ID..."
+          autocomplete="off"
+        >
+      </div>
+    </header>
+
+    <div class="gallery-stats mt-md">
+      <span class="text-muted" id="diagramCount">Loading...</span>
+    </div>
+
+    <div id="gallery" class="gallery-grid mt-lg">
+      <div class="loading">
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+
+    <div id="emptyState" class="empty-state" style="display: none;">
+      <div class="empty-state-icon">📊</div>
+      <h2 class="empty-state-title">No diagrams found</h2>
+      <p class="empty-state-description">
+        Create a diagram using the mermaid_preview tool to see it here
+      </p>
+    </div>
+
+    <div id="noResults" class="empty-state" style="display: none;">
+      <div class="empty-state-icon">🔍</div>
+      <h2 class="empty-state-title">No matching diagrams</h2>
+      <p class="empty-state-description">
+        Try a different search term
+      </p>
+    </div>
+  </div>
+
+  {{FOOTER}}
+
+  <script src="/gallery.js" data-port="{{PORT}}"></script>
+</body>
+</html>

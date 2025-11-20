@@ -1,21 +1,16 @@
 import { readdir, unlink, stat, mkdir, readFile, writeFile, rmdir } from "fs/promises";
 import { join, resolve } from "path";
 import { tmpdir } from "os";
-
-const APP_NAME = "claude-mermaid";
-const PREVIEW_ID_REGEX = /^[a-zA-Z0-9_-]+$/;
-const UNIX_SYSTEM_PATHS = [
-  "/etc",
-  "/bin",
-  "/sbin",
-  "/usr/bin",
-  "/usr/sbin",
-  "/boot",
-  "/sys",
-  "/proc",
-];
-
-const WINDOWS_SYSTEM_PATHS = ["C:\\Windows", "C:\\Program Files"];
+import {
+  APP_NAME,
+  PREVIEW_ID_REGEX,
+  UNIX_SYSTEM_PATHS,
+  WINDOWS_SYSTEM_PATHS,
+  TIMEOUTS,
+  FILE_NAMES,
+  DIR_NAMES,
+} from "./constants.js";
+import type { DiagramOptions } from "./types.js";
 
 export function getConfigDir(): string {
   const xdg = process.env.XDG_CONFIG_HOME;
@@ -29,11 +24,11 @@ export function getAppDir(): string {
 }
 
 export function getLiveDir(): string {
-  return join(getAppDir(), "live");
+  return join(getAppDir(), DIR_NAMES.LIVE);
 }
 
 export function getLogsDir(): string {
-  return join(getAppDir(), "logs");
+  return join(getAppDir(), DIR_NAMES.LOGS);
 }
 
 /**
@@ -58,28 +53,18 @@ export function getDiagramFilePath(previewId: string, format: string): string {
 }
 
 export function getDiagramSourcePath(previewId: string): string {
-  return join(getPreviewDir(previewId), "diagram.mmd");
+  return join(getPreviewDir(previewId), FILE_NAMES.DIAGRAM_SOURCE);
 }
 
 export function getDiagramOptionsPath(previewId: string): string {
-  return join(getPreviewDir(previewId), "options.json");
+  return join(getPreviewDir(previewId), FILE_NAMES.DIAGRAM_OPTIONS);
 }
 
-export interface DiagramOptions {
-  theme: string;
-  background: string;
-  width: number;
-  height: number;
-  scale: number;
-}
+// Re-export DiagramOptions type from types.ts for backward compatibility
+export type { DiagramOptions } from "./types.js";
 
-export const DEFAULT_DIAGRAM_OPTIONS: DiagramOptions = {
-  theme: "default",
-  background: "white",
-  width: 800,
-  height: 600,
-  scale: 2,
-};
+// Re-export DEFAULT_DIAGRAM_OPTIONS from constants.ts for backward compatibility
+export { DEFAULT_DIAGRAM_OPTIONS } from "./constants.js";
 
 export async function saveDiagramSource(
   previewId: string,
@@ -135,7 +120,7 @@ export function validateSavePath(savePath: string): void {
 }
 
 export async function cleanupOldDiagrams(
-  maxAgeMs: number = 7 * 24 * 60 * 60 * 1000
+  maxAgeMs: number = TIMEOUTS.CLEANUP_MAX_AGE_MS
 ): Promise<number> {
   try {
     const liveDir = getLiveDir();
@@ -148,7 +133,7 @@ export async function cleanupOldDiagrams(
     for (const entry of entries) {
       if (entry.isDirectory()) {
         const dirPath = join(liveDir, entry.name);
-        const sourcePath = join(dirPath, "diagram.mmd");
+        const sourcePath = join(dirPath, FILE_NAMES.DIAGRAM_SOURCE);
 
         try {
           const stats = await stat(sourcePath);
