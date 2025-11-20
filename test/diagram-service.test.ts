@@ -12,7 +12,7 @@ import {
   getDiagramCount,
 } from "../src/diagram-service.js";
 import * as fileUtils from "../src/file-utils.js";
-import { readdir, stat, mkdir, writeFile, rmdir, unlink } from "fs/promises";
+import { readdir, stat, mkdir, writeFile, rmdir, unlink, utimes } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
 
@@ -20,10 +20,17 @@ describe("Diagram Service", () => {
   let testHomeDir: string;
   let testLiveDir: string;
   let originalHome: string | undefined;
+  let originalXdgConfigHome: string | undefined;
 
   beforeEach(async () => {
-    // Create temporary HOME directory to isolate tests
+    // Save original environment
     originalHome = process.env.HOME;
+    originalXdgConfigHome = process.env.XDG_CONFIG_HOME;
+
+    // Clear XDG_CONFIG_HOME to ensure HOME is used
+    delete process.env.XDG_CONFIG_HOME;
+
+    // Create temporary HOME directory to isolate tests
     testHomeDir = join(tmpdir(), `diagram-service-test-home-${Date.now()}`);
     process.env.HOME = testHomeDir;
 
@@ -33,11 +40,17 @@ describe("Diagram Service", () => {
   });
 
   afterEach(async () => {
-    // Restore original HOME
+    // Restore original environment
     if (originalHome) {
       process.env.HOME = originalHome;
     } else {
       delete process.env.HOME;
+    }
+
+    if (originalXdgConfigHome) {
+      process.env.XDG_CONFIG_HOME = originalXdgConfigHome;
+    } else {
+      delete process.env.XDG_CONFIG_HOME;
     }
 
     // Cleanup test directory
@@ -71,14 +84,14 @@ describe("Diagram Service", () => {
     });
 
     it("should list all valid diagrams", async () => {
-      await createTestDiagram("test-diagram-1", "svg");
-      await delay(10); // Ensure different timestamps
-      await createTestDiagram("test-diagram-2", "png");
+      const now = new Date();
+      const earlier = new Date(now.getTime() - 1000);
+      await createTestDiagram("test-diagram-1", "svg", earlier);
+      await createTestDiagram("test-diagram-2", "png", now);
 
       const diagrams = await listDiagrams();
 
       expect(diagrams).toHaveLength(2);
-      // Sorted by modification time, newest first
       expect(diagrams[0].id).toBe("test-diagram-2");
       expect(diagrams[0].format).toBe("png");
       expect(diagrams[1].id).toBe("test-diagram-1");
@@ -86,9 +99,10 @@ describe("Diagram Service", () => {
     });
 
     it("should sort diagrams by modification time (newest first)", async () => {
-      await createTestDiagram("old-diagram", "svg");
-      await delay(100);
-      await createTestDiagram("new-diagram", "svg");
+      const oldTime = new Date("2024-01-01T10:00:00Z");
+      const newTime = new Date("2024-01-02T10:00:00Z");
+      await createTestDiagram("old-diagram", "svg", oldTime);
+      await createTestDiagram("new-diagram", "svg", newTime);
 
       const diagrams = await listDiagrams();
 
@@ -119,7 +133,6 @@ describe("Diagram Service", () => {
     });
 
     it("should include file size and modification date", async () => {
-      // Arrange
       await createTestDiagram("test-diagram", "svg");
 
       const diagrams = await listDiagrams();
@@ -132,7 +145,6 @@ describe("Diagram Service", () => {
 
   describe("getDiagramInfo", () => {
     it("should return diagram info for existing diagram", async () => {
-      // Arrange
       await createTestDiagram("test-diagram", "svg");
 
       const info = await getDiagramInfo("test-diagram");
@@ -169,7 +181,6 @@ describe("Diagram Service", () => {
       const diagramDir = join(testLiveDir, "test-diagram");
       await mkdir(diagramDir, { recursive: true });
       await writeFile(join(diagramDir, "diagram.svg"), "<svg></svg>");
-      await delay(10);
       await writeFile(join(diagramDir, "diagram.png"), "png-data");
 
       const info = await getDiagramInfo("test-diagram");
@@ -236,7 +247,6 @@ describe("Diagram Service", () => {
 
   describe("diagramExists", () => {
     it("should return true for existing diagram", async () => {
-      // Arrange
       await createTestDiagram("test-diagram", "svg");
 
       const exists = await diagramExists("test-diagram");
@@ -265,7 +275,6 @@ describe("Diagram Service", () => {
     });
 
     it("should return correct count of diagrams", async () => {
-      // Arrange
       await createTestDiagram("diagram-1", "svg");
       await createTestDiagram("diagram-2", "svg");
       await createTestDiagram("diagram-3", "svg");
@@ -277,14 +286,15 @@ describe("Diagram Service", () => {
   });
 
   // Helper functions
-  async function createTestDiagram(id: string, format: string): Promise<void> {
+  async function createTestDiagram(id: string, format: string, mtime?: Date): Promise<void> {
     const diagramDir = join(testLiveDir, id);
     await mkdir(diagramDir, { recursive: true });
     const content = format === "svg" ? "<svg>test</svg>" : "binary-data";
-    await writeFile(join(diagramDir, `diagram.${format}`), content);
-  }
+    const filePath = join(diagramDir, `diagram.${format}`);
+    await writeFile(filePath, content);
 
-  function delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    if (mtime) {
+      await utimes(filePath, mtime, mtime);
+    }
   }
 });
