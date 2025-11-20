@@ -71,15 +71,12 @@ describe("Diagram Service", () => {
     });
 
     it("should list all valid diagrams", async () => {
-      // Arrange: Create test diagrams
       await createTestDiagram("test-diagram-1", "svg");
       await delay(10); // Ensure different timestamps
       await createTestDiagram("test-diagram-2", "png");
 
-      // Act
       const diagrams = await listDiagrams();
 
-      // Assert
       expect(diagrams).toHaveLength(2);
       // Sorted by modification time, newest first
       expect(diagrams[0].id).toBe("test-diagram-2");
@@ -89,43 +86,34 @@ describe("Diagram Service", () => {
     });
 
     it("should sort diagrams by modification time (newest first)", async () => {
-      // Arrange: Create diagrams with different timestamps
       await createTestDiagram("old-diagram", "svg");
       await delay(100);
       await createTestDiagram("new-diagram", "svg");
 
-      // Act
       const diagrams = await listDiagrams();
 
-      // Assert
       expect(diagrams).toHaveLength(2);
       expect(diagrams[0].id).toBe("new-diagram");
       expect(diagrams[1].id).toBe("old-diagram");
     });
 
     it("should skip invalid directory names", async () => {
-      // Arrange: Create valid and invalid diagram directories
       await createTestDiagram("valid-diagram", "svg");
       await mkdir(join(testLiveDir, "invalid..diagram"), { recursive: true });
 
-      // Act
       const diagrams = await listDiagrams();
 
-      // Assert
       expect(diagrams).toHaveLength(1);
       expect(diagrams[0].id).toBe("valid-diagram");
     });
 
     it("should skip directories without diagram files", async () => {
-      // Arrange: Create directory without diagram file
       const emptyDir = join(testLiveDir, "empty-diagram");
       await mkdir(emptyDir, { recursive: true });
       await createTestDiagram("valid-diagram", "svg");
 
-      // Act
       const diagrams = await listDiagrams();
 
-      // Assert
       expect(diagrams).toHaveLength(1);
       expect(diagrams[0].id).toBe("valid-diagram");
     });
@@ -134,10 +122,8 @@ describe("Diagram Service", () => {
       // Arrange
       await createTestDiagram("test-diagram", "svg");
 
-      // Act
       const diagrams = await listDiagrams();
 
-      // Assert
       expect(diagrams).toHaveLength(1);
       expect(diagrams[0].sizeBytes).toBeGreaterThan(0);
       expect(diagrams[0].modifiedAt).toBeInstanceOf(Date);
@@ -149,10 +135,8 @@ describe("Diagram Service", () => {
       // Arrange
       await createTestDiagram("test-diagram", "svg");
 
-      // Act
       const info = await getDiagramInfo("test-diagram");
 
-      // Assert
       expect(info).not.toBeNull();
       expect(info!.id).toBe("test-diagram");
       expect(info!.format).toBe("svg");
@@ -161,45 +145,35 @@ describe("Diagram Service", () => {
     });
 
     it("should return null for non-existent diagram", async () => {
-      // Act
       const info = await getDiagramInfo("non-existent");
 
-      // Assert
       expect(info).toBeNull();
     });
 
     it("should validate preview ID format", async () => {
-      // Act
       const info = await getDiagramInfo("invalid..id");
 
-      // Assert
       expect(info).toBeNull();
     });
 
     it("should try all formats and return first found", async () => {
-      // Arrange: Create only PNG version
       await createTestDiagram("test-diagram", "png");
 
-      // Act
       const info = await getDiagramInfo("test-diagram");
 
-      // Assert
       expect(info).not.toBeNull();
       expect(info!.format).toBe("png");
     });
 
     it("should prefer SVG over other formats", async () => {
-      // Arrange: Create multiple formats
       const diagramDir = join(testLiveDir, "test-diagram");
       await mkdir(diagramDir, { recursive: true });
       await writeFile(join(diagramDir, "diagram.svg"), "<svg></svg>");
       await delay(10);
       await writeFile(join(diagramDir, "diagram.png"), "png-data");
 
-      // Act
       const info = await getDiagramInfo("test-diagram");
 
-      // Assert
       expect(info).not.toBeNull();
       expect(info!.format).toBe("svg");
     });
@@ -215,61 +189,47 @@ describe("Diagram Service", () => {
     });
 
     it("should return all diagrams for empty query", async () => {
-      // Act
       const results = await searchDiagrams("");
 
-      // Assert
       expect(results).toHaveLength(4);
     });
 
     it("should return all diagrams for whitespace-only query", async () => {
-      // Act
       const results = await searchDiagrams("   ");
 
-      // Assert
       expect(results).toHaveLength(4);
     });
 
     it("should filter diagrams by exact match", async () => {
-      // Act
       const results = await searchDiagrams("user-profile");
 
-      // Assert
       expect(results).toHaveLength(1);
       expect(results[0].id).toBe("user-profile");
     });
 
     it("should filter diagrams by partial match", async () => {
-      // Act
       const results = await searchDiagrams("user");
 
-      // Assert
       expect(results).toHaveLength(2);
       expect(results.map((d) => d.id).sort()).toEqual(["user-profile", "user-settings"]);
     });
 
     it("should be case-insensitive", async () => {
-      // Act
       const results = await searchDiagrams("USER");
 
-      // Assert
       expect(results).toHaveLength(2);
     });
 
     it("should trim query whitespace", async () => {
-      // Act
       const results = await searchDiagrams("  admin  ");
 
-      // Assert
       expect(results).toHaveLength(1);
       expect(results[0].id).toBe("admin-dashboard");
     });
 
     it("should return empty array for no matches", async () => {
-      // Act
       const results = await searchDiagrams("nonexistent");
 
-      // Assert
       expect(results).toEqual([]);
     });
   });
@@ -279,36 +239,28 @@ describe("Diagram Service", () => {
       // Arrange
       await createTestDiagram("test-diagram", "svg");
 
-      // Act
       const exists = await diagramExists("test-diagram");
 
-      // Assert
       expect(exists).toBe(true);
     });
 
     it("should return false for non-existent diagram", async () => {
-      // Act
       const exists = await diagramExists("non-existent");
 
-      // Assert
       expect(exists).toBe(false);
     });
 
     it("should return false for invalid preview ID", async () => {
-      // Act
       const exists = await diagramExists("invalid..id");
 
-      // Assert
       expect(exists).toBe(false);
     });
   });
 
   describe("getDiagramCount", () => {
     it("should return 0 when no diagrams exist", async () => {
-      // Act
       const count = await getDiagramCount();
 
-      // Assert
       expect(count).toBe(0);
     });
 
@@ -318,10 +270,8 @@ describe("Diagram Service", () => {
       await createTestDiagram("diagram-2", "svg");
       await createTestDiagram("diagram-3", "svg");
 
-      // Act
       const count = await getDiagramCount();
 
-      // Assert
       expect(count).toBe(3);
     });
   });

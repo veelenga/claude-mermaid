@@ -209,7 +209,7 @@
       elements.openLiveButton.addEventListener("click", handleOpenMermaidLive);
     }
     if (elements.backToGalleryButton) {
-      elements.backToGalleryButton.addEventListener("click", function() {
+      elements.backToGalleryButton.addEventListener("click", function () {
         window.location.href = "/";
       });
     }

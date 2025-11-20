@@ -78,7 +78,6 @@ describe("Page Renderer", () => {
 
   describe("renderPage", () => {
     it("should render page with basic template variables", async () => {
-      // Arrange: Create test template
       const templateContent = `
 <!DOCTYPE html>
 <html>
@@ -96,14 +95,12 @@ describe("Page Renderer", () => {
       const actualPreviewDir = join(dirname(__dirname), "src", "preview");
       await writeFile(join(actualPreviewDir, "test-template.html"), templateContent);
 
-      // Act
       const html = await renderPage(
         "test-template.html",
         { PORT: 3737, CONTENT: "<div>Hello World</div>" },
         { title: "Test Page", includeNav: false, includeFooter: false }
       );
 
-      // Assert
       expect(html).toContain("<title>Test Page</title>");
       expect(html).toContain("<div>Hello World</div>");
 
@@ -112,21 +109,19 @@ describe("Page Renderer", () => {
     });
 
     it("should not escape content template (for SVG/HTML rendering)", async () => {
-      // Arrange
       // Note: Content templates are processed with escape=false to allow HTML/SVG content
       // This is intentional for rendering diagrams and navigation
       const templateContent = "<div>{{CONTENT}}</div>";
       const actualPreviewDir = join(dirname(__dirname), "src", "preview");
       await writeFile(join(actualPreviewDir, "no-escape-test.html"), templateContent);
 
-      // Act
       const html = await renderPage(
         "no-escape-test.html",
         { PORT: 3737, CONTENT: "<svg>test</svg>" },
         { includeNav: false, includeFooter: false }
       );
 
-      // Assert - Content should not be escaped to allow SVG rendering
+      // Content should not be escaped to allow SVG rendering
       expect(html).toContain("<svg>test</svg>");
       expect(html).not.toContain("&lt;svg&gt;");
 
@@ -135,19 +130,16 @@ describe("Page Renderer", () => {
     });
 
     it("should include navigation when requested", async () => {
-      // Arrange
       const templateContent = "{{NAV}}<div>Content</div>";
       const actualPreviewDir = join(dirname(__dirname), "src", "preview");
       await writeFile(join(actualPreviewDir, "nav-test.html"), templateContent);
 
-      // Act
       const html = await renderPage(
         "nav-test.html",
         { PORT: 3737 },
         { includeNav: true, includeFooter: false }
       );
 
-      // Assert
       expect(html).toContain('<nav class="nav">');
       expect(html).toContain('href="http://localhost:3737/"');
 
@@ -156,19 +148,16 @@ describe("Page Renderer", () => {
     });
 
     it("should include footer when requested", async () => {
-      // Arrange
       const templateContent = "<div>Content</div>{{FOOTER}}";
       const actualPreviewDir = join(dirname(__dirname), "src", "preview");
       await writeFile(join(actualPreviewDir, "footer-test.html"), templateContent);
 
-      // Act
       const html = await renderPage(
         "footer-test.html",
         { PORT: 3737 },
         { includeNav: false, includeFooter: true }
       );
 
-      // Assert
       expect(html).toContain('<footer class="footer">');
       expect(html).toContain("Claude Mermaid");
 
@@ -177,19 +166,16 @@ describe("Page Renderer", () => {
     });
 
     it("should include custom styles", async () => {
-      // Arrange
       const templateContent = "{{PAGE_STYLES}}<div>Content</div>";
       const actualPreviewDir = join(dirname(__dirname), "src", "preview");
       await writeFile(join(actualPreviewDir, "styles-test.html"), templateContent);
 
-      // Act
       const html = await renderPage(
         "styles-test.html",
         { PORT: 3737 },
         { styles: ["/shared.css", "/custom.css"], includeNav: false, includeFooter: false }
       );
 
-      // Assert
       expect(html).toContain('<link rel="stylesheet" href="/shared.css">');
       expect(html).toContain('<link rel="stylesheet" href="/custom.css">');
 
@@ -198,19 +184,16 @@ describe("Page Renderer", () => {
     });
 
     it("should include custom scripts", async () => {
-      // Arrange
       const templateContent = "<div>Content</div>{{PAGE_SCRIPTS}}";
       const actualPreviewDir = join(dirname(__dirname), "src", "preview");
       await writeFile(join(actualPreviewDir, "scripts-test.html"), templateContent);
 
-      // Act
       const html = await renderPage(
         "scripts-test.html",
         { PORT: 3737 },
         { scripts: ["/app.js", "/utils.js"], includeNav: false, includeFooter: false }
       );
 
-      // Assert
       expect(html).toContain('<script src="/app.js"></script>');
       expect(html).toContain('<script src="/utils.js"></script>');
 
@@ -219,26 +202,22 @@ describe("Page Renderer", () => {
     });
 
     it("should handle missing template gracefully", async () => {
-      // Act & Assert
       await expect(
         renderPage("non-existent.html", {}, { includeNav: false, includeFooter: false })
       ).rejects.toThrow();
     });
 
     it("should replace all occurrences of template variables", async () => {
-      // Arrange
       const templateContent = "{{VAR}} and {{VAR}} and {{VAR}}";
       const actualPreviewDir = join(dirname(__dirname), "src", "preview");
       await writeFile(join(actualPreviewDir, "multiple-vars.html"), templateContent);
 
-      // Act
       const html = await renderPage(
         "multiple-vars.html",
         { VAR: "test" },
         { includeNav: false, includeFooter: false }
       );
 
-      // Assert
       expect(html).toBe("test and test and test");
 
       // Cleanup
@@ -246,19 +225,16 @@ describe("Page Renderer", () => {
     });
 
     it("should handle undefined values gracefully", async () => {
-      // Arrange
       const templateContent = "Value: {{UNDEFINED_VAR}}";
       const actualPreviewDir = join(dirname(__dirname), "src", "preview");
       await writeFile(join(actualPreviewDir, "undefined-test.html"), templateContent);
 
-      // Act
       const html = await renderPage(
         "undefined-test.html",
         { UNDEFINED_VAR: undefined },
         { includeNav: false, includeFooter: false }
       );
 
-      // Assert
       expect(html).toBe("Value: ");
 
       // Cleanup
@@ -266,15 +242,12 @@ describe("Page Renderer", () => {
     });
 
     it("should use default options when not provided", async () => {
-      // Arrange
       const templateContent = "<title>{{PAGE_TITLE}}</title>{{NAV}}{{FOOTER}}";
       const actualPreviewDir = join(dirname(__dirname), "src", "preview");
       await writeFile(join(actualPreviewDir, "defaults-test.html"), templateContent);
 
-      // Act
       const html = await renderPage("defaults-test.html", { PORT: 3737 });
 
-      // Assert
       expect(html).toContain("<title>Claude Mermaid</title>"); // Default title
       expect(html).toContain('<nav class="nav">'); // includeNav defaults to true
       // includeFooter defaults to false, so footer should be empty
@@ -286,7 +259,6 @@ describe("Page Renderer", () => {
 
   describe("clearTemplateCache", () => {
     it("should clear cached templates", async () => {
-      // Arrange: Render a page to cache the template
       const templateContent = "Original: {{VALUE}}";
       const actualPreviewDir = join(dirname(__dirname), "src", "preview");
       const templatePath = join(actualPreviewDir, "cache-test.html");
@@ -305,7 +277,6 @@ describe("Page Renderer", () => {
       // Without clearing cache, should still use old template
       // (Note: This test might be fragile depending on caching implementation)
 
-      // Act: Clear cache
       clearTemplateCache();
 
       // Render again - should use new template
@@ -315,7 +286,6 @@ describe("Page Renderer", () => {
         { includeNav: false, includeFooter: false }
       );
 
-      // Assert
       expect(html2).toContain("Updated: second");
 
       // Cleanup

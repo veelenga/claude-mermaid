@@ -4,19 +4,19 @@
  */
 
 // Get port from script tag data attribute
-const currentScript = document.currentScript || document.querySelector('script[data-port]');
-const SERVER_PORT = currentScript ? currentScript.getAttribute('data-port') : '3737';
+const currentScript = document.currentScript || document.querySelector("script[data-port]");
+const SERVER_PORT = currentScript ? currentScript.getAttribute("data-port") : "3737";
 
 // State
 let allDiagrams = [];
 let filteredDiagrams = [];
 
 // DOM Elements
-const galleryEl = document.getElementById('gallery');
-const emptyStateEl = document.getElementById('emptyState');
-const noResultsEl = document.getElementById('noResults');
-const searchInput = document.getElementById('searchInput');
-const diagramCountEl = document.getElementById('diagramCount');
+const galleryEl = document.getElementById("gallery");
+const emptyStateEl = document.getElementById("emptyState");
+const noResultsEl = document.getElementById("noResults");
+const searchInput = document.getElementById("searchInput");
+const diagramCountEl = document.getElementById("diagramCount");
 
 /**
  * Formats a date as relative time (e.g., "2 hours ago")
@@ -29,10 +29,10 @@ function formatRelativeTime(date) {
   const diffHour = Math.floor(diffMin / 60);
   const diffDay = Math.floor(diffHour / 24);
 
-  if (diffSec < 60) return 'just now';
+  if (diffSec < 60) return "just now";
   if (diffMin < 60) return `${diffMin} min ago`;
-  if (diffHour < 24) return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
-  if (diffDay < 7) return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`;
+  if (diffHour < 24) return `${diffHour} hour${diffHour > 1 ? "s" : ""} ago`;
+  if (diffDay < 7) return `${diffDay} day${diffDay > 1 ? "s" : ""} ago`;
 
   return new Date(date).toLocaleDateString();
 }
@@ -50,28 +50,28 @@ function formatFileSize(bytes) {
  * Creates a diagram card element
  */
 function createDiagramCard(diagram) {
-  const card = document.createElement('a');
-  card.className = 'diagram-card';
+  const card = document.createElement("a");
+  card.className = "diagram-card";
   // Use /view/ route which works for all diagrams
   card.href = `/view/${diagram.id}`;
   card.dataset.diagramId = diagram.id;
 
   // Preview section
-  const preview = document.createElement('div');
-  preview.className = 'diagram-preview';
+  const preview = document.createElement("div");
+  preview.className = "diagram-preview";
 
-  if (diagram.format === 'svg') {
+  if (diagram.format === "svg") {
     // Load SVG preview from the file system via fetch
     fetch(`/view/${diagram.id}`)
-      .then(response => response.text())
-      .then(html => {
+      .then((response) => response.text())
+      .then((html) => {
         // Extract SVG from the HTML response
         const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-        const svg = doc.querySelector('svg');
+        const doc = parser.parseFromString(html, "text/html");
+        const svg = doc.querySelector("svg");
         if (svg) {
           // Clone and append the SVG
-          preview.innerHTML = '';
+          preview.innerHTML = "";
           preview.appendChild(svg.cloneNode(true));
         } else {
           preview.innerHTML = '<div class="diagram-preview-placeholder">📊</div>';
@@ -86,26 +86,26 @@ function createDiagramCard(diagram) {
   }
 
   // Info section
-  const info = document.createElement('div');
-  info.className = 'diagram-info';
+  const info = document.createElement("div");
+  info.className = "diagram-info";
 
-  const id = document.createElement('h3');
-  id.className = 'diagram-id';
+  const id = document.createElement("h3");
+  id.className = "diagram-id";
   id.textContent = diagram.id;
 
-  const meta = document.createElement('div');
-  meta.className = 'diagram-meta';
+  const meta = document.createElement("div");
+  meta.className = "diagram-meta";
 
-  const format = document.createElement('span');
-  format.className = 'diagram-meta-item';
+  const format = document.createElement("span");
+  format.className = "diagram-meta-item";
   format.innerHTML = `<span class="diagram-format">${diagram.format}</span>`;
 
-  const modified = document.createElement('span');
-  modified.className = 'diagram-meta-item';
+  const modified = document.createElement("span");
+  modified.className = "diagram-meta-item";
   modified.innerHTML = `📅 ${formatRelativeTime(diagram.modifiedAt)}`;
 
-  const size = document.createElement('span');
-  size.className = 'diagram-meta-item';
+  const size = document.createElement("span");
+  size.className = "diagram-meta-item";
   size.innerHTML = `💾 ${formatFileSize(diagram.sizeBytes)}`;
 
   meta.appendChild(format);
@@ -126,29 +126,29 @@ function createDiagramCard(diagram) {
  */
 function renderGallery() {
   // Clear gallery
-  galleryEl.innerHTML = '';
+  galleryEl.innerHTML = "";
 
   // Update count
-  diagramCountEl.textContent = `${filteredDiagrams.length} diagram${filteredDiagrams.length !== 1 ? 's' : ''}`;
+  diagramCountEl.textContent = `${filteredDiagrams.length} diagram${filteredDiagrams.length !== 1 ? "s" : ""}`;
 
   // Show appropriate state
   if (allDiagrams.length === 0) {
     // No diagrams at all
-    galleryEl.style.display = 'none';
-    emptyStateEl.style.display = 'block';
-    noResultsEl.style.display = 'none';
+    galleryEl.style.display = "none";
+    emptyStateEl.style.display = "block";
+    noResultsEl.style.display = "none";
   } else if (filteredDiagrams.length === 0) {
     // No results from search
-    galleryEl.style.display = 'none';
-    emptyStateEl.style.display = 'none';
-    noResultsEl.style.display = 'block';
+    galleryEl.style.display = "none";
+    emptyStateEl.style.display = "none";
+    noResultsEl.style.display = "block";
   } else {
     // Show diagrams
-    galleryEl.style.display = 'grid';
-    emptyStateEl.style.display = 'none';
-    noResultsEl.style.display = 'none';
+    galleryEl.style.display = "grid";
+    emptyStateEl.style.display = "none";
+    noResultsEl.style.display = "none";
 
-    filteredDiagrams.forEach(diagram => {
+    filteredDiagrams.forEach((diagram) => {
       const card = createDiagramCard(diagram);
       galleryEl.appendChild(card);
     });
@@ -163,7 +163,7 @@ function filterDiagrams(query) {
     filteredDiagrams = [...allDiagrams];
   } else {
     const normalizedQuery = query.toLowerCase().trim();
-    filteredDiagrams = allDiagrams.filter(diagram =>
+    filteredDiagrams = allDiagrams.filter((diagram) =>
       diagram.id.toLowerCase().includes(normalizedQuery)
     );
   }
@@ -187,7 +187,7 @@ async function loadDiagrams() {
 
     renderGallery();
   } catch (error) {
-    console.error('Failed to load diagrams:', error);
+    console.error("Failed to load diagrams:", error);
     galleryEl.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">⚠️</div>
@@ -215,7 +215,7 @@ function debounce(func, wait) {
 
 // Event Listeners
 searchInput.addEventListener(
-  'input',
+  "input",
   debounce((e) => {
     filterDiagrams(e.target.value);
   }, 300)

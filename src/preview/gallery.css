@@ -167,11 +167,27 @@ body {
 }
 
 /* Stagger animation for cards */
-.diagram-card:nth-child(1) { animation-delay: 0ms; }
-.diagram-card:nth-child(2) { animation-delay: 50ms; }
-.diagram-card:nth-child(3) { animation-delay: 100ms; }
-.diagram-card:nth-child(4) { animation-delay: 150ms; }
-.diagram-card:nth-child(5) { animation-delay: 200ms; }
-.diagram-card:nth-child(6) { animation-delay: 250ms; }
-.diagram-card:nth-child(7) { animation-delay: 300ms; }
-.diagram-card:nth-child(8) { animation-delay: 350ms; }
+.diagram-card:nth-child(1) {
+  animation-delay: 0ms;
+}
+.diagram-card:nth-child(2) {
+  animation-delay: 50ms;
+}
+.diagram-card:nth-child(3) {
+  animation-delay: 100ms;
+}
+.diagram-card:nth-child(4) {
+  animation-delay: 150ms;
+}
+.diagram-card:nth-child(5) {
+  animation-delay: 200ms;
+}
+.diagram-card:nth-child(6) {
+  animation-delay: 250ms;
+}
+.diagram-card:nth-child(7) {
+  animation-delay: 300ms;
+}
+.diagram-card:nth-child(8) {
+  animation-delay: 350ms;
+}

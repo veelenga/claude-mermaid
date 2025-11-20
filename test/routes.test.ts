@@ -146,14 +146,11 @@ describe("Routes", () => {
 
     describe("handleGallery", () => {
       it("should render gallery page with correct content type", async () => {
-        // Arrange
         vi.spyOn(pageRenderer, "renderPage").mockResolvedValue("<html>Gallery Page</html>");
         const context: RouteContext = { req: mockReq, res: mockRes, url: "/", port: 3737 };
 
-        // Act
         await handleGallery(context);
 
-        // Assert
         expect(statusCode).toBe(200);
         expect(responseHeaders["Content-Type"]).toBe("text/html");
         expect(responseHeaders["Content-Security-Policy"]).toBeDefined();
@@ -161,14 +158,11 @@ describe("Routes", () => {
       });
 
       it("should pass correct port to template", async () => {
-        // Arrange
         const renderSpy = vi.spyOn(pageRenderer, "renderPage").mockResolvedValue("<html></html>");
         const context: RouteContext = { req: mockReq, res: mockRes, url: "/", port: 3740 };
 
-        // Act
         await handleGallery(context);
 
-        // Assert
         expect(renderSpy).toHaveBeenCalledWith(
           expect.any(String),
           expect.objectContaining({ PORT: 3740 }),
@@ -177,14 +171,11 @@ describe("Routes", () => {
       });
 
       it("should handle rendering errors gracefully", async () => {
-        // Arrange
         vi.spyOn(pageRenderer, "renderPage").mockRejectedValue(new Error("Template not found"));
         const context: RouteContext = { req: mockReq, res: mockRes, url: "/", port: 3737 };
 
-        // Act
         await handleGallery(context);
 
-        // Assert
         expect(statusCode).toBe(500);
         expect(responseHeaders["Content-Type"]).toBe("text/plain");
         expect(responseData).toContain("Error loading gallery");
@@ -193,7 +184,6 @@ describe("Routes", () => {
 
     describe("handleApiDiagrams", () => {
       it("should return JSON list of diagrams", async () => {
-        // Arrange
         const mockDiagrams = [
           {
             id: "test-1",
@@ -216,10 +206,8 @@ describe("Routes", () => {
           port: 3737,
         };
 
-        // Act
         await handleApiDiagrams(context);
 
-        // Assert
         expect(statusCode).toBe(200);
         expect(responseHeaders["Content-Type"]).toBe("application/json");
         expect(responseHeaders["Cache-Control"]).toBe("no-store");
@@ -230,7 +218,6 @@ describe("Routes", () => {
       });
 
       it("should handle empty diagram list", async () => {
-        // Arrange
         vi.spyOn(diagramService, "listDiagrams").mockResolvedValue([]);
         const context: RouteContext = {
           req: mockReq,
@@ -239,10 +226,8 @@ describe("Routes", () => {
           port: 3737,
         };
 
-        // Act
         await handleApiDiagrams(context);
 
-        // Assert
         expect(statusCode).toBe(200);
         const json = JSON.parse(responseData);
         expect(json.diagrams).toEqual([]);
@@ -250,10 +235,7 @@ describe("Routes", () => {
       });
 
       it("should handle service errors gracefully", async () => {
-        // Arrange
-        vi.spyOn(diagramService, "listDiagrams").mockRejectedValue(
-          new Error("Database error")
-        );
+        vi.spyOn(diagramService, "listDiagrams").mockRejectedValue(new Error("Database error"));
         const context: RouteContext = {
           req: mockReq,
           res: mockRes,
@@ -261,10 +243,8 @@ describe("Routes", () => {
           port: 3737,
         };
 
-        // Act
         await handleApiDiagrams(context);
 
-        // Assert
         expect(statusCode).toBe(500);
         expect(responseHeaders["Content-Type"]).toBe("application/json");
         const json = JSON.parse(responseData);
@@ -273,35 +253,7 @@ describe("Routes", () => {
     });
 
     describe("Static Asset Handlers", () => {
-      let testPreviewDir: string;
-
-      beforeEach(async () => {
-        // Create temporary preview directory with test files
-        const srcDir = join(dirname(__dirname), "src");
-        testPreviewDir = join(srcDir, "preview");
-
-        // Ensure preview directory exists
-        await mkdir(testPreviewDir, { recursive: true });
-
-        // Create test CSS files
-        await writeFile(join(testPreviewDir, "shared.css"), "body { margin: 0; }");
-        await writeFile(join(testPreviewDir, "gallery.css"), ".gallery { display: grid; }");
-        await writeFile(join(testPreviewDir, "gallery.js"), "console.log('gallery');");
-      });
-
-      afterEach(async () => {
-        // Cleanup test files
-        try {
-          await unlink(join(testPreviewDir, "shared.css"));
-          await unlink(join(testPreviewDir, "gallery.css"));
-          await unlink(join(testPreviewDir, "gallery.js"));
-        } catch (error) {
-          // Ignore cleanup errors
-        }
-      });
-
       it("handleSharedCss should serve CSS file", async () => {
-        // Arrange
         const context: RouteContext = {
           req: mockReq,
           res: mockRes,
@@ -309,17 +261,15 @@ describe("Routes", () => {
           port: 3737,
         };
 
-        // Act
         await handleSharedCss(context);
 
-        // Assert
         expect(statusCode).toBe(200);
         expect(responseHeaders["Content-Type"]).toBe("text/css");
-        expect(responseData).toContain("body { margin: 0; }");
+        expect(responseData).toContain("/* ===== Base Styles ===== */");
+        expect(responseData).toContain("body {");
       });
 
       it("handleGalleryCss should serve CSS file", async () => {
-        // Arrange
         const context: RouteContext = {
           req: mockReq,
           res: mockRes,
@@ -327,17 +277,15 @@ describe("Routes", () => {
           port: 3737,
         };
 
-        // Act
         await handleGalleryCss(context);
 
-        // Assert
         expect(statusCode).toBe(200);
         expect(responseHeaders["Content-Type"]).toBe("text/css");
-        expect(responseData).toContain(".gallery { display: grid; }");
+        expect(responseData).toContain(".gallery-grid");
+        expect(responseData).toContain("grid-template-columns");
       });
 
       it("handleGalleryJs should serve JavaScript file", async () => {
-        // Arrange
         const context: RouteContext = {
           req: mockReq,
           res: mockRes,
@@ -345,13 +293,12 @@ describe("Routes", () => {
           port: 3737,
         };
 
-        // Act
         await handleGalleryJs(context);
 
-        // Assert
         expect(statusCode).toBe(200);
         expect(responseHeaders["Content-Type"]).toBe("application/javascript");
-        expect(responseData).toContain("console.log('gallery')");
+        expect(responseData).toContain("function renderGallery");
+        expect(responseData).toContain("loadDiagrams");
       });
     });
   });

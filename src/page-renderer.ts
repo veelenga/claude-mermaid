@@ -58,11 +58,7 @@ export function escapeHtml(unsafe: string): string {
  * @param escape Whether to HTML-escape values (default: true)
  * @returns Processed template
  */
-function replaceVariables(
-  template: string,
-  data: PageData,
-  escape: boolean = true
-): string {
+function replaceVariables(template: string, data: PageData, escape: boolean = true): string {
   let result = template;
 
   for (const [key, value] of Object.entries(data)) {
@@ -127,14 +123,10 @@ export async function renderPage(
     const contentHtml = await loadTemplate(contentTemplate);
 
     // Generate style links
-    const styleLinks = styles
-      .map((style) => `<link rel="stylesheet" href="${style}">`)
-      .join("\n");
+    const styleLinks = styles.map((style) => `<link rel="stylesheet" href="${style}">`).join("\n");
 
     // Generate script tags
-    const scriptTags = scripts
-      .map((script) => `<script src="${script}"></script>`)
-      .join("\n");
+    const scriptTags = scripts.map((script) => `<script src="${script}"></script>`).join("\n");
 
     // Generate navigation if requested
     const nav = includeNav && data.PORT ? generateNav(Number(data.PORT)) : "";
@@ -167,7 +159,9 @@ export async function renderPage(
     webLogger.error(`Failed to render page: ${contentTemplate}`, {
       error: error instanceof Error ? error.message : String(error),
     });
-    throw new Error(`Page rendering failed: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Page rendering failed: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 

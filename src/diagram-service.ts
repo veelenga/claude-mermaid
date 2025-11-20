@@ -104,9 +104,7 @@ export async function searchDiagrams(query: string): Promise<DiagramInfo[]> {
   const allDiagrams = await listDiagrams();
   const normalizedQuery = query.toLowerCase().trim();
 
-  return allDiagrams.filter((diagram) =>
-    diagram.id.toLowerCase().includes(normalizedQuery)
-  );
+  return allDiagrams.filter((diagram) => diagram.id.toLowerCase().includes(normalizedQuery));
 }
 
 /**
