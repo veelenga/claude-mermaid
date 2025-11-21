@@ -11,6 +11,7 @@ import {
   DIR_NAMES,
 } from "./constants.js";
 import type { DiagramOptions } from "./types.js";
+import { webLogger } from "./logger.js";
 
 export function getConfigDir(): string {
   const xdg = process.env.XDG_CONFIG_HOME;
@@ -89,6 +90,31 @@ export async function loadDiagramOptions(previewId: string): Promise<DiagramOpti
 }
 
 /**
+ * Helper function to delete a directory and all its contents
+ * @param dirPath - The absolute path to the directory to delete
+ */
+async function deleteDiagramDirectory(dirPath: string): Promise<void> {
+  const files = await readdir(dirPath);
+  for (const file of files) {
+    await unlink(join(dirPath, file));
+  }
+  await rmdir(dirPath);
+}
+
+export async function deleteDiagram(previewId: string): Promise<void> {
+  validatePreviewId(previewId);
+  const dirPath = getPreviewDir(previewId);
+
+  try {
+    await deleteDiagramDirectory(dirPath);
+  } catch (error) {
+    throw new Error(
+      `Failed to delete diagram: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
+}
+
+/**
  * Validates a save path to prevent path traversal and writing to sensitive locations
  * @param savePath - The path where the user wants to save the file
  * @throws Error if the path is invalid or dangerous
@@ -140,23 +166,24 @@ export async function cleanupOldDiagrams(
           const age = now - stats.mtimeMs;
 
           if (age > maxAgeMs) {
-            const files = await readdir(dirPath);
-            for (const file of files) {
-              await unlink(join(dirPath, file));
-            }
-            await rmdir(dirPath);
-            console.error(`Cleaned up old diagram: ${entry.name}`);
+            await deleteDiagramDirectory(dirPath);
+            webLogger.info(`Cleaned up old diagram: ${entry.name}`);
             cleanedCount++;
           }
         } catch (error) {
-          // Ignore errors for individual directories
+          // Log but continue if individual diagram cleanup fails
+          webLogger.debug(`Skipping diagram cleanup: ${entry.name}`, {
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
       }
     }
 
     return cleanedCount;
   } catch (error) {
-    console.error("Cleanup warning:", error instanceof Error ? error.message : String(error));
+    webLogger.warn("Diagram cleanup failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return 0;
   }
 }

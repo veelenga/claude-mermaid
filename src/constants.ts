@@ -48,6 +48,7 @@ export const ROUTES = {
   ROOT: "/",
   GALLERY: "/",
   API_DIAGRAMS: "/api/diagrams",
+  API_DIAGRAM_DELETE: "/api/diagrams/", // + :id
   VIEW: "/view/",
   MERMAID_LIVE: "/mermaid-live/",
   FAVICON_SVG: "/favicon.svg",

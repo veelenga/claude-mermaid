@@ -69,12 +69,13 @@ describe("Routes", () => {
     });
 
     it("should handle routes with query parameters", () => {
-      // Note: matchRoute does exact matching, so query params make it not match
-      // In practice, the server strips query params before matching
+      // /api/diagrams uses non-exact matching, so query params are included
+      // The handler is responsible for parsing and ignoring query params
       const routeWithQuery = matchRoute("/api/diagrams?search=test");
-      expect(routeWithQuery).toBeNull(); // Doesn't match with query string
+      expect(routeWithQuery).not.toBeNull();
+      expect(routeWithQuery!.path).toBe(ROUTES.API_DIAGRAMS);
 
-      // But without query params it matches
+      // Without query params also matches
       const route = matchRoute("/api/diagrams");
       expect(route).not.toBeNull();
       expect(route!.path).toBe(ROUTES.API_DIAGRAMS);

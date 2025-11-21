@@ -50,17 +50,69 @@ body {
   border-radius: var(--border-radius-md);
   overflow: hidden;
   transition: all var(--transition-fast);
-  cursor: pointer;
-  text-decoration: none;
   color: inherit;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .diagram-card:hover {
   border-color: var(--border-color-hover);
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.diagram-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  cursor: pointer;
+}
+
+/* ===== Diagram Actions ===== */
+.diagram-actions {
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  display: flex;
+  gap: var(--spacing-xs);
+  z-index: 10;
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+}
+
+.diagram-card:hover .diagram-actions {
+  opacity: 1;
+}
+
+.diagram-action-btn {
+  background: rgba(0, 0, 0, 0.7);
+  border: none;
+  border-radius: var(--border-radius-sm);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all var(--transition-fast);
+  backdrop-filter: blur(4px);
+}
+
+.diagram-action-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: scale(1.1);
+}
+
+.diagram-action-btn:active {
+  transform: scale(0.95);
+}
+
+.delete-btn:hover {
+  background: rgba(220, 53, 69, 0.9);
 }
 
 .diagram-preview {
@@ -148,46 +200,4 @@ body {
   .gallery-grid {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
-}
-
-/* ===== Animation ===== */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.diagram-card {
-  animation: fadeIn var(--transition-medium) ease-out;
-}
-
-/* Stagger animation for cards */
-.diagram-card:nth-child(1) {
-  animation-delay: 0ms;
-}
-.diagram-card:nth-child(2) {
-  animation-delay: 50ms;
-}
-.diagram-card:nth-child(3) {
-  animation-delay: 100ms;
-}
-.diagram-card:nth-child(4) {
-  animation-delay: 150ms;
-}
-.diagram-card:nth-child(5) {
-  animation-delay: 200ms;
-}
-.diagram-card:nth-child(6) {
-  animation-delay: 250ms;
-}
-.diagram-card:nth-child(7) {
-  animation-delay: 300ms;
-}
-.diagram-card:nth-child(8) {
-  animation-delay: 350ms;
 }

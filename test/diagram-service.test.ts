@@ -10,6 +10,7 @@ import {
   searchDiagrams,
   diagramExists,
   getDiagramCount,
+  deleteDiagram,
 } from "../src/diagram-service.js";
 import * as fileUtils from "../src/file-utils.js";
 import { readdir, stat, mkdir, writeFile, rmdir, unlink, utimes } from "fs/promises";
@@ -282,6 +283,77 @@ describe("Diagram Service", () => {
       const count = await getDiagramCount();
 
       expect(count).toBe(3);
+    });
+  });
+
+  describe("deleteDiagram", () => {
+    it("should delete an existing diagram", async () => {
+      await createTestDiagram("test-diagram", "svg");
+
+      // Verify diagram exists
+      let exists = await diagramExists("test-diagram");
+      expect(exists).toBe(true);
+
+      // Delete the diagram
+      await deleteDiagram("test-diagram");
+
+      // Verify diagram no longer exists
+      exists = await diagramExists("test-diagram");
+      expect(exists).toBe(false);
+    });
+
+    it("should delete all files in the diagram directory", async () => {
+      const diagramDir = join(testLiveDir, "test-diagram");
+      await mkdir(diagramDir, { recursive: true });
+      await writeFile(join(diagramDir, "diagram.svg"), "<svg>test</svg>");
+      await writeFile(join(diagramDir, "diagram.mmd"), "graph TD");
+      await writeFile(join(diagramDir, "options.json"), "{}");
+
+      // Delete the diagram
+      await deleteDiagram("test-diagram");
+
+      // Verify directory no longer exists
+      const dirExists = await stat(diagramDir)
+        .then(() => true)
+        .catch(() => false);
+      expect(dirExists).toBe(false);
+    });
+
+    it("should remove diagram from list after deletion", async () => {
+      await createTestDiagram("diagram-1", "svg");
+      await createTestDiagram("diagram-2", "svg");
+      await createTestDiagram("diagram-3", "svg");
+
+      let diagrams = await listDiagrams();
+      expect(diagrams).toHaveLength(3);
+
+      // Delete middle diagram
+      await deleteDiagram("diagram-2");
+
+      diagrams = await listDiagrams();
+      expect(diagrams).toHaveLength(2);
+      expect(diagrams.map((d) => d.id).sort()).toEqual(["diagram-1", "diagram-3"]);
+    });
+
+    it("should throw error for non-existent diagram", async () => {
+      await expect(deleteDiagram("non-existent")).rejects.toThrow();
+    });
+
+    it("should throw error for invalid preview ID", async () => {
+      await expect(deleteDiagram("invalid..id")).rejects.toThrow();
+    });
+
+    it("should decrement diagram count after deletion", async () => {
+      await createTestDiagram("diagram-1", "svg");
+      await createTestDiagram("diagram-2", "svg");
+
+      let count = await getDiagramCount();
+      expect(count).toBe(2);
+
+      await deleteDiagram("diagram-1");
+
+      count = await getDiagramCount();
+      expect(count).toBe(1);
     });
   });
 

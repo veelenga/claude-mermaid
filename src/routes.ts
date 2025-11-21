@@ -10,7 +10,7 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { RouteContext } from "./types.js";
 import { renderPage } from "./page-renderer.js";
-import { listDiagrams } from "./diagram-service.js";
+import { listDiagrams, deleteDiagram } from "./diagram-service.js";
 import {
   ROUTES,
   CONTENT_TYPES,
@@ -114,6 +114,60 @@ export async function handleApiDiagrams(context: RouteContext): Promise<void> {
 }
 
 /**
+ * API: Delete Diagram
+ * Handles deletion of individual diagrams
+ */
+export async function handleApiDiagramDelete(context: RouteContext): Promise<void> {
+  const { req, res, url } = context;
+
+  // If it's exactly /api/diagrams, delegate to the list handler
+  if (url === "/api/diagrams") {
+    return handleApiDiagrams(context);
+  }
+
+  // Check for delete action: DELETE /api/diagrams/:id
+  const deleteMatch = url.match(/^\/api\/diagrams\/([^\/]+)$/);
+  if (deleteMatch) {
+    if (req.method !== "DELETE") {
+      res.writeHead(405, { "Content-Type": CONTENT_TYPES.JSON });
+      res.end(JSON.stringify({ error: "Method not allowed" }));
+      return;
+    }
+
+    try {
+      const diagramId = deleteMatch[1];
+      webLogger.debug(`API request: delete diagram ${diagramId}`);
+
+      await deleteDiagram(diagramId);
+
+      res.writeHead(200, {
+        "Content-Type": CONTENT_TYPES.JSON,
+        "Cache-Control": CACHE_CONTROL.NO_STORE,
+      });
+      res.end(JSON.stringify({ success: true }));
+
+      webLogger.info(`API: Deleted diagram ${diagramId}`);
+    } catch (error) {
+      webLogger.error("API error: delete diagram", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      res.writeHead(500, { "Content-Type": CONTENT_TYPES.JSON });
+      res.end(
+        JSON.stringify({
+          error: "Failed to delete diagram",
+          message: error instanceof Error ? error.message : String(error),
+        })
+      );
+    }
+    return;
+  }
+
+  // No match found
+  res.writeHead(404, { "Content-Type": CONTENT_TYPES.JSON });
+  res.end(JSON.stringify({ error: "Not found" }));
+}
+
+/**
  * Static Asset Handlers
  */
 
@@ -192,7 +246,7 @@ export interface Route {
 
 export const ROUTE_CONFIG: Route[] = [
   { path: ROUTES.ROOT, exact: true, handler: handleGallery },
-  { path: ROUTES.API_DIAGRAMS, exact: true, handler: handleApiDiagrams },
+  { path: ROUTES.API_DIAGRAMS, handler: handleApiDiagramDelete }, // Handles /api/diagrams/* including exact match
   { path: ROUTES.SHARED_STYLE, exact: true, handler: handleSharedCss },
   { path: ROUTES.GALLERY_STYLE, exact: true, handler: handleGalleryCss },
   { path: ROUTES.GALLERY_SCRIPT, exact: true, handler: handleGalleryJs },
