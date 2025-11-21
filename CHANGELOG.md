@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Diagram gallery
+- Ability to delete a diagram
+
 ## [1.2.0] - 2025-11-01
 
 ### Added

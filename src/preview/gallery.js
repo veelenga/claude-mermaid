@@ -18,6 +18,12 @@ const noResultsEl = document.getElementById("noResults");
 const searchInput = document.getElementById("searchInput");
 const diagramCountEl = document.getElementById("diagramCount");
 
+// Messages
+const MESSAGES = {
+  DELETE_CONFIRM: (id) => `Are you sure you want to delete diagram "${id}"?`,
+  DELETE_FAILED: (error) => `Failed to delete diagram: ${error}`,
+};
+
 /**
  * Formats a date as relative time (e.g., "2 hours ago")
  */
@@ -50,11 +56,30 @@ function formatFileSize(bytes) {
  * Creates a diagram card element
  */
 function createDiagramCard(diagram) {
-  const card = document.createElement("a");
+  const card = document.createElement("div");
   card.className = "diagram-card";
-  // Use /view/ route which works for all diagrams
-  card.href = `/view/${diagram.id}`;
   card.dataset.diagramId = diagram.id;
+
+  // Action buttons
+  const actions = document.createElement("div");
+  actions.className = "diagram-actions";
+
+  const deleteBtn = document.createElement("button");
+  deleteBtn.className = "diagram-action-btn delete-btn";
+  deleteBtn.innerHTML = "🗑️";
+  deleteBtn.title = "Delete";
+  deleteBtn.onclick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    deleteDiagram(diagram.id);
+  };
+
+  actions.appendChild(deleteBtn);
+
+  // Card link wrapper for preview and info
+  const cardLink = document.createElement("a");
+  cardLink.href = `/view/${diagram.id}`;
+  cardLink.className = "diagram-card-link";
 
   // Preview section
   const preview = document.createElement("div");
@@ -115,8 +140,11 @@ function createDiagramCard(diagram) {
   info.appendChild(id);
   info.appendChild(meta);
 
-  card.appendChild(preview);
-  card.appendChild(info);
+  cardLink.appendChild(preview);
+  cardLink.appendChild(info);
+
+  card.appendChild(actions);
+  card.appendChild(cardLink);
 
   return card;
 }
@@ -195,6 +223,37 @@ async function loadDiagrams() {
         <p class="empty-state-description">${error.message}</p>
       </div>
     `;
+  }
+}
+
+/**
+ * Deletes a diagram
+ */
+async function deleteDiagram(diagramId) {
+  if (!confirm(MESSAGES.DELETE_CONFIRM(diagramId))) {
+    return;
+  }
+
+  try {
+    const response = await fetch(`http://localhost:${SERVER_PORT}/api/diagrams/${diagramId}`, {
+      method: "DELETE",
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    // Remove from the list
+    const index = allDiagrams.findIndex((d) => d.id === diagramId);
+    if (index !== -1) {
+      allDiagrams.splice(index, 1);
+    }
+
+    // Re-filter and render
+    filterDiagrams(searchInput.value);
+  } catch (error) {
+    console.error("Failed to delete diagram:", error);
+    alert(MESSAGES.DELETE_FAILED(error.message));
   }
 }
 

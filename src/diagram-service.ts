@@ -5,7 +5,12 @@
 
 import { readdir, stat } from "fs/promises";
 import { join } from "path";
-import { getLiveDir, validatePreviewId, getDiagramFilePath } from "./file-utils.js";
+import {
+  getLiveDir,
+  validatePreviewId,
+  getDiagramFilePath,
+  deleteDiagram as deleteDiagramFiles,
+} from "./file-utils.js";
 import { DIAGRAM_FORMATS } from "./constants.js";
 import { DiagramInfo } from "./types.js";
 import { webLogger } from "./logger.js";
@@ -41,7 +46,7 @@ export async function listDiagrams(): Promise<DiagramInfo[]> {
       }
     }
 
-    // Sort by modification time, newest first
+    // Sort by modification time (newest first)
     diagrams.sort((a, b) => b.modifiedAt.getTime() - a.modifiedAt.getTime());
 
     webLogger.debug(`Listed ${diagrams.length} diagrams`);
@@ -129,4 +134,30 @@ export async function diagramExists(previewId: string): Promise<boolean> {
 export async function getDiagramCount(): Promise<number> {
   const diagrams = await listDiagrams();
   return diagrams.length;
+}
+
+/**
+ * Deletes a diagram and all its associated files
+ * @param previewId The diagram ID
+ */
+export async function deleteDiagram(previewId: string): Promise<void> {
+  try {
+    validatePreviewId(previewId);
+
+    // Check if diagram exists
+    const info = await getDiagramInfo(previewId);
+    if (!info) {
+      throw new Error(`Diagram not found: ${previewId}`);
+    }
+
+    // Delete the diagram
+    await deleteDiagramFiles(previewId);
+
+    webLogger.info(`Deleted diagram: ${previewId}`);
+  } catch (error) {
+    webLogger.error(`Error deleting diagram: ${previewId}`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
 }
