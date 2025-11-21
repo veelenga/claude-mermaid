@@ -17,6 +17,7 @@
     statusIndicator: document.getElementById("status-indicator"),
     resetButton: document.getElementById("reset-pan"),
     openLiveButton: document.getElementById("open-mermaid-live"),
+    backToGalleryButton: document.getElementById("back-to-gallery"),
   };
 
   // ===== Pan/Zoom State =====
@@ -207,6 +208,11 @@
     if (elements.openLiveButton) {
       elements.openLiveButton.addEventListener("click", handleOpenMermaidLive);
     }
+    if (elements.backToGalleryButton) {
+      elements.backToGalleryButton.addEventListener("click", function () {
+        window.location.href = "/";
+      });
+    }
   }
 
   function initializeWebSocket() {
@@ -221,6 +227,21 @@
     initializePanZoom();
     initializeWebSocket();
   }
+
+  // Cleanup on page unload
+  function cleanup() {
+    if (wsState.connection) {
+      wsState.connection.close();
+      wsState.connection = null;
+    }
+    if (wsState.reconnectInterval) {
+      clearInterval(wsState.reconnectInterval);
+      wsState.reconnectInterval = null;
+    }
+  }
+
+  // Register cleanup handler
+  window.addEventListener("beforeunload", cleanup);
 
   // Start the application
   initialize();

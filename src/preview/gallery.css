@@ -1,0 +1,193 @@
+/**
+ * Gallery-specific styles
+ * Extends shared.css with gallery page components
+ */
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===== Gallery Header ===== */
+.gallery-header {
+  margin-bottom: var(--spacing-lg);
+}
+
+.gallery-title {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.gallery-subtitle {
+  margin: var(--spacing-sm) 0 0 0;
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+/* ===== Gallery Stats ===== */
+.gallery-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) 0;
+}
+
+/* ===== Gallery Grid ===== */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+/* ===== Diagram Card ===== */
+.diagram-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md);
+  overflow: hidden;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+}
+
+.diagram-card:hover {
+  border-color: var(--border-color-hover);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.diagram-preview {
+  width: 100%;
+  height: 200px;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.diagram-preview svg {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+}
+
+.diagram-preview-placeholder {
+  color: var(--text-tertiary);
+  font-size: 48px;
+  opacity: 0.3;
+}
+
+.diagram-info {
+  padding: var(--spacing-md);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.diagram-id {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 var(--spacing-sm) 0;
+  word-break: break-word;
+}
+
+.diagram-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  margin-top: auto;
+}
+
+.diagram-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.diagram-format {
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--accent-color);
+}
+
+/* ===== Responsive Design ===== */
+@media (max-width: 768px) {
+  .gallery-title {
+    font-size: 24px;
+  }
+
+  .gallery-subtitle {
+    font-size: 14px;
+  }
+
+  .gallery-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+
+  .container {
+    padding: var(--spacing-md);
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .gallery-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  }
+}
+
+/* ===== Animation ===== */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.diagram-card {
+  animation: fadeIn var(--transition-medium) ease-out;
+}
+
+/* Stagger animation for cards */
+.diagram-card:nth-child(1) {
+  animation-delay: 0ms;
+}
+.diagram-card:nth-child(2) {
+  animation-delay: 50ms;
+}
+.diagram-card:nth-child(3) {
+  animation-delay: 100ms;
+}
+.diagram-card:nth-child(4) {
+  animation-delay: 150ms;
+}
+.diagram-card:nth-child(5) {
+  animation-delay: 200ms;
+}
+.diagram-card:nth-child(6) {
+  animation-delay: 250ms;
+}
+.diagram-card:nth-child(7) {
+  animation-delay: 300ms;
+}
+.diagram-card:nth-child(8) {
+  animation-delay: 350ms;
+}
