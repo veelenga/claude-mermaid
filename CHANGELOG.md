@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Diagram gallery
 - Ability to delete a diagram
 
+### Fixed
+
+- Fixed "could not determine executable to run" error when mermaid-cli is not installed globally by using the scoped package name `@mermaid-js/mermaid-cli` instead of `mmdc`
+
 ## [1.2.0] - 2025-11-01
 
 ### Added
