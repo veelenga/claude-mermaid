@@ -50,7 +50,7 @@ async function renderDiagram(options: RenderOptions, liveFilePath: string): Prom
 
   const args = [
     "-y",
-    "mmdc",
+    "@mermaid-js/mermaid-cli",
     "-i",
     inputFile,
     "-o",
