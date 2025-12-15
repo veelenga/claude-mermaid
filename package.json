@@ -46,7 +46,7 @@
     "ws": "^8.18.3"
   },
   "devDependencies": {
-    "@types/node": "^24.6.0",
+    "@types/node": "^25.0.2",
     "@types/pako": "^2.0.4",
     "@types/ws": "^8.18.1",
     "prettier": "^3.6.2",
