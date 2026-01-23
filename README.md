@@ -360,6 +360,7 @@ npm start
 This is a rare environment-specific issue. Try these solutions:
 
 1. **Install claude-mermaid globally**:
+
    ```bash
    npm install -g claude-mermaid
    ```
