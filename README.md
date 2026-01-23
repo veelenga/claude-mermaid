@@ -355,6 +355,21 @@ npm start
 
 ## 📝 Troubleshooting
 
+**Error: Cannot find package 'puppeteer':**
+
+This is a rare environment-specific issue. Try these solutions:
+
+1. **Install claude-mermaid globally**:
+   ```bash
+   npm install -g claude-mermaid
+   ```
+
+2. **Reinstall the plugin** in Claude Code:
+   ```
+   /plugin uninstall claude-mermaid
+   /plugin install claude-mermaid@claude-mermaid
+   ```
+
 **Server not connecting:**
 
 ```bash
