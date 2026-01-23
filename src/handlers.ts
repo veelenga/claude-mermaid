@@ -49,8 +49,7 @@ async function renderDiagram(options: RenderOptions, liveFilePath: string): Prom
   await writeFile(inputFile, diagram, "utf-8");
 
   const args = [
-    "-y",
-    "@mermaid-js/mermaid-cli",
+    "mmdc",
     "-i",
     inputFile,
     "-o",
