@@ -445,3 +445,9 @@ MIT - see [LICENSE](LICENSE) file for details
 - [npm Package](https://www.npmjs.com/package/claude-mermaid)
 - [Claude Code Documentation](https://docs.claude.com/claude-code)
 - [Mermaid Documentation](https://mermaid.js.org/)
+
+## 👀 See Also
+
+If you like this project, you might also be interested in
+
+- [preview-skills](https://github.com/veelenga/preview-skills) — preview skills for visualizing files in the browser (markdown, csv, json, mermaid and more)
