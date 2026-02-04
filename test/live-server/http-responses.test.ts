@@ -48,6 +48,7 @@ describe("Live server responses", () => {
     expect(cspHeader).toContain("default-src 'none'");
     expect(cspHeader).toContain("script-src 'self'");
     expect(cspHeader).toContain("style-src 'self' 'unsafe-inline'");
+    expect(cspHeader).toContain("img-src 'self' data: blob:");
     expect(cspHeader).toContain("connect-src 'self' ws://localhost:*");
   });
 

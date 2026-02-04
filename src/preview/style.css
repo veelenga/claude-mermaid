@@ -55,6 +55,53 @@ body {
   transform: none;
 }
 
+.export-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.export-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 4px;
+  background: rgba(30, 30, 30, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  padding: 4px 0;
+  min-width: 140px;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.export-menu.visible {
+  display: block;
+}
+
+.export-option {
+  display: block;
+  width: 100%;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.export-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.export-option:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
 .status-indicator {
   display: inline-block;
   width: 8px;
