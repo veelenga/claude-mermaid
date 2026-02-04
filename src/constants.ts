@@ -79,10 +79,10 @@ export const CACHE_CONTROL = {
 // - default-src 'none': Deny all by default
 // - script-src 'self': Only allow scripts from same origin
 // - style-src 'self' 'unsafe-inline': Allow CSS from same origin and inline styles
-// - img-src 'self' data:: Allow images from same origin and data URIs
+// - img-src 'self' data: blob:: Allow images from same origin, data URIs, and blob URLs (for PNG export)
 // - connect-src 'self' ws://localhost:*: Allow WebSocket connections
 export const CSP_HEADER =
-  "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws://localhost:*";
+  "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ws://localhost:*";
 
 // ===== Validation Patterns =====
 export const PREVIEW_ID_REGEX = /^[a-zA-Z0-9_-]+$/;
