@@ -336,6 +336,16 @@ The live server uses ports 3737-3747 and automatically finds an available port.
 - Live preview is available for `svg` format only; PNG/PDF are rendered without live reload.
 - For sequence diagrams, Mermaid does not support `style` directives inside `sequenceDiagram`.
 
+## 🖥️ Standalone server
+
+You can start the preview server without an AI agent using the `--serve` flag:
+
+```bash
+claude-mermaid --serve
+```
+
+This opens the diagram gallery in your browser with all previously rendered diagrams. Useful for browsing and exporting diagrams outside of a Claude Code session.
+
 ## 🛠️ Development
 
 ```bash

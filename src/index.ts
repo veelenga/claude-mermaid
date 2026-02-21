@@ -24,6 +24,13 @@ if (process.argv.includes("-v") || process.argv.includes("--version")) {
   process.exit(0);
 }
 
+const isServeMode = process.argv.includes("--serve");
+
+if (isServeMode) {
+  const { startServeMode } = await import("./serve.js");
+  await startServeMode();
+}
+
 const TOOL_DEFINITIONS: Tool[] = [
   {
     name: "mermaid_preview",
@@ -174,11 +181,13 @@ async function main() {
   console.error("Claude Mermaid MCP Server running on stdio");
 }
 
-main().catch((error) => {
-  mcpLogger.error("Fatal error during startup", {
-    error: error instanceof Error ? error.message : String(error),
-    stack: error instanceof Error ? error.stack : undefined,
+if (!isServeMode) {
+  main().catch((error) => {
+    mcpLogger.error("Fatal error during startup", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+    console.error("Fatal error:", error);
+    process.exit(1);
   });
-  console.error("Fatal error:", error);
-  process.exit(1);
-});
+}

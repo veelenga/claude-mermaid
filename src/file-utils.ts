@@ -145,6 +145,14 @@ export function validateSavePath(savePath: string): void {
   }
 }
 
+export function getOpenCommand(): string {
+  return process.platform === "darwin"
+    ? "open"
+    : process.platform === "win32"
+      ? "start"
+      : "xdg-open";
+}
+
 export async function cleanupOldDiagrams(
   maxAgeMs: number = TIMEOUTS.CLEANUP_MAX_AGE_MS
 ): Promise<number> {

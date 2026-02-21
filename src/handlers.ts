@@ -11,6 +11,7 @@ import {
   loadDiagramSource,
   loadDiagramOptions,
   validateSavePath,
+  getOpenCommand,
 } from "./file-utils.js";
 import { mcpLogger } from "./logger.js";
 
@@ -25,14 +26,6 @@ interface RenderOptions {
   width: number;
   height: number;
   scale: number;
-}
-
-function getOpenCommand(): string {
-  return process.platform === "darwin"
-    ? "open"
-    : process.platform === "win32"
-      ? "start"
-      : "xdg-open";
 }
 
 async function renderDiagram(options: RenderOptions, liveFilePath: string): Promise<void> {
