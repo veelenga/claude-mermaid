@@ -50,6 +50,7 @@ export const ROUTES = {
   API_DIAGRAMS: "/api/diagrams",
   API_DIAGRAM_DELETE: "/api/diagrams/", // + :id
   VIEW: "/view/",
+  EXPORT: "/export/",
   MERMAID_LIVE: "/mermaid-live/",
   FAVICON_SVG: "/favicon.svg",
   FAVICON_ICO: "/favicon.ico",
@@ -67,6 +68,7 @@ export const CONTENT_TYPES = {
   JAVASCRIPT: "application/javascript",
   JSON: "application/json",
   SVG: "image/svg+xml",
+  PNG: "image/png",
   PLAIN: "text/plain",
 } as const;
 

@@ -185,70 +185,29 @@
     downloadBlob(blob, getFilename("svg"));
   }
 
-  function getSvgDimensions(svg) {
-    const viewBox = svg.getAttribute("viewBox");
-    if (viewBox) {
-      const parts = viewBox.split(/\s+|,/).map(Number);
-      if (parts.length === 4) {
-        return { width: parts[2], height: parts[3] };
-      }
-    }
-
-    const width = svg.getAttribute("width");
-    const height = svg.getAttribute("height");
-    if (width && height) {
-      return {
-        width: parseFloat(width),
-        height: parseFloat(height),
-      };
-    }
-
-    const bbox = svg.getBBox();
-    return { width: bbox.width, height: bbox.height };
-  }
-
   function exportPng() {
-    if (!elements.svg) {
+    if (!config.diagramId) {
       alert("No diagram found to export.");
       return;
     }
 
-    const svgClone = elements.svg.cloneNode(true);
-    svgClone.removeAttribute("style");
+    const baseUrl = window.location.origin;
+    const exportUrl = `${baseUrl}/export/${encodeURIComponent(config.diagramId)}`;
 
-    const dimensions = getSvgDimensions(elements.svg);
-    svgClone.setAttribute("width", dimensions.width);
-    svgClone.setAttribute("height", dimensions.height);
-
-    const svgData = new XMLSerializer().serializeToString(svgClone);
-    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(svgBlob);
-
-    const img = new Image();
-    img.onload = function () {
-      const scale = 2;
-      const canvas = document.createElement("canvas");
-      canvas.width = dimensions.width * scale;
-      canvas.height = dimensions.height * scale;
-
-      const ctx = canvas.getContext("2d");
-      ctx.scale(scale, scale);
-      ctx.fillStyle = "white";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(img, 0, 0, dimensions.width, dimensions.height);
-
-      canvas.toBlob(function (blob) {
+    fetch(exportUrl)
+      .then(function (response) {
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        return response.blob();
+      })
+      .then(function (blob) {
         downloadBlob(blob, getFilename("png"));
-        URL.revokeObjectURL(url);
-      }, "image/png");
-    };
-
-    img.onerror = function () {
-      URL.revokeObjectURL(url);
-      alert("Failed to generate PNG. Try downloading as SVG instead.");
-    };
-
-    img.src = url;
+      })
+      .catch(function (error) {
+        console.error("PNG export failed", error);
+        alert("Failed to generate PNG. Try downloading as SVG instead.");
+      });
   }
 
   function handleExport(format) {

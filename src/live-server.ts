@@ -8,9 +8,11 @@ import { deflate } from "pako";
 import {
   loadDiagramOptions,
   getLiveDir,
+  getDiagramFilePath,
   loadDiagramSource,
   validatePreviewId,
 } from "./file-utils.js";
+import { renderDiagram } from "./handlers.js";
 import { webLogger } from "./logger.js";
 import { matchRoute } from "./routes.js";
 import { DiagramState } from "./types.js";
@@ -189,6 +191,59 @@ async function handleMermaidLiveRequest(url: string, res: ServerResponse): Promi
   }
 }
 
+async function handleExportPngRequest(url: string, res: ServerResponse): Promise<void> {
+  const rawId = url.substring(ROUTES.EXPORT.length);
+
+  if (!rawId) {
+    res.writeHead(400, { "Content-Type": CONTENT_TYPES.PLAIN });
+    res.end("Diagram ID is required");
+    return;
+  }
+
+  let diagramId: string;
+  try {
+    diagramId = decodeURIComponent(rawId);
+    validatePreviewId(diagramId);
+  } catch (error) {
+    webLogger.warn("Invalid export request", {
+      rawId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    res.writeHead(400, { "Content-Type": CONTENT_TYPES.PLAIN });
+    res.end("Invalid diagram ID");
+    return;
+  }
+
+  webLogger.debug(`PNG export request for: ${diagramId}`);
+
+  try {
+    const [diagram, options] = await Promise.all([
+      loadDiagramSource(diagramId),
+      loadDiagramOptions(diagramId).catch(() => DEFAULT_DIAGRAM_OPTIONS),
+    ]);
+
+    const pngPath = getDiagramFilePath(diagramId, "png");
+    await renderDiagram({ diagram, previewId: diagramId, format: "png", ...options }, pngPath);
+
+    const pngData = await readFile(pngPath);
+    res.writeHead(200, {
+      "Content-Type": CONTENT_TYPES.PNG,
+      "Content-Disposition": `attachment; filename="${diagramId}.png"`,
+      "Content-Length": pngData.byteLength,
+      "Cache-Control": CACHE_CONTROL.NO_STORE,
+    });
+    res.end(pngData);
+
+    webLogger.info(`Served PNG export for: ${diagramId}`);
+  } catch (error) {
+    webLogger.error(`PNG export failed for: ${diagramId}`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    res.writeHead(500, { "Content-Type": CONTENT_TYPES.PLAIN });
+    res.end("Failed to export PNG");
+  }
+}
+
 export async function ensureLiveServer(): Promise<number> {
   if (liveServer && liveServerPort) {
     webLogger.debug(`Reusing existing server on port ${liveServerPort}`);
@@ -221,6 +276,11 @@ export async function ensureLiveServer(): Promise<number> {
         const js = await readFile(SCRIPT_PATH, "utf-8");
         res.writeHead(200, { "Content-Type": CONTENT_TYPES.JAVASCRIPT });
         res.end(js);
+        return;
+      }
+
+      if (url.startsWith(ROUTES.EXPORT)) {
+        await handleExportPngRequest(url, res);
         return;
       }
 
