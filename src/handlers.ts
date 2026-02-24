@@ -17,7 +17,7 @@ import { mcpLogger } from "./logger.js";
 
 const execFileAsync = promisify(execFile);
 
-interface RenderOptions {
+export interface RenderOptions {
   diagram: string;
   previewId: string;
   format: string;
@@ -28,7 +28,7 @@ interface RenderOptions {
   scale: number;
 }
 
-async function renderDiagram(options: RenderOptions, liveFilePath: string): Promise<void> {
+export async function renderDiagram(options: RenderOptions, liveFilePath: string): Promise<void> {
   const { diagram, previewId, format, theme, background, width, height, scale } = options;
 
   mcpLogger.info(`Rendering diagram: ${previewId}`, { format, theme, width, height });
