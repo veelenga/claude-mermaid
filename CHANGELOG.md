@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-02-24
+
+### Added
+
+- Simple server mode to browse and manage diagrams without Claude (`npx claude-mermaid serve`)
+
+### Fixed
+
+- Fixed PNG export failing with "tainted canvas" SecurityError by rendering PNG server-side via mermaid-cli instead of using browser canvas conversion
+
 ## [1.4.0] - 2026-02-04
 
 ### Added
