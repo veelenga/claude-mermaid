@@ -9,13 +9,24 @@
     liveEnabled: document.body.dataset.liveEnabled === "true",
   };
 
+  // ===== Constants =====
+  const MIN_SCALE = 0.1;
+  const MAX_SCALE = 10;
+  const ZOOM_STEP = 0.1;
+  const WHEEL_ZOOM_FACTOR = 0.001;
+
   // ===== DOM Elements =====
   const elements = {
     viewport: document.querySelector(".viewport"),
+    diagramWrapper: document.querySelector(".diagram-wrapper"),
     svg: document.querySelector("svg"),
     statusText: document.getElementById("status-text"),
     statusIndicator: document.getElementById("status-indicator"),
     resetButton: document.getElementById("reset-pan"),
+    zoomInButton: document.getElementById("zoom-in"),
+    zoomOutButton: document.getElementById("zoom-out"),
+    zoomFitButton: document.getElementById("zoom-fit"),
+    zoomLevel: document.getElementById("zoom-level"),
     openLiveButton: document.getElementById("open-mermaid-live"),
     backToGalleryButton: document.getElementById("back-to-gallery"),
     exportButton: document.getElementById("export-btn"),
@@ -26,6 +37,7 @@
   const panState = {
     x: 0,
     y: 0,
+    scale: 1,
     isDragging: false,
     dragStartX: 0,
     dragStartY: 0,
@@ -40,18 +52,76 @@
   };
 
   // ===== Pan/Zoom Functions =====
-  function resetPan() {
-    panState.x = 0;
-    panState.y = 0;
-    if (elements.svg) {
-      elements.svg.style.transform = "";
+  function clampScale(value) {
+    return Math.min(MAX_SCALE, Math.max(MIN_SCALE, value));
+  }
+
+  function updateZoomLevel() {
+    if (elements.zoomLevel) {
+      elements.zoomLevel.textContent = `${Math.round(panState.scale * 100)}%`;
     }
   }
 
-  function updatePan() {
-    if (elements.svg) {
-      elements.svg.style.transform = `translate(${panState.x}px, ${panState.y}px)`;
+  function resetView() {
+    panState.x = 0;
+    panState.y = 0;
+    panState.scale = 1;
+    applyTransform();
+    updateZoomLevel();
+  }
+
+  function applyTransform() {
+    if (elements.diagramWrapper) {
+      elements.diagramWrapper.style.transform = `translate(${panState.x}px, ${panState.y}px) scale(${panState.scale})`;
     }
+  }
+
+  function zoomAtPoint(newScale, pivotX, pivotY) {
+    newScale = clampScale(newScale);
+    const ratio = 1 - newScale / panState.scale;
+    panState.x += (pivotX - panState.x) * ratio;
+    panState.y += (pivotY - panState.y) * ratio;
+    panState.scale = newScale;
+    applyTransform();
+    updateZoomLevel();
+  }
+
+  function zoomAtCenter(newScale) {
+    if (!elements.viewport) return;
+    const rect = elements.viewport.getBoundingClientRect();
+    zoomAtPoint(newScale, rect.width / 2, rect.height / 2);
+  }
+
+  function zoomToFit() {
+    if (!elements.viewport || !elements.svg) return;
+    const viewportRect = elements.viewport.getBoundingClientRect();
+    const svgWidth = elements.svg.getBBox().width;
+    const svgHeight = elements.svg.getBBox().height;
+    if (svgWidth === 0 || svgHeight === 0) return;
+
+    const padding = 40;
+    const availableWidth = viewportRect.width - padding * 2;
+    const availableHeight = viewportRect.height - padding * 2;
+    const fitScale = clampScale(Math.min(availableWidth / svgWidth, availableHeight / svgHeight));
+
+    panState.scale = fitScale;
+    panState.x = 0;
+    panState.y = 0;
+    applyTransform();
+    updateZoomLevel();
+  }
+
+  function handleWheel(e) {
+    if (!elements.viewport) return;
+    e.preventDefault();
+
+    const rect = elements.viewport.getBoundingClientRect();
+    const pivotX = e.clientX - rect.left;
+    const pivotY = e.clientY - rect.top;
+
+    const delta = -e.deltaY * WHEEL_ZOOM_FACTOR;
+    const newScale = panState.scale * (1 + delta);
+    zoomAtPoint(newScale, pivotX, pivotY);
   }
 
   function handleMouseDown(e) {
@@ -72,10 +142,10 @@
 
   function handleMouseMove(e) {
     if (!elements.viewport) return;
-    if (panState.isDragging && elements.svg) {
+    if (panState.isDragging) {
       panState.x = e.clientX - panState.dragStartX;
       panState.y = e.clientY - panState.dragStartY;
-      updatePan();
+      applyTransform();
     }
   }
 
@@ -281,10 +351,24 @@
       elements.viewport.addEventListener("mousedown", handleMouseDown);
       document.addEventListener("mouseup", handleMouseUp);
       elements.viewport.addEventListener("mousemove", handleMouseMove);
+      elements.viewport.addEventListener("wheel", handleWheel, { passive: false });
       elements.viewport.style.cursor = "grab";
     }
     if (elements.resetButton) {
-      elements.resetButton.addEventListener("click", resetPan);
+      elements.resetButton.addEventListener("click", resetView);
+    }
+    if (elements.zoomInButton) {
+      elements.zoomInButton.addEventListener("click", function () {
+        zoomAtCenter(panState.scale + ZOOM_STEP);
+      });
+    }
+    if (elements.zoomOutButton) {
+      elements.zoomOutButton.addEventListener("click", function () {
+        zoomAtCenter(panState.scale - ZOOM_STEP);
+      });
+    }
+    if (elements.zoomFitButton) {
+      elements.zoomFitButton.addEventListener("click", zoomToFit);
     }
     if (elements.openLiveButton) {
       elements.openLiveButton.addEventListener("click", handleOpenMermaidLive);
