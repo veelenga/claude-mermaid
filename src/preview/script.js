@@ -12,7 +12,7 @@
   // ===== Constants =====
   const MIN_SCALE = 0.1;
   const MAX_SCALE = 10;
-  const ZOOM_STEP = 0.1;
+  const ZOOM_BUTTON_FACTOR = 1.2;
   const WHEEL_ZOOM_FACTOR = 0.001;
 
   // ===== DOM Elements =====
@@ -91,6 +91,13 @@
     zoomAtPoint(newScale, rect.width / 2, rect.height / 2);
   }
 
+  function normalizeWheelDelta(e) {
+    var deltaY = e.deltaY;
+    if (e.deltaMode === 1) deltaY *= 40;
+    else if (e.deltaMode === 2) deltaY *= 800;
+    return deltaY;
+  }
+
   function handleWheel(e) {
     if (!elements.viewport) return;
     e.preventDefault();
@@ -99,7 +106,7 @@
     const pivotX = e.clientX - rect.left;
     const pivotY = e.clientY - rect.top;
 
-    const delta = -e.deltaY * WHEEL_ZOOM_FACTOR;
+    const delta = -normalizeWheelDelta(e) * WHEEL_ZOOM_FACTOR;
     const newScale = panState.scale * (1 + delta);
     zoomAtPoint(newScale, pivotX, pivotY);
   }
@@ -339,12 +346,12 @@
     }
     if (elements.zoomInButton) {
       elements.zoomInButton.addEventListener("click", function () {
-        zoomAtCenter(panState.scale + ZOOM_STEP);
+        zoomAtCenter(panState.scale * ZOOM_BUTTON_FACTOR);
       });
     }
     if (elements.zoomOutButton) {
       elements.zoomOutButton.addEventListener("click", function () {
-        zoomAtCenter(panState.scale - ZOOM_STEP);
+        zoomAtCenter(panState.scale / ZOOM_BUTTON_FACTOR);
       });
     }
     if (elements.openLiveButton) {
