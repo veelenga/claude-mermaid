@@ -89,6 +89,21 @@ describe("Preview template", () => {
     expect(template).toContain('<link rel="stylesheet" href="/style.css"');
     expect(template).toContain('<script src="/script.js"></script>');
   });
-});
 
-// Additional tests for CSS/JS assets could be added similarly if desired
+  it("contains zoom controls", async () => {
+    const { readFile } = await import("fs/promises");
+    const { join } = await import("path");
+    const { fileURLToPath } = await import("url");
+    const { dirname } = await import("path");
+
+    const template = await readFile(
+      join(dirname(fileURLToPath(import.meta.url)), "../../src/preview/template.html"),
+      "utf-8"
+    );
+
+    expect(template).toContain('id="zoom-in"');
+    expect(template).toContain('id="zoom-out"');
+    expect(template).toContain('id="zoom-level"');
+    expect(template).toContain('id="reset-pan"');
+  });
+});

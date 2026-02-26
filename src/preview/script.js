@@ -25,7 +25,6 @@
     resetButton: document.getElementById("reset-pan"),
     zoomInButton: document.getElementById("zoom-in"),
     zoomOutButton: document.getElementById("zoom-out"),
-    zoomFitButton: document.getElementById("zoom-fit"),
     zoomLevel: document.getElementById("zoom-level"),
     openLiveButton: document.getElementById("open-mermaid-live"),
     backToGalleryButton: document.getElementById("back-to-gallery"),
@@ -90,25 +89,6 @@
     if (!elements.viewport) return;
     const rect = elements.viewport.getBoundingClientRect();
     zoomAtPoint(newScale, rect.width / 2, rect.height / 2);
-  }
-
-  function zoomToFit() {
-    if (!elements.viewport || !elements.svg) return;
-    const viewportRect = elements.viewport.getBoundingClientRect();
-    const svgWidth = elements.svg.getBBox().width;
-    const svgHeight = elements.svg.getBBox().height;
-    if (svgWidth === 0 || svgHeight === 0) return;
-
-    const padding = 40;
-    const availableWidth = viewportRect.width - padding * 2;
-    const availableHeight = viewportRect.height - padding * 2;
-    const fitScale = clampScale(Math.min(availableWidth / svgWidth, availableHeight / svgHeight));
-
-    panState.scale = fitScale;
-    panState.x = 0;
-    panState.y = 0;
-    applyTransform();
-    updateZoomLevel();
   }
 
   function handleWheel(e) {
@@ -366,9 +346,6 @@
       elements.zoomOutButton.addEventListener("click", function () {
         zoomAtCenter(panState.scale - ZOOM_STEP);
       });
-    }
-    if (elements.zoomFitButton) {
-      elements.zoomFitButton.addEventListener("click", zoomToFit);
     }
     if (elements.openLiveButton) {
       elements.openLiveButton.addEventListener("click", handleOpenMermaidLive);
