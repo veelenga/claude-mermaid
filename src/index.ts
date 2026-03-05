@@ -10,7 +10,6 @@ import {
 import { readFile } from "fs/promises";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { cleanupOldDiagrams } from "./file-utils.js";
 import { handleMermaidPreview, handleMermaidSave } from "./handlers.js";
 import { mcpLogger } from "./logger.js";
 
@@ -169,11 +168,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
 async function main() {
   mcpLogger.info("MCP Server starting", { version: VERSION });
-
-  const cleanedCount = await cleanupOldDiagrams();
-  if (cleanedCount > 0) {
-    mcpLogger.info(`Cleaned up ${cleanedCount} old diagrams`);
-  }
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
