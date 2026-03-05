@@ -45,6 +45,9 @@
     "pako": "^2.1.0",
     "ws": "^8.18.3"
   },
+  "overrides": {
+    "dompurify": "github:cure53/DOMPurify#fca0a938b4261ddc9c0293a289935a9029c049f5"
+  },
   "devDependencies": {
     "@types/node": "^25.0.2",
     "@types/pako": "^2.0.4",
