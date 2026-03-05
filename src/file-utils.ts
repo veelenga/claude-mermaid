@@ -1,4 +1,4 @@
-import { readdir, unlink, stat, mkdir, readFile, writeFile, rmdir } from "fs/promises";
+import { readdir, unlink, readFile, writeFile, rmdir } from "fs/promises";
 import { join, resolve } from "path";
 import { tmpdir } from "os";
 import {
@@ -6,12 +6,10 @@ import {
   PREVIEW_ID_REGEX,
   UNIX_SYSTEM_PATHS,
   WINDOWS_SYSTEM_PATHS,
-  TIMEOUTS,
   FILE_NAMES,
   DIR_NAMES,
 } from "./constants.js";
 import type { DiagramOptions } from "./types.js";
-import { webLogger } from "./logger.js";
 
 export function getConfigDir(): string {
   const xdg = process.env.XDG_CONFIG_HOME;
@@ -151,47 +149,4 @@ export function getOpenCommand(): string {
     : process.platform === "win32"
       ? "start"
       : "xdg-open";
-}
-
-export async function cleanupOldDiagrams(
-  maxAgeMs: number = TIMEOUTS.CLEANUP_MAX_AGE_MS
-): Promise<number> {
-  try {
-    const liveDir = getLiveDir();
-    await mkdir(liveDir, { recursive: true });
-
-    const entries = await readdir(liveDir, { withFileTypes: true });
-    const now = Date.now();
-    let cleanedCount = 0;
-
-    for (const entry of entries) {
-      if (entry.isDirectory()) {
-        const dirPath = join(liveDir, entry.name);
-        const sourcePath = join(dirPath, FILE_NAMES.DIAGRAM_SOURCE);
-
-        try {
-          const stats = await stat(sourcePath);
-          const age = now - stats.mtimeMs;
-
-          if (age > maxAgeMs) {
-            await deleteDiagramDirectory(dirPath);
-            webLogger.info(`Cleaned up old diagram: ${entry.name}`);
-            cleanedCount++;
-          }
-        } catch (error) {
-          // Log but continue if individual diagram cleanup fails
-          webLogger.debug(`Skipping diagram cleanup: ${entry.name}`, {
-            error: error instanceof Error ? error.message : String(error),
-          });
-        }
-      }
-    }
-
-    return cleanedCount;
-  } catch (error) {
-    webLogger.warn("Diagram cleanup failed", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    return 0;
-  }
 }

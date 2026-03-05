@@ -103,11 +103,6 @@ export const UNIX_SYSTEM_PATHS = [
 
 export const WINDOWS_SYSTEM_PATHS = ["C:\\Windows", "C:\\Program Files"] as const;
 
-// ===== Timeouts and Intervals =====
-export const TIMEOUTS = {
-  CLEANUP_MAX_AGE_MS: 7 * 24 * 60 * 60 * 1000, // 7 days in milliseconds
-} as const;
-
 // ===== WebSocket Messages =====
 export const WS_MESSAGES = {
   RELOAD: "reload",

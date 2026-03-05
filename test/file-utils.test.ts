@@ -8,11 +8,10 @@ import {
   saveDiagramSource,
   loadDiagramSource,
   loadDiagramOptions,
-  cleanupOldDiagrams,
   getConfigDir,
   validateSavePath,
 } from "../src/file-utils.js";
-import { writeFile, unlink, mkdir, utimes, rmdir, readdir, mkdtemp } from "fs/promises";
+import { writeFile, unlink, mkdir, rmdir, readdir, mkdtemp } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -256,105 +255,6 @@ describe("File Utilities", () => {
       expect(loadedOptions.width).toBe(1024);
       expect(loadedOptions.height).toBe(768);
       expect(loadedOptions.scale).toBe(3);
-    });
-  });
-
-  describe("cleanupOldDiagrams", () => {
-    let tempDir: string;
-    let testFiles: string[];
-
-    beforeEach(async () => {
-      // Use a test-specific directory
-      tempDir = join(tmpdir(), "claude-mermaid-test-cleanup", Date.now().toString());
-      await mkdir(tempDir, { recursive: true });
-      testFiles = [];
-    });
-
-    afterEach(async () => {
-      // Clean up test files
-      for (const file of testFiles) {
-        try {
-          await unlink(file);
-        } catch {
-          // Ignore if file doesn't exist
-        }
-      }
-    });
-
-    it("should return 0 when no files to clean", async () => {
-      // Test with very short max age to simulate old files
-      const count = await cleanupOldDiagrams(0);
-      expect(count).toBeGreaterThanOrEqual(0);
-    });
-
-    it("should clean up files older than max age", async () => {
-      const oldFile = join(tempDir, "old-diagram.svg");
-      const newFile = join(tempDir, "new-diagram.svg");
-
-      // Create old file
-      await writeFile(oldFile, "<svg>old</svg>", "utf-8");
-      testFiles.push(oldFile);
-
-      // Set file modification time to 8 days ago
-      const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000);
-      await utimes(oldFile, eightDaysAgo, eightDaysAgo);
-
-      // Create new file
-      await writeFile(newFile, "<svg>new</svg>", "utf-8");
-      testFiles.push(newFile);
-
-      // This test verifies the cleanup logic works conceptually
-      // In practice, it cleans the actual live directory, not our test dir
-      const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
-      expect(maxAge).toBe(604800000);
-    });
-
-    it("should clean up directories with all their files", async () => {
-      const testPreviewId = "test-cleanup-dir";
-      const testDir = getPreviewDir(testPreviewId);
-
-      await mkdir(testDir, { recursive: true });
-      await writeFile(join(testDir, "diagram.svg"), "<svg>test</svg>", "utf-8");
-      await writeFile(join(testDir, "diagram.mmd"), "graph TD; A-->B", "utf-8");
-      await writeFile(join(testDir, "options.json"), "{}", "utf-8");
-
-      const files = await readdir(testDir);
-      expect(files.length).toBeGreaterThan(0);
-
-      // Cleanup test directory
-      for (const file of files) {
-        await unlink(join(testDir, file));
-      }
-      await rmdir(testDir);
-    });
-
-    it("should handle different max age values", () => {
-      const oneDayMs = 24 * 60 * 60 * 1000;
-      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-      const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-
-      expect(oneDayMs).toBe(86400000);
-      expect(sevenDaysMs).toBe(604800000);
-      expect(thirtyDaysMs).toBe(2592000000);
-    });
-
-    it("should use 7 days as default max age", () => {
-      const defaultMaxAge = 7 * 24 * 60 * 60 * 1000;
-      expect(defaultMaxAge).toBe(604800000);
-    });
-
-    it("should not throw errors when directory does not exist", async () => {
-      // The function creates the directory if it doesn't exist
-      await expect(cleanupOldDiagrams()).resolves.not.toThrow();
-    });
-
-    it("should calculate file age correctly", () => {
-      const now = Date.now();
-      const eightDaysAgo = now - 8 * 24 * 60 * 60 * 1000;
-      const age = now - eightDaysAgo;
-      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-
-      expect(age).toBeGreaterThan(sevenDaysMs);
     });
   });
 
