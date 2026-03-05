@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-03-05
+
+### Added
+
+- Zoom controls in diagram preview (scroll wheel, +/- buttons, zoom level indicator)
+- Touch support for panning diagrams on mobile devices
+
+### Fixed
+
+- Improved mobile layout for diagram preview (responsive status bar, better diagram sizing)
+- Gallery card actions now visible on touch devices without hover
+
+### Removed
+
+- Automatic diagram removal functionality
+
 ## [1.5.0] - 2026-02-24
 
 ### Added
