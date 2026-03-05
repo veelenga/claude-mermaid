@@ -147,3 +147,31 @@ svg {
   margin: 0 auto;
   pointer-events: none;
 }
+
+/* ===== Mobile layout ===== */
+@media (max-width: 640px) {
+  .status-bar {
+    height: auto;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  #last-update {
+    display: none;
+  }
+
+  .diagram-wrapper {
+    padding: 16px;
+  }
+
+  svg {
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 80px);
+  }
+
+  .export-menu {
+    left: auto;
+    right: 0;
+    transform: none;
+  }
+}

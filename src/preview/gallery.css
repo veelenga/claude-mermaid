@@ -201,3 +201,16 @@ body {
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
 }
+
+/* ===== Touch device actions ===== */
+@media (hover: none) {
+  .diagram-actions {
+    opacity: 1;
+  }
+
+  .diagram-action-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+}

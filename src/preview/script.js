@@ -136,6 +136,28 @@
     }
   }
 
+  // ===== Touch Event Handlers =====
+  function handleTouchStart(e) {
+    if (!elements.viewport || e.target.closest(".status-bar")) return;
+    if (e.touches.length !== 1) return;
+    panState.isDragging = true;
+    panState.dragStartX = e.touches[0].clientX - panState.x;
+    panState.dragStartY = e.touches[0].clientY - panState.y;
+    e.preventDefault();
+  }
+
+  function handleTouchMove(e) {
+    if (!panState.isDragging || e.touches.length !== 1) return;
+    panState.x = e.touches[0].clientX - panState.dragStartX;
+    panState.y = e.touches[0].clientY - panState.dragStartY;
+    applyTransform();
+    e.preventDefault();
+  }
+
+  function handleTouchEnd() {
+    panState.isDragging = false;
+  }
+
   // ===== Status Update Functions =====
   function setStatus(text, isConnected) {
     if (elements.statusText) {
@@ -339,6 +361,9 @@
       document.addEventListener("mouseup", handleMouseUp);
       elements.viewport.addEventListener("mousemove", handleMouseMove);
       elements.viewport.addEventListener("wheel", handleWheel, { passive: false });
+      elements.viewport.addEventListener("touchstart", handleTouchStart, { passive: false });
+      elements.viewport.addEventListener("touchmove", handleTouchMove, { passive: false });
+      elements.viewport.addEventListener("touchend", handleTouchEnd);
       elements.viewport.style.cursor = "grab";
     }
     if (elements.resetButton) {
