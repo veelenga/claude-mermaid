@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { handleMermaidPreview, handleMermaidSave } from "../src/handlers.js";
+import { handleMermaidPreview, handleMermaidSave, renderDiagram } from "../src/handlers.js";
 import { getPreviewDir, getDiagramFilePath } from "../src/file-utils.js";
 import { mkdir, readdir, unlink, access, mkdtemp } from "fs/promises";
 import { join } from "path";
+import { execFile } from "child_process";
 import { tmpdir } from "os";
 
 // Mock execFile to avoid actually running mmdc and create fake output files
@@ -171,6 +172,29 @@ describe("handleMermaidPreview", () => {
     });
 
     expect(result.content[0].text).toContain("Live preview is only available for SVG");
+  });
+
+  it("should include stderr details in error when rendering fails", async () => {
+    const mockExecFile = vi.mocked(execFile);
+    const originalImpl = mockExecFile.getMockImplementation()!;
+
+    // Temporarily make execFile fail with stderr containing parse error details
+    mockExecFile.mockImplementation((_file: string, _args: any, callback: any) => {
+      const error: any = new Error("Command failed: npx mmdc");
+      error.stderr = "Parse error on line 3: invalid syntax near 'graph'";
+      callback(error, { stdout: "", stderr: error.stderr });
+    });
+
+    const result = await handleMermaidPreview({
+      diagram: "invalid diagram syntax",
+      preview_id: testPreviewId,
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Parse error on line 3");
+
+    // Restore original mock
+    mockExecFile.mockImplementation(originalImpl);
   });
 });
 
