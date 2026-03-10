@@ -11,26 +11,18 @@ import {
   getConfigDir,
   validateSavePath,
 } from "../src/file-utils.js";
-import { writeFile, unlink, mkdir, rmdir, readdir, mkdtemp } from "fs/promises";
+import { unlink, mkdir, rmdir, readdir, mkdtemp, rm } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
+import { setupTestEnv, restoreTestEnv } from "./helpers/env-helpers.js";
 
 describe("File Utilities", () => {
-  let originalHome: string | undefined;
-
-  // Ensure tests operate in a temporary HOME to avoid touching real config
   beforeAll(async () => {
-    originalHome = process.env.HOME;
-    const tempHome = await mkdtemp(join(tmpdir(), "claude-mermaid-test-home-"));
-    process.env.HOME = tempHome;
+    await setupTestEnv();
   });
 
   afterAll(() => {
-    if (originalHome) {
-      process.env.HOME = originalHome;
-    } else {
-      delete process.env.HOME;
-    }
+    restoreTestEnv();
   });
   describe("getLiveDir", () => {
     it("should return path containing .config/claude-mermaid/live", () => {
@@ -217,15 +209,7 @@ describe("File Utilities", () => {
     });
 
     afterEach(async () => {
-      try {
-        const files = await readdir(testDir);
-        for (const file of files) {
-          await unlink(join(testDir, file));
-        }
-        await rmdir(testDir);
-      } catch {
-        // Ignore errors
-      }
+      await rm(testDir, { recursive: true, force: true }).catch(() => {});
     });
 
     it("should save and load diagram source", async () => {

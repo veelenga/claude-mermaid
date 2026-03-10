@@ -1,37 +1,30 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { handleMermaidPreview, handleMermaidSave } from "../src/handlers.js";
 import { getPreviewDir, getDiagramFilePath } from "../src/file-utils.js";
-import { mkdir, readdir, unlink, access, mkdtemp } from "fs/promises";
-import { join } from "path";
+import { readdir, unlink, access } from "fs/promises";
 import { execFile } from "child_process";
-import { tmpdir } from "os";
+import { setupTestEnvWithPreview, restoreTestEnv } from "./helpers/env-helpers.js";
 
 // Mock execFile to avoid actually running mmdc and create fake output files
 vi.mock("child_process", () => ({
   execFile: vi.fn((_file: string, args: string[], callback: Function) => {
-    // Find the output file from args array
     const outputIndex = args.indexOf("-o");
     if (outputIndex !== -1 && outputIndex + 1 < args.length) {
       const outputFile = args[outputIndex + 1];
-      // Create a fake output file synchronously
       const fs = require("fs");
       const path = require("path");
       const dir = path.dirname(outputFile);
 
-      // Ensure directory exists
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
       }
 
-      // Write fake content based on file extension
       const ext = path.extname(outputFile);
       if (ext === ".svg") {
         fs.writeFileSync(outputFile, "<svg>test</svg>", "utf-8");
       } else if (ext === ".png") {
-        // Write minimal PNG header
         fs.writeFileSync(outputFile, Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]));
       } else if (ext === ".pdf") {
-        // Write minimal PDF header
         fs.writeFileSync(outputFile, "%PDF-1.4\n", "utf-8");
       } else {
         fs.writeFileSync(outputFile, "test", "utf-8");
@@ -44,7 +37,6 @@ vi.mock("child_process", () => ({
   }),
 }));
 
-// Mock live server functions
 vi.mock("../src/live-server.js", () => ({
   ensureLiveServer: vi.fn(async () => 3737),
   addLiveDiagram: vi.fn(async () => {}),
@@ -54,53 +46,24 @@ vi.mock("../src/live-server.js", () => ({
 describe("handleMermaidPreview", () => {
   const testPreviewId = "test-preview";
   let testDir: string;
-  let originalHome: string | undefined;
-  let originalXdgConfig: string | undefined;
 
   beforeEach(async () => {
-    // Override config dirs to use a temp HOME/XDG path for isolation
-    originalHome = process.env.HOME;
-    originalXdgConfig = process.env.XDG_CONFIG_HOME;
-    const tempHome = await mkdtemp(join(tmpdir(), "claude-mermaid-test-home-"));
-    const tempConfigDir = join(tempHome, ".config");
-    process.env.HOME = tempHome;
-    process.env.XDG_CONFIG_HOME = tempConfigDir;
-
-    await mkdir(tempConfigDir, { recursive: true });
-    testDir = getPreviewDir(testPreviewId);
-    await mkdir(testDir, { recursive: true });
+    testDir = await setupTestEnvWithPreview(testPreviewId);
   });
 
-  afterEach(async () => {
-    // Restore original config env vars
-    if (originalHome) {
-      process.env.HOME = originalHome;
-    } else {
-      delete process.env.HOME;
-    }
-
-    if (originalXdgConfig) {
-      process.env.XDG_CONFIG_HOME = originalXdgConfig;
-    } else {
-      delete process.env.XDG_CONFIG_HOME;
-    }
+  afterEach(() => {
+    restoreTestEnv();
   });
 
   it("should throw error when diagram parameter is missing", async () => {
     await expect(
-      handleMermaidPreview({
-        diagram: undefined,
-        preview_id: testPreviewId,
-      })
+      handleMermaidPreview({ diagram: undefined, preview_id: testPreviewId })
     ).rejects.toThrow("diagram parameter is required");
   });
 
   it("should throw error when preview_id parameter is missing", async () => {
     await expect(
-      handleMermaidPreview({
-        diagram: "graph TD; A-->B",
-        preview_id: undefined,
-      })
+      handleMermaidPreview({ diagram: "graph TD; A-->B", preview_id: undefined })
     ).rejects.toThrow("preview_id parameter is required");
   });
 
@@ -176,69 +139,44 @@ describe("handleMermaidPreview", () => {
 
   it("should include stderr details in error when rendering fails", async () => {
     const mockExecFile = vi.mocked(execFile);
-    const originalImpl = mockExecFile.getMockImplementation()!;
+    mockExecFile.mockImplementationOnce((_file: string, _args: any, callback: any) => {
+      const error: any = new Error("Command failed: npx mmdc");
+      error.stderr = "Parse error on line 3: invalid syntax near 'graph'";
+      callback(error, { stdout: "", stderr: error.stderr });
+    });
 
-    try {
-      mockExecFile.mockImplementation((_file: string, _args: any, callback: any) => {
-        const error: any = new Error("Command failed: npx mmdc");
-        error.stderr = "Parse error on line 3: invalid syntax near 'graph'";
-        callback(error, { stdout: "", stderr: error.stderr });
-      });
+    const result = await handleMermaidPreview({
+      diagram: "invalid diagram syntax",
+      preview_id: testPreviewId,
+    });
 
-      const result = await handleMermaidPreview({
-        diagram: "invalid diagram syntax",
-        preview_id: testPreviewId,
-      });
-
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("Parse error on line 3");
-      expect(result.content[0].text).toContain("Command failed");
-    } finally {
-      mockExecFile.mockImplementation(originalImpl);
-    }
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Parse error on line 3");
+    expect(result.content[0].text).toContain("Command failed");
   });
 
   it("should show original error message when stderr is empty", async () => {
     const mockExecFile = vi.mocked(execFile);
-    const originalImpl = mockExecFile.getMockImplementation()!;
+    mockExecFile.mockImplementationOnce((_file: string, _args: any, callback: any) => {
+      const error = new Error("Command failed: npx mmdc");
+      callback(error, { stdout: "", stderr: "" });
+    });
 
-    try {
-      mockExecFile.mockImplementation((_file: string, _args: any, callback: any) => {
-        const error = new Error("Command failed: npx mmdc");
-        callback(error, { stdout: "", stderr: "" });
-      });
+    const result = await handleMermaidPreview({
+      diagram: "invalid diagram syntax",
+      preview_id: testPreviewId,
+    });
 
-      const result = await handleMermaidPreview({
-        diagram: "invalid diagram syntax",
-        preview_id: testPreviewId,
-      });
-
-      expect(result.isError).toBe(true);
-      expect(result.content[0].text).toContain("Command failed");
-    } finally {
-      mockExecFile.mockImplementation(originalImpl);
-    }
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Command failed");
   });
 });
 
 describe("handleMermaidSave", () => {
   const testPreviewId = "test-save";
-  let testDir: string;
-  let originalHome: string | undefined;
-  let originalXdgConfig: string | undefined;
 
   beforeEach(async () => {
-    // Override config dirs to use a temp HOME/XDG path for isolation
-    originalHome = process.env.HOME;
-    originalXdgConfig = process.env.XDG_CONFIG_HOME;
-    const tempHome = await mkdtemp(join(tmpdir(), "claude-mermaid-test-home-"));
-    const tempConfigDir = join(tempHome, ".config");
-    process.env.HOME = tempHome;
-    process.env.XDG_CONFIG_HOME = tempConfigDir;
-
-    await mkdir(tempConfigDir, { recursive: true });
-    testDir = getPreviewDir(testPreviewId);
-    await mkdir(testDir, { recursive: true });
+    await setupTestEnvWithPreview(testPreviewId);
 
     await handleMermaidPreview({
       diagram: "graph TD; A-->B",
@@ -247,36 +185,19 @@ describe("handleMermaidSave", () => {
     });
   });
 
-  afterEach(async () => {
-    // Restore original config env vars
-    if (originalHome) {
-      process.env.HOME = originalHome;
-    } else {
-      delete process.env.HOME;
-    }
-
-    if (originalXdgConfig) {
-      process.env.XDG_CONFIG_HOME = originalXdgConfig;
-    } else {
-      delete process.env.XDG_CONFIG_HOME;
-    }
+  afterEach(() => {
+    restoreTestEnv();
   });
 
   it("should throw error when save_path parameter is missing", async () => {
     await expect(
-      handleMermaidSave({
-        save_path: undefined,
-        preview_id: testPreviewId,
-      })
+      handleMermaidSave({ save_path: undefined, preview_id: testPreviewId })
     ).rejects.toThrow("save_path parameter is required");
   });
 
   it("should throw error when preview_id parameter is missing", async () => {
     await expect(
-      handleMermaidSave({
-        save_path: "./test.svg",
-        preview_id: undefined,
-      })
+      handleMermaidSave({ save_path: "./test.svg", preview_id: undefined })
     ).rejects.toThrow("preview_id parameter is required");
   });
 
@@ -320,10 +241,9 @@ describe("handleMermaidSave", () => {
   });
 
   it("should handle missing diagram source when saving", async () => {
-    const nonExistentId = "non-existent-preview";
     const result = await handleMermaidSave({
       save_path: "/tmp/test-diagram.svg",
-      preview_id: nonExistentId,
+      preview_id: "non-existent-preview",
     });
 
     expect(result.isError).toBe(true);

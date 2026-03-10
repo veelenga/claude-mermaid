@@ -3,7 +3,7 @@
  * Tests business logic for diagram data access and management
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   listDiagrams,
   getDiagramInfo,
@@ -12,70 +12,28 @@ import {
   getDiagramCount,
   deleteDiagram,
 } from "../src/diagram-service.js";
-import * as fileUtils from "../src/file-utils.js";
-import { readdir, stat, mkdir, writeFile, rmdir, unlink, utimes } from "fs/promises";
+import { stat, mkdir, writeFile, utimes, rm } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
+import { setupTestEnv, restoreTestEnv } from "./helpers/env-helpers.js";
 
 describe("Diagram Service", () => {
   let testHomeDir: string;
   let testLiveDir: string;
-  let originalHome: string | undefined;
-  let originalXdgConfigHome: string | undefined;
 
   beforeEach(async () => {
-    // Save original environment
-    originalHome = process.env.HOME;
-    originalXdgConfigHome = process.env.XDG_CONFIG_HOME;
+    testHomeDir = await setupTestEnv();
 
-    // Clear XDG_CONFIG_HOME to ensure HOME is used
+    // Clear XDG_CONFIG_HOME to ensure HOME-based paths are used
     delete process.env.XDG_CONFIG_HOME;
 
-    // Create temporary HOME directory to isolate tests
-    testHomeDir = join(tmpdir(), `diagram-service-test-home-${Date.now()}`);
-    process.env.HOME = testHomeDir;
-
-    // Live dir will be: testHomeDir/.config/claude-mermaid/live
     testLiveDir = join(testHomeDir, ".config", "claude-mermaid", "live");
     await mkdir(testLiveDir, { recursive: true });
   });
 
   afterEach(async () => {
-    // Restore original environment
-    if (originalHome) {
-      process.env.HOME = originalHome;
-    } else {
-      delete process.env.HOME;
-    }
-
-    if (originalXdgConfigHome) {
-      process.env.XDG_CONFIG_HOME = originalXdgConfigHome;
-    } else {
-      delete process.env.XDG_CONFIG_HOME;
-    }
-
-    // Cleanup test directory
-    try {
-      const entries = await readdir(testLiveDir, { withFileTypes: true });
-      for (const entry of entries) {
-        const fullPath = join(testLiveDir, entry.name);
-        if (entry.isDirectory()) {
-          const files = await readdir(fullPath);
-          for (const file of files) {
-            await unlink(join(fullPath, file));
-          }
-          await rmdir(fullPath);
-        } else {
-          await unlink(fullPath);
-        }
-      }
-      await rmdir(testLiveDir);
-      await rmdir(join(testHomeDir, ".config", "claude-mermaid"));
-      await rmdir(join(testHomeDir, ".config"));
-      await rmdir(testHomeDir);
-    } catch (error) {
-      // Ignore cleanup errors
-    }
+    await rm(testHomeDir, { recursive: true, force: true }).catch(() => {});
+    restoreTestEnv();
   });
 
   describe("listDiagrams", () => {

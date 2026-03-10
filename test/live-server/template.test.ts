@@ -1,11 +1,21 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtemp, writeFile, unlink, rm } from "fs/promises";
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from "vitest";
+import { mkdtemp, writeFile, unlink, rm, readFile } from "fs/promises";
 import { tmpdir } from "os";
-import { join } from "path";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const templatePath = join(__dirname, "../../src/preview/template.html");
+
+let template: string;
 let tempDir: string;
 let testFilePath: string;
 let originalHome: string | undefined;
+
+beforeAll(async () => {
+  template = await readFile(templatePath, "utf-8");
+});
 
 beforeEach(async () => {
   originalHome = process.env.HOME;
@@ -36,32 +46,12 @@ afterEach(async () => {
 });
 
 describe("Preview template", () => {
-  it("is readable from disk", async () => {
-    const { readFile } = await import("fs/promises");
-    const { join } = await import("path");
-    const { fileURLToPath } = await import("url");
-    const { dirname } = await import("path");
-
-    const __filename = fileURLToPath(import.meta.url);
-    const __dirname = dirname(__filename);
-    const templatePath = join(__dirname, "../../src/preview/template.html");
-
-    const template = await readFile(templatePath, "utf-8");
+  it("is readable from disk", () => {
     expect(template).toBeTruthy();
     expect(template).toContain("<!doctype html>");
   });
 
-  it("contains required placeholders", async () => {
-    const { readFile } = await import("fs/promises");
-    const { join } = await import("path");
-    const { fileURLToPath } = await import("url");
-    const { dirname } = await import("path");
-
-    const template = await readFile(
-      join(dirname(fileURLToPath(import.meta.url)), "../../src/preview/template.html"),
-      "utf-8"
-    );
-
+  it("contains required placeholders", () => {
     expect(template).toContain("{{CONTENT}}");
     expect(template).toContain("{{DIAGRAM_ID}}");
     expect(template).toContain("{{PORT}}");
@@ -75,32 +65,12 @@ describe("Preview template", () => {
     expect(template).toContain("background: {{BACKGROUND}}");
   });
 
-  it("references CSS and script assets", async () => {
-    const { readFile } = await import("fs/promises");
-    const { join } = await import("path");
-    const { fileURLToPath } = await import("url");
-    const { dirname } = await import("path");
-
-    const template = await readFile(
-      join(dirname(fileURLToPath(import.meta.url)), "../../src/preview/template.html"),
-      "utf-8"
-    );
-
+  it("references CSS and script assets", () => {
     expect(template).toContain('<link rel="stylesheet" href="/style.css"');
     expect(template).toContain('<script src="/script.js"></script>');
   });
 
-  it("contains zoom controls", async () => {
-    const { readFile } = await import("fs/promises");
-    const { join } = await import("path");
-    const { fileURLToPath } = await import("url");
-    const { dirname } = await import("path");
-
-    const template = await readFile(
-      join(dirname(fileURLToPath(import.meta.url)), "../../src/preview/template.html"),
-      "utf-8"
-    );
-
+  it("contains zoom controls", () => {
     expect(template).toContain('id="zoom-in"');
     expect(template).toContain('id="zoom-out"');
     expect(template).toContain('id="zoom-level"');
