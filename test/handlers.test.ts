@@ -51,8 +51,8 @@ describe("handleMermaidPreview", () => {
     testDir = await setupTestEnvWithPreview(testPreviewId);
   });
 
-  afterEach(() => {
-    restoreTestEnv();
+  afterEach(async () => {
+    await restoreTestEnv();
   });
 
   it("should throw error when diagram parameter is missing", async () => {
@@ -185,8 +185,8 @@ describe("handleMermaidSave", () => {
     });
   });
 
-  afterEach(() => {
-    restoreTestEnv();
+  afterEach(async () => {
+    await restoreTestEnv();
   });
 
   it("should throw error when save_path parameter is missing", async () => {

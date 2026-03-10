@@ -1,6 +1,5 @@
-import { describe, it, expect, beforeAll, beforeEach, afterEach } from "vitest";
-import { mkdtemp, writeFile, unlink, rm, readFile } from "fs/promises";
-import { tmpdir } from "os";
+import { describe, it, expect, beforeAll } from "vitest";
+import { readFile } from "fs/promises";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 
@@ -9,40 +8,9 @@ const __dirname = dirname(__filename);
 const templatePath = join(__dirname, "../../src/preview/template.html");
 
 let template: string;
-let tempDir: string;
-let testFilePath: string;
-let originalHome: string | undefined;
 
 beforeAll(async () => {
   template = await readFile(templatePath, "utf-8");
-});
-
-beforeEach(async () => {
-  originalHome = process.env.HOME;
-  const tempHome = await mkdtemp(join(tmpdir(), "claude-mermaid-render-test-"));
-  process.env.HOME = tempHome;
-
-  tempDir = await mkdtemp(join(tmpdir(), "claude-mermaid-template-test-"));
-  testFilePath = join(tempDir, "test-diagram.svg");
-  await writeFile(
-    testFilePath,
-    '<svg viewBox="0 0 100 100"><circle cx="50" cy="50" r="40"/></svg>',
-    "utf-8"
-  );
-});
-
-afterEach(async () => {
-  try {
-    await unlink(testFilePath);
-  } catch {}
-
-  await rm(tempDir, { recursive: true, force: true }).catch(() => {});
-
-  if (originalHome) {
-    process.env.HOME = originalHome;
-  } else {
-    delete process.env.HOME;
-  }
 });
 
 describe("Preview template", () => {

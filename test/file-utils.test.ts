@@ -21,8 +21,8 @@ describe("File Utilities", () => {
     await setupTestEnv();
   });
 
-  afterAll(() => {
-    restoreTestEnv();
+  afterAll(async () => {
+    await restoreTestEnv();
   });
   describe("getLiveDir", () => {
     it("should return path containing .config/claude-mermaid/live", () => {

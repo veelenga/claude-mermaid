@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir } from "fs/promises";
+import { mkdtemp, mkdir, rm } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
 import { getPreviewDir } from "../../src/file-utils.js";
@@ -6,21 +6,33 @@ import { getPreviewDir } from "../../src/file-utils.js";
 interface EnvSnapshot {
   home: string | undefined;
   xdgConfig: string | undefined;
+  tempHome: string;
 }
 
 let snapshot: EnvSnapshot | null = null;
 
-export async function setupTestEnv(): Promise<string> {
+interface SetupOptions {
+  setXdgConfig?: boolean;
+}
+
+export async function setupTestEnv(opts: SetupOptions = {}): Promise<string> {
+  const { setXdgConfig = true } = opts;
+
   snapshot = {
     home: process.env.HOME,
     xdgConfig: process.env.XDG_CONFIG_HOME,
+    tempHome: "",
   };
 
   const tempHome = await mkdtemp(join(tmpdir(), "claude-mermaid-test-home-"));
-  const tempConfigDir = join(tempHome, ".config");
+  snapshot.tempHome = tempHome;
   process.env.HOME = tempHome;
-  process.env.XDG_CONFIG_HOME = tempConfigDir;
-  await mkdir(tempConfigDir, { recursive: true });
+
+  if (setXdgConfig) {
+    const tempConfigDir = join(tempHome, ".config");
+    process.env.XDG_CONFIG_HOME = tempConfigDir;
+    await mkdir(tempConfigDir, { recursive: true });
+  }
 
   return tempHome;
 }
@@ -32,20 +44,23 @@ export async function setupTestEnvWithPreview(previewId: string): Promise<string
   return testDir;
 }
 
-export function restoreTestEnv(): void {
+export async function restoreTestEnv(): Promise<void> {
   if (!snapshot) return;
 
-  if (snapshot.home !== undefined) {
-    process.env.HOME = snapshot.home;
+  const { home, xdgConfig, tempHome } = snapshot;
+  snapshot = null;
+
+  if (home !== undefined) {
+    process.env.HOME = home;
   } else {
     delete process.env.HOME;
   }
 
-  if (snapshot.xdgConfig !== undefined) {
-    process.env.XDG_CONFIG_HOME = snapshot.xdgConfig;
+  if (xdgConfig !== undefined) {
+    process.env.XDG_CONFIG_HOME = xdgConfig;
   } else {
     delete process.env.XDG_CONFIG_HOME;
   }
 
-  snapshot = null;
+  await rm(tempHome, { recursive: true, force: true }).catch(() => {});
 }

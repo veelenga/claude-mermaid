@@ -12,7 +12,7 @@ import {
   getDiagramCount,
   deleteDiagram,
 } from "../src/diagram-service.js";
-import { stat, mkdir, writeFile, utimes, rm } from "fs/promises";
+import { stat, mkdir, writeFile, utimes } from "fs/promises";
 import { join } from "path";
 import { tmpdir } from "os";
 import { setupTestEnv, restoreTestEnv } from "./helpers/env-helpers.js";
@@ -22,18 +22,13 @@ describe("Diagram Service", () => {
   let testLiveDir: string;
 
   beforeEach(async () => {
-    testHomeDir = await setupTestEnv();
-
-    // Clear XDG_CONFIG_HOME to ensure HOME-based paths are used
-    delete process.env.XDG_CONFIG_HOME;
-
+    testHomeDir = await setupTestEnv({ setXdgConfig: false });
     testLiveDir = join(testHomeDir, ".config", "claude-mermaid", "live");
     await mkdir(testLiveDir, { recursive: true });
   });
 
   afterEach(async () => {
-    await rm(testHomeDir, { recursive: true, force: true }).catch(() => {});
-    restoreTestEnv();
+    await restoreTestEnv();
   });
 
   describe("listDiagrams", () => {
