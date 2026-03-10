@@ -73,15 +73,14 @@ export async function renderDiagram(options: RenderOptions, liveFilePath: string
     }
     await copyFile(outputFile, liveFilePath);
     mcpLogger.info(`Diagram rendered successfully: ${previewId}`);
-  } catch (error: any) {
-    const stderr = error?.stderr ? `\n${error.stderr}` : "";
-    mcpLogger.error(`Diagram rendering failed: ${previewId}`, {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    const renderError = new Error(
-      `Diagram rendering failed.${stderr}`
-    );
-    throw renderError;
+  } catch (error) {
+    const stderr =
+      error instanceof Error && "stderr" in error && (error as Error & { stderr: string }).stderr
+        ? `\n${(error as Error & { stderr: string }).stderr}`
+        : "";
+    const message = error instanceof Error ? error.message : String(error);
+    mcpLogger.error(`Diagram rendering failed: ${previewId}`, { error: message });
+    throw new Error(`${message}${stderr}`);
   }
 }
 
