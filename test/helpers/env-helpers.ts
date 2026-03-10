@@ -32,6 +32,8 @@ export async function setupTestEnv(opts: SetupOptions = {}): Promise<string> {
     const tempConfigDir = join(tempHome, ".config");
     process.env.XDG_CONFIG_HOME = tempConfigDir;
     await mkdir(tempConfigDir, { recursive: true });
+  } else {
+    delete process.env.XDG_CONFIG_HOME;
   }
 
   return tempHome;
