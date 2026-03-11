@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.1] - 2026-03-11
+
+### Fixed
+
+- Propagate mermaid-cli stderr in rendering errors for better error messages
+
+### Changed
+
+- Improved test structure and coverage
+
 ## [1.6.0] - 2026-03-05
 
 ### Added
