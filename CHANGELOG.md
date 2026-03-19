@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.2] - 2026-03-19
+
+### Fixed
+
+- Use non-blocking spawn for browser open to prevent CLI freezing on WSL2
+
 ## [1.6.1] - 2026-03-11
 
 ### Fixed
