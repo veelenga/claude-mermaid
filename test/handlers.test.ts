@@ -5,7 +5,7 @@ import { readdir, unlink, access } from "fs/promises";
 import { execFile } from "child_process";
 import { setupTestEnvWithPreview, restoreTestEnv } from "./helpers/env-helpers.js";
 
-// Mock execFile to avoid actually running mmdc and create fake output files
+// Mock child_process to avoid actually running mmdc and opening browser
 vi.mock("child_process", () => ({
   execFile: vi.fn((_file: string, args: string[], callback: Function) => {
     const outputIndex = args.indexOf("-o");
@@ -35,6 +35,10 @@ vi.mock("child_process", () => ({
       callback(null, { stdout: "", stderr: "" });
     }
   }),
+  spawn: vi.fn(() => ({
+    unref: vi.fn(),
+    on: vi.fn(),
+  })),
 }));
 
 vi.mock("../src/live-server.js", () => ({

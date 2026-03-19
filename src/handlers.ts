@@ -1,4 +1,4 @@
-import { execFile } from "child_process";
+import { execFile, spawn } from "child_process";
 import { promisify } from "util";
 import { writeFile, mkdir, copyFile, access } from "fs/promises";
 import { join, dirname } from "path";
@@ -95,7 +95,8 @@ async function setupLivePreview(
   if (!hasConnections) {
     mcpLogger.info(`Opening browser for new diagram: ${previewId}`, { serverUrl });
     const openCommand = getOpenCommand();
-    await execFileAsync(openCommand, [serverUrl]);
+    const child = spawn(openCommand, [serverUrl], { detached: true, stdio: "ignore" });
+    child.unref();
   } else {
     mcpLogger.info(`Reusing existing browser tab for diagram: ${previewId}`);
   }
