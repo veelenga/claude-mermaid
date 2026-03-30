@@ -463,3 +463,7 @@ MIT - see [LICENSE](LICENSE) file for details
 If you like this project, you might also be interested in
 
 - [preview-skills](https://github.com/veelenga/preview-skills) — preview skills for visualizing files in the browser (markdown, csv, json, mermaid and more)
+
+## Hosted deployment
+
+A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/veelenga-claude-mermaid).
