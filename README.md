@@ -467,4 +467,3 @@ If you like this project, you might also be interested in
 ## Hosted deployment
 
 A hosted deployment is available on [Fronteir AI](https://fronteir.ai/mcp/veelenga-claude-mermaid).
-
