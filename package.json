@@ -53,7 +53,7 @@
     "@types/pako": "^2.0.4",
     "@types/ws": "^8.18.1",
     "prettier": "^3.6.2",
-    "typescript": "^5.9.2",
+    "typescript": "^6.0.2",
     "vitest": "^4.0.3"
   }
 }
