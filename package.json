@@ -46,7 +46,9 @@
     "ws": "^8.18.3"
   },
   "overrides": {
-    "dompurify": "^3.3.3"
+    "dompurify": "^3.3.3",
+    "lodash": "^4.18.0",
+    "lodash-es": "^4.18.0"
   },
   "devDependencies": {
     "@types/node": "^25.0.2",
