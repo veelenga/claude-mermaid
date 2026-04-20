@@ -3,6 +3,7 @@ import { promisify } from "util";
 import { writeFile, mkdir, copyFile, access } from "fs/promises";
 import { join, dirname } from "path";
 import { tmpdir } from "os";
+import { execPath } from "process";
 import { ensureLiveServer, addLiveDiagram, hasActiveConnections } from "./live-server.js";
 import {
   getDiagramFilePath,
@@ -16,6 +17,10 @@ import {
 import { mcpLogger } from "./logger.js";
 
 const execFileAsync = promisify(execFile);
+
+// On Windows, spawning npx.cmd throws EINVAL since Node 20.12.2 (CVE-2024-27980, "BatBadBut").
+// Run node directly on npx-cli.js to avoid the .cmd wrapper without needing shell: true.
+const npxCliPath = join(dirname(execPath), "node_modules", "npm", "bin", "npx-cli.js");
 
 export interface RenderOptions {
   diagram: string;
@@ -67,7 +72,10 @@ export async function renderDiagram(options: RenderOptions, liveFilePath: string
   mcpLogger.debug(`Executing mermaid-cli`, { args });
 
   try {
-    const { stdout, stderr } = await execFileAsync("npx", args);
+    const { stdout, stderr } =
+      process.platform === "win32"
+        ? await execFileAsync(execPath, [npxCliPath, ...args])
+        : await execFileAsync("npx", args);
     if (stderr) {
       mcpLogger.debug(`mermaid-cli stderr`, { stderr });
     }
