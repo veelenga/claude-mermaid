@@ -67,7 +67,16 @@ export async function renderDiagram(options: RenderOptions, liveFilePath: string
   mcpLogger.debug(`Executing mermaid-cli`, { args });
 
   try {
-    const { stdout, stderr } = await execFileAsync("npx", args);
+    // On Windows, `execFile`/`spawn` cannot invoke `npx` directly: the real
+    // binary is `npx.cmd`, and Node no longer allows direct spawn of `.cmd`
+    // files (see CVE-2024-27980 / spawn EINVAL). `{ shell: true }` would work
+    // but is deprecated in Node 24+ (DEP0190) because args aren't escaped.
+    // The Node-documented pattern is to go through `cmd.exe /c` explicitly.
+    // See: https://nodejs.org/api/child_process.html#spawning-bat-and-cmd-files-on-windows
+    const isWin = process.platform === "win32";
+    const command = isWin ? "cmd.exe" : "npx";
+    const finalArgs = isWin ? ["/c", "npx", ...args] : args;
+    const { stdout, stderr } = await execFileAsync(command, finalArgs);
     if (stderr) {
       mcpLogger.debug(`mermaid-cli stderr`, { stderr });
     }
