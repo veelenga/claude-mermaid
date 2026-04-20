@@ -20,7 +20,23 @@ const execFileAsync = promisify(execFile);
 
 // On Windows, spawning npx.cmd throws EINVAL since Node 20.12.2 (CVE-2024-27980, "BatBadBut").
 // Run node directly on npx-cli.js to avoid the .cmd wrapper without needing shell: true.
-const npxCliPath = join(dirname(execPath), "node_modules", "npm", "bin", "npx-cli.js");
+let cachedNpxCliPath: string | undefined;
+
+async function getNpxCliPath(): Promise<string> {
+  if (cachedNpxCliPath !== undefined) {
+    return cachedNpxCliPath;
+  }
+  const candidate = join(dirname(execPath), "node_modules", "npm", "bin", "npx-cli.js");
+  try {
+    await access(candidate);
+  } catch {
+    throw new Error(
+      `npx-cli.js not found at ${candidate}. This Node installation's layout isn't supported (e.g. nvm-windows, Volta, fnm, Scoop). Please file an issue.`
+    );
+  }
+  cachedNpxCliPath = candidate;
+  return cachedNpxCliPath;
+}
 
 export interface RenderOptions {
   diagram: string;
@@ -74,7 +90,7 @@ export async function renderDiagram(options: RenderOptions, liveFilePath: string
   try {
     const { stdout, stderr } =
       process.platform === "win32"
-        ? await execFileAsync(execPath, [npxCliPath, ...args])
+        ? await execFileAsync(execPath, [await getNpxCliPath(), ...args])
         : await execFileAsync("npx", args);
     if (stderr) {
       mcpLogger.debug(`mermaid-cli stderr`, { stderr });

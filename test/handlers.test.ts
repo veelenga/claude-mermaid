@@ -3,7 +3,23 @@ import { handleMermaidPreview, handleMermaidSave } from "../src/handlers.js";
 import { getPreviewDir, getDiagramFilePath } from "../src/file-utils.js";
 import { readdir, unlink, access } from "fs/promises";
 import { execFile } from "child_process";
+import { execPath } from "process";
 import { setupTestEnvWithPreview, restoreTestEnv } from "./helpers/env-helpers.js";
+
+// Partial mock of fs/promises so access() resolves for npx-cli.js discovery
+// regardless of the host Node install layout (keeps the win32 test hermetic).
+vi.mock("fs/promises", async () => {
+  const actual = await vi.importActual<typeof import("fs/promises")>("fs/promises");
+  return {
+    ...actual,
+    access: vi.fn((path: any, mode?: any) => {
+      if (typeof path === "string" && path.endsWith("npx-cli.js")) {
+        return Promise.resolve();
+      }
+      return actual.access(path, mode);
+    }),
+  };
+});
 
 // Mock child_process to avoid actually running mmdc and opening browser
 vi.mock("child_process", () => ({
@@ -157,6 +173,56 @@ describe("handleMermaidPreview", () => {
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain("Parse error on line 3");
     expect(result.content[0].text).toContain("Command failed");
+  });
+
+  it("should invoke node directly with npx-cli.js on win32", async () => {
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, "platform", { value: "win32", configurable: true });
+    const mockExecFile = vi.mocked(execFile);
+    mockExecFile.mockClear();
+
+    try {
+      await handleMermaidPreview({
+        diagram: "graph TD; A-->B",
+        preview_id: testPreviewId,
+      });
+
+      expect(mockExecFile).toHaveBeenCalled();
+      const [file, args] = mockExecFile.mock.calls[0] as [string, string[], unknown];
+      expect(file).toBe(execPath);
+      expect(file).not.toBe("npx");
+      expect(Array.isArray(args)).toBe(true);
+      expect(args[0]).toContain("npx-cli.js");
+    } finally {
+      Object.defineProperty(process, "platform", {
+        value: originalPlatform,
+        configurable: true,
+      });
+    }
+  });
+
+  it("should invoke npx directly on non-win32 platforms", async () => {
+    const originalPlatform = process.platform;
+    Object.defineProperty(process, "platform", { value: "linux", configurable: true });
+    const mockExecFile = vi.mocked(execFile);
+    mockExecFile.mockClear();
+
+    try {
+      await handleMermaidPreview({
+        diagram: "graph TD; A-->B",
+        preview_id: testPreviewId,
+      });
+
+      expect(mockExecFile).toHaveBeenCalled();
+      const [file, args] = mockExecFile.mock.calls[0] as [string, string[], unknown];
+      expect(file).toBe("npx");
+      expect(args[0]).not.toContain("npx-cli.js");
+    } finally {
+      Object.defineProperty(process, "platform", {
+        value: originalPlatform,
+        configurable: true,
+      });
+    }
   });
 
   it("should show original error message when stderr is empty", async () => {
