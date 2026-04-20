@@ -5,3 +5,5 @@ dist/
 .DS_Store
 test-diagram.mmd
 test-output.png
+# Claude Code session files
+.claude/
