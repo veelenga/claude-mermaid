@@ -10,6 +10,7 @@ import {
   saveDiagramSource,
   loadDiagramSource,
   loadDiagramOptions,
+  validateBackground,
   validateSavePath,
   getOpenCommand,
 } from "./file-utils.js";
@@ -163,6 +164,20 @@ export async function handleMermaidPreview(args: any) {
   }
   if (!previewId) {
     throw new Error("preview_id parameter is required");
+  }
+
+  try {
+    validateBackground(background);
+  } catch (error) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Invalid background: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+      isError: true,
+    };
   }
 
   const previewDir = getPreviewDir(previewId);

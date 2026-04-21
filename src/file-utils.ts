@@ -3,6 +3,7 @@ import { join, resolve } from "path";
 import { tmpdir } from "os";
 import {
   APP_NAME,
+  BACKGROUND_REGEX,
   PREVIEW_ID_REGEX,
   UNIX_SYSTEM_PATHS,
   WINDOWS_SYSTEM_PATHS,
@@ -38,6 +39,20 @@ export function validatePreviewId(previewId: string): void {
   if (!previewId || !PREVIEW_ID_REGEX.test(previewId)) {
     throw new Error(
       "Invalid preview ID format. Only alphanumeric characters, hyphens, and underscores are allowed."
+    );
+  }
+}
+
+/**
+ * Validates that a background color string is safe to pass as a CLI argument.
+ * Accepts CSS named colors, hex, and rgb/rgba/hsl/hsla functions — rejects
+ * anything that could be interpreted as a shell metacharacter on Windows,
+ * where the child process is launched via `cmd.exe /c`.
+ */
+export function validateBackground(background: string): void {
+  if (!background || !BACKGROUND_REGEX.test(background)) {
+    throw new Error(
+      "Invalid background color. Use a CSS named color (e.g. 'transparent'), hex (e.g. '#F0F0F0'), or rgb/rgba/hsl/hsla(...)."
     );
   }
 }

@@ -89,6 +89,13 @@ export const CSP_HEADER =
 // ===== Validation Patterns =====
 export const PREVIEW_ID_REGEX = /^[a-zA-Z0-9_-]+$/;
 
+// CSS-color-safe allowlist. On Windows we invoke npx via `cmd.exe /c`, and
+// cmd.exe re-parses its command line with its own rules (DEP0190/CVE-2024-27980).
+// Allowing only named colors, hex, and rgb/rgba/hsl/hsla keeps shell
+// metacharacters (&, |, %, ^, <, >, ", etc.) out of the child argv.
+export const BACKGROUND_REGEX =
+  /^(?:[a-zA-Z]+|#[0-9a-fA-F]{3,8}|(?:rgb|rgba|hsl|hsla)\(\s*[0-9.,%\s]+\s*\))$/;
+
 // ===== System Paths (Security) =====
 export const UNIX_SYSTEM_PATHS = [
   "/etc",
