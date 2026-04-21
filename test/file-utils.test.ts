@@ -9,6 +9,7 @@ import {
   loadDiagramSource,
   loadDiagramOptions,
   getConfigDir,
+  validateBackground,
   validateSavePath,
 } from "../src/file-utils.js";
 import { unlink, mkdir, rmdir, readdir, mkdtemp, rm } from "fs/promises";
@@ -317,6 +318,53 @@ describe("File Utilities", () => {
       );
 
       Object.defineProperty(process, "platform", { value: originalPlatform });
+    });
+  });
+
+  describe("validateBackground", () => {
+    it("should accept CSS named colors", () => {
+      expect(() => validateBackground("transparent")).not.toThrow();
+      expect(() => validateBackground("white")).not.toThrow();
+      expect(() => validateBackground("red")).not.toThrow();
+      expect(() => validateBackground("lightblue")).not.toThrow();
+    });
+
+    it("should accept hex colors", () => {
+      expect(() => validateBackground("#fff")).not.toThrow();
+      expect(() => validateBackground("#F0F0F0")).not.toThrow();
+      expect(() => validateBackground("#abcd")).not.toThrow();
+      expect(() => validateBackground("#aabbccdd")).not.toThrow();
+    });
+
+    it("should accept rgb/rgba/hsl/hsla functions", () => {
+      expect(() => validateBackground("rgb(255, 0, 0)")).not.toThrow();
+      expect(() => validateBackground("rgba(0,0,0,0.5)")).not.toThrow();
+      expect(() => validateBackground("hsl(120, 100%, 50%)")).not.toThrow();
+      expect(() => validateBackground("hsla(120, 100%, 50%, 0.5)")).not.toThrow();
+    });
+
+    it("should reject empty or missing values", () => {
+      expect(() => validateBackground("")).toThrow("Invalid background color");
+      expect(() => validateBackground(undefined as unknown as string)).toThrow(
+        "Invalid background color"
+      );
+    });
+
+    it("should reject shell metacharacters", () => {
+      // These matter because on Windows the child runs via `cmd.exe /c`.
+      expect(() => validateBackground("red & calc.exe")).toThrow("Invalid background color");
+      expect(() => validateBackground("red|calc.exe")).toThrow("Invalid background color");
+      expect(() => validateBackground("%PATH%")).toThrow("Invalid background color");
+      expect(() => validateBackground('white"')).toThrow("Invalid background color");
+      expect(() => validateBackground("red;echo")).toThrow("Invalid background color");
+      expect(() => validateBackground("white\ncalc")).toThrow("Invalid background color");
+    });
+
+    it("should reject malformed hex or function syntax", () => {
+      expect(() => validateBackground("#zzz")).toThrow("Invalid background color");
+      expect(() => validateBackground("#ff")).toThrow("Invalid background color");
+      expect(() => validateBackground("rgb(255, 0, 0")).toThrow("Invalid background color");
+      expect(() => validateBackground("javascript:alert(1)")).toThrow("Invalid background color");
     });
   });
 });
