@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.3] - 2026-05-16
+
+### Fixed
+
+- Invoke `npx` through `cmd.exe /c` on Windows to avoid spawn failures
+
+### Changed
+
+- Bumped `@mermaid-js/mermaid-cli` to 11.14.0
+- Various dependency and security updates
+
 ## [1.6.2] - 2026-03-19
 
 ### Fixed
