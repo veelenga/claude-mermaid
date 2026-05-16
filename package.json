@@ -5,7 +5,7 @@
   "main": "build/index.js",
   "type": "module",
   "bin": {
-    "claude-mermaid": "./build/index.js"
+    "claude-mermaid": "build/index.js"
   },
   "files": [
     "build/**/*.js",
@@ -33,7 +33,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/veelenga/claude-mermaid.git"
+    "url": "git+https://github.com/veelenga/claude-mermaid.git"
   },
   "homepage": "https://github.com/veelenga/claude-mermaid#readme",
   "bugs": {
