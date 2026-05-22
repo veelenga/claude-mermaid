@@ -104,8 +104,19 @@ async function setupLivePreview(
 
   if (!hasConnections) {
     mcpLogger.info(`Opening browser for new diagram: ${previewId}`, { serverUrl });
-    const openCommand = getOpenCommand();
-    const child = spawn(openCommand, [serverUrl], { detached: true, stdio: "ignore" });
+    // On Windows, `getOpenCommand()` returns the cmd.exe builtin `start`,
+    // which `spawn` cannot launch directly — it emits an asynchronous `error`
+    // event that, with no listener attached, crashes the MCP server.
+    // Route through `cmd /c start` (mirroring the npx-on-Windows pattern in
+    // `renderDiagram` above), and attach an `error` listener so a failed
+    // browser-open is best-effort and never aborts the server.
+    const isWin = process.platform === "win32";
+    const openCommand = isWin ? "cmd.exe" : getOpenCommand();
+    const openArgs = isWin ? ["/c", "start", "", serverUrl] : [serverUrl];
+    const child = spawn(openCommand, openArgs, { detached: true, stdio: "ignore" });
+    child.on("error", () => {
+      // Best-effort: log nothing extra; the diagram itself rendered fine.
+    });
     child.unref();
   } else {
     mcpLogger.info(`Reusing existing browser tab for diagram: ${previewId}`);
