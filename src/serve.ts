@@ -48,5 +48,10 @@ export async function startServeMode(): Promise<void> {
 
   console.log(`Serving ${diagramCount} diagram(s) at ${galleryUrl}`);
 
-  await execFileAsync(getOpenCommand(), [galleryUrl]);
+  const { command, args } = getOpenCommand(galleryUrl);
+  try {
+    await execFileAsync(command, args);
+  } catch {
+    console.warn(`Could not open browser automatically. Open ${galleryUrl} manually.`);
+  }
 }

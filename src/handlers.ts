@@ -104,8 +104,11 @@ async function setupLivePreview(
 
   if (!hasConnections) {
     mcpLogger.info(`Opening browser for new diagram: ${previewId}`, { serverUrl });
-    const openCommand = getOpenCommand();
-    const child = spawn(openCommand, [serverUrl], { detached: true, stdio: "ignore" });
+    const { command, args } = getOpenCommand(serverUrl);
+    const child = spawn(command, args, { detached: true, stdio: "ignore" });
+    child.on("error", (error) => {
+      mcpLogger.warn("Failed to open browser", { error: error.message, serverUrl });
+    });
     child.unref();
   } else {
     mcpLogger.info(`Reusing existing browser tab for diagram: ${previewId}`);
