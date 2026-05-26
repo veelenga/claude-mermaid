@@ -158,10 +158,18 @@ export function validateSavePath(savePath: string): void {
   }
 }
 
-export function getOpenCommand(): string {
-  return process.platform === "darwin"
-    ? "open"
-    : process.platform === "win32"
-      ? "start"
-      : "xdg-open";
+export interface OpenCommand {
+  command: string;
+  args: string[];
+}
+
+export function getOpenCommand(url: string): OpenCommand {
+  switch (process.platform) {
+    case "darwin":
+      return { command: "open", args: [url] };
+    case "win32":
+      return { command: "cmd.exe", args: ["/c", "start", "", url] };
+    default:
+      return { command: "xdg-open", args: [url] };
+  }
 }
