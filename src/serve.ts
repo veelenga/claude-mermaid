@@ -48,16 +48,10 @@ export async function startServeMode(): Promise<void> {
 
   console.log(`Serving ${diagramCount} diagram(s) at ${galleryUrl}`);
 
-  // Opening the browser is best-effort — a failure must not bring down
-  // `--serve`. On Windows, `getOpenCommand()` returns `start`, a cmd.exe
-  // builtin that `execFile` cannot launch directly; route through `cmd /c`.
+  const { command, args } = getOpenCommand(galleryUrl);
   try {
-    if (process.platform === "win32") {
-      await execFileAsync("cmd.exe", ["/c", "start", "", galleryUrl]);
-    } else {
-      await execFileAsync(getOpenCommand(), [galleryUrl]);
-    }
+    await execFileAsync(command, args);
   } catch {
-    // Ignored — server is up; the user can navigate to the URL manually.
+    console.warn(`Could not open browser automatically. Open ${galleryUrl} manually.`);
   }
 }
