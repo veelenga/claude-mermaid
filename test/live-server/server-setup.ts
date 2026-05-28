@@ -25,9 +25,10 @@ class FakeServer {
     this.events.set(event, callback);
   }
 
-  listen(port: number, callback?: () => void) {
+  listen(port: number, hostOrCallback?: string | (() => void), callback?: () => void) {
     state.port = port;
-    callback?.();
+    const cb = typeof hostOrCallback === "function" ? hostOrCallback : callback;
+    cb?.();
     this.events.get("listening")?.();
   }
 

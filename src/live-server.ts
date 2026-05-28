@@ -20,6 +20,7 @@ import {
   CSP_HEADER,
   SERVER_PORT_START,
   SERVER_PORT_END,
+  SERVER_HOST,
   ROUTES,
   CONTENT_TYPES,
   CACHE_CONTROL,
@@ -53,7 +54,7 @@ async function findAvailablePort(
         testServer.once("listening", () => {
           testServer.close(() => resolve());
         });
-        testServer.listen(port);
+        testServer.listen(port, SERVER_HOST);
       });
       return port;
     } catch (error) {
@@ -349,10 +350,10 @@ export async function ensureLiveServer(): Promise<number> {
   });
 
   await new Promise<void>((resolve) => {
-    liveServer!.listen(port, () => {
+    liveServer!.listen(port, SERVER_HOST, () => {
       liveServerPort = port;
-      webLogger.info(`Live reload server listening on port ${port}`);
-      console.error(`Live reload server started on port ${port}`);
+      webLogger.info(`Live reload server listening on ${SERVER_HOST}:${port}`);
+      console.error(`Live reload server started on ${SERVER_HOST}:${port}`);
       resolve();
     });
   });
