@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.4] - 2026-05-28
+
+### Security
+
+- Bind live reload server to `127.0.0.1` to prevent LAN exposure of the unauthenticated gallery and `DELETE /api/diagrams` endpoint (#135)
+- Bumped `qs` transitive dependency to 6.15.2
+
+### Fixed
+
+- Windows browser-open crash (`spawn start ENOENT`) in MCP and `--serve` paths (#130)
+
+### Changed
+
+- Bumped `@mermaid-js/mermaid-cli` to 11.15.0
+- Bumped `ws` to 8.21.0
+- Normalized `package.json` bin path and repository URL
+
 ## [1.6.3] - 2026-05-16
 
 ### Fixed
