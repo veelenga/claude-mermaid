@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Validate diagram ID in `/view/` route to prevent path traversal in `handleViewRequest`
+
 ## [1.6.4] - 2026-05-28
 
 ### Security

@@ -65,7 +65,22 @@ async function findAvailablePort(
 }
 
 async function handleViewRequest(url: string, res: ServerResponse, port: number): Promise<void> {
-  const diagramId = url.substring(6);
+  const rawId = url.substring(ROUTES.VIEW.length);
+
+  let diagramId: string;
+  try {
+    diagramId = decodeURIComponent(rawId);
+    validatePreviewId(diagramId);
+  } catch (error) {
+    webLogger.warn("Invalid view request", {
+      rawId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    res.writeHead(400, { "Content-Type": CONTENT_TYPES.PLAIN });
+    res.end("Invalid diagram ID");
+    return;
+  }
+
   const filePath = join(getLiveDir(), diagramId, "diagram.svg");
 
   webLogger.debug(`View request for diagram: ${diagramId}`);
