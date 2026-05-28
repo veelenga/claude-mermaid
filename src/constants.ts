@@ -9,6 +9,10 @@ export const APP_NAME = "claude-mermaid";
 // ===== Server Configuration =====
 export const SERVER_PORT_START = 3737;
 export const SERVER_PORT_END = 3747;
+// Bind to loopback only — this is a local developer tool with no auth,
+// and binding to all interfaces would expose the unauthenticated
+// gallery + DELETE /api/diagrams endpoints to anyone on the LAN.
+export const SERVER_HOST = "127.0.0.1";
 
 // ===== File Names =====
 export const FILE_NAMES = {
