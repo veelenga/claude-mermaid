@@ -93,4 +93,38 @@ describe("Live server responses", () => {
     const payload = await response.json();
     expect(payload.error).toBe("Diagram not found");
   });
+
+  it("serves /view for a valid diagram ID", async () => {
+    const port = await ensureLiveServer();
+    const diagramId = "view-test";
+
+    const diagramDir = join(configDir, "claude-mermaid", "live", diagramId);
+    await mkdir(diagramDir, { recursive: true });
+    await writeFile(join(diagramDir, "diagram.svg"), "<svg>view</svg>", "utf-8");
+    await writeFile(
+      join(diagramDir, "options.json"),
+      JSON.stringify(DEFAULT_DIAGRAM_OPTIONS),
+      "utf-8"
+    );
+
+    const response = await mockFetch(`http://localhost:${port}/view/${diagramId}`);
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-type")).toBe("text/html");
+  });
+
+  it("rejects /view path traversal attempts", async () => {
+    const port = await ensureLiveServer();
+    const response = await mockFetch(`http://localhost:${port}/view/../../etc/passwd`);
+    expect(response.status).toBe(400);
+    expect(await response.text()).toBe("Invalid diagram ID");
+  });
+
+  it("rejects /view URL-encoded path traversal", async () => {
+    const port = await ensureLiveServer();
+    const response = await mockFetch(
+      `http://localhost:${port}/view/%2e%2e%2f%2e%2e%2fetc%2fpasswd`
+    );
+    expect(response.status).toBe(400);
+    expect(await response.text()).toBe("Invalid diagram ID");
+  });
 });
