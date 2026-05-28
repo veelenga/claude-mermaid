@@ -7,12 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Validate diagram ID in `/view/` route to prevent path traversal in `handleViewRequest`
+
 ## [1.6.4] - 2026-05-28
 
 ### Security
 
 - Bind live reload server to `127.0.0.1` to prevent LAN exposure of the unauthenticated gallery and `DELETE /api/diagrams` endpoint (#135)
-- Validate diagram ID in `/view/` route to prevent path traversal in `handleViewRequest`
 - Bumped `qs` transitive dependency to 6.15.2
 
 ### Fixed
