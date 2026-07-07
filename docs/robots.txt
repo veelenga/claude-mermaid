@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://veelenga.github.io/claude-mermaid/sitemap.xml

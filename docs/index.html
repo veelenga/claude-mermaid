@@ -1,0 +1,1532 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Claude Mermaid — Live Mermaid Diagram Previews for Claude Code</title>
+    <meta
+      name="description"
+      content="An MCP server that renders Mermaid diagrams in your browser and reloads them live as Claude refines the code. Export SVG, PNG, or PDF. Free and MIT-licensed."
+    />
+    <link rel="canonical" href="https://veelenga.github.io/claude-mermaid/" />
+
+    <meta name="theme-color" content="#fbfaf7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#131311" media="(prefers-color-scheme: dark)" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Claude Mermaid" />
+    <meta
+      property="og:title"
+      content="Claude Mermaid — Live Mermaid Diagram Previews for Claude Code"
+    />
+    <meta
+      property="og:description"
+      content="An MCP server that renders Mermaid diagrams in your browser and reloads them live as Claude refines the code. Export SVG, PNG, or PDF."
+    />
+    <meta property="og:url" content="https://veelenga.github.io/claude-mermaid/" />
+    <meta
+      property="og:image"
+      content="https://raw.githubusercontent.com/veelenga/claude-mermaid/main/assets/demo.gif"
+    />
+    <meta
+      property="og:image:alt"
+      content="A Mermaid diagram re-rendering live in the browser as Claude edits it"
+    />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Claude Mermaid — Live Mermaid Diagram Previews for Claude Code"
+    />
+    <meta
+      name="twitter:description"
+      content="An MCP server that renders Mermaid diagrams in your browser and reloads them live as Claude refines the code. Export SVG, PNG, or PDF."
+    />
+    <meta
+      name="twitter:image"
+      content="https://raw.githubusercontent.com/veelenga/claude-mermaid/main/assets/demo.gif"
+    />
+
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231b1a17'/><path d='M9 11.4 16 19M23 11.4 16 19' stroke='%23faf7f0' stroke-width='1.8' fill='none' stroke-linecap='round'/><circle cx='9' cy='9' r='3.3' fill='%23ff3670'/><circle cx='23' cy='9' r='3.3' fill='none' stroke='%23faf7f0' stroke-width='1.8'/><circle cx='16' cy='22' r='3.3' fill='none' stroke='%23faf7f0' stroke-width='1.8'/></svg>"
+    />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "Claude Mermaid",
+        "description": "An MCP server that renders Mermaid diagrams in your browser with live reload as Claude refines the code. Exports SVG, PNG, and PDF, with four themes and pan/zoom preview controls.",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "macOS, Linux, Windows",
+        "softwareVersion": "1.6.4",
+        "url": "https://veelenga.github.io/claude-mermaid/",
+        "codeRepository": "https://github.com/veelenga/claude-mermaid",
+        "downloadUrl": "https://www.npmjs.com/package/claude-mermaid",
+        "license": "https://opensource.org/licenses/MIT",
+        "author": {
+          "@type": "Person",
+          "name": "Vitalii Elenhaupt",
+          "url": "https://github.com/veelenga"
+        },
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Which clients are supported?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "It is built for Claude Code, where the plugin also installs a diagram skill. Because it speaks the Model Context Protocol, it works with any MCP client, including Cursor, Codex, Windsurf, Cline, and Gemini CLI, using the standard command configuration."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Does live reload work for PNG and PDF?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Live preview in the browser is SVG-only. PNG and PDF still render and can be saved or exported, but they do not auto-reload. The browser always previews SVG while saving to the format you ask for."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Where are my diagrams stored?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Live working files are kept under ~/.config/claude-mermaid/live so previews persist between sessions. Logs live under ~/.config/claude-mermaid/logs. The mermaid_save tool copies the rendered diagram to any path you choose, such as ./docs/diagram.svg."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What ports does it use?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The local preview server uses ports 3737 to 3747 and automatically picks the first one that is free."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Can I preview several diagrams at once?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. Give each diagram its own preview_id, such as architecture or flow, and each gets its own live URL that reloads independently."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Is it free?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Yes. claude-mermaid is open source under the MIT license."
+            }
+          }
+        ]
+      }
+    </script>
+
+    <style>
+      :root {
+        --bg: #fbfaf7;
+        --bg-raised: #ffffff;
+        --bg-sunken: #f4f1ea;
+        --ink: #1b1a17;
+        --ink-soft: #4a4741;
+        --ink-faint: #736e64;
+        --line: #e7e2d7;
+        --line-strong: #d7d1c3;
+        --accent: #ff3670;
+        --accent-ink: #c11d4e;
+        --term-bg: #1c1b18;
+        --term-ink: #e9e5db;
+        --term-faint: #9a948a;
+        --shadow: 0 1px 2px rgba(27, 26, 23, 0.06), 0 12px 32px rgba(27, 26, 23, 0.07);
+        --radius: 12px;
+        --maxw: 1080px;
+        --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, ui-serif, serif;
+        --font-mono:
+          ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #131311;
+          --bg-raised: #1c1b18;
+          --bg-sunken: #1a1916;
+          --ink: #f2efe8;
+          --ink-soft: #c2bdb1;
+          --ink-faint: #928c80;
+          --line: #2c2a24;
+          --line-strong: #3a382f;
+          --accent: #ff4d80;
+          --accent-ink: #ff7ba1;
+          --term-bg: #0f0f0d;
+          --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 14px 34px rgba(0, 0, 0, 0.4);
+        }
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--font-sans);
+        font-size: 17px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+
+      a {
+        color: var(--accent-ink);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+        text-underline-offset: 3px;
+      }
+
+      h1,
+      h2,
+      h3 {
+        font-family: var(--font-serif);
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        line-height: 1.12;
+        color: var(--ink);
+      }
+
+      code,
+      kbd,
+      pre {
+        font-family: var(--font-mono);
+      }
+
+      .wrap {
+        width: 100%;
+        max-width: var(--maxw);
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+
+      /* ---------- nav ---------- */
+      .nav {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: color-mix(in srgb, var(--bg) 88%, transparent);
+        backdrop-filter: saturate(1.4) blur(8px);
+        border-bottom: 1px solid var(--line);
+      }
+      .nav-inner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 60px;
+      }
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--ink);
+        font-family: var(--font-mono);
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+      .brand:hover {
+        text-decoration: none;
+      }
+      .brand svg {
+        width: 26px;
+        height: 26px;
+        display: block;
+      }
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 26px;
+      }
+      .nav-links a {
+        color: var(--ink-soft);
+        font-size: 15px;
+      }
+      .nav-links a:hover {
+        color: var(--ink);
+        text-decoration: none;
+      }
+      .nav-sec {
+        display: none;
+      }
+      @media (min-width: 820px) {
+        .nav-sec {
+          display: inline;
+        }
+      }
+
+      /* ---------- buttons ---------- */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 18px;
+        border-radius: 9px;
+        font-size: 15px;
+        font-weight: 600;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: transform 0.06s ease;
+      }
+      .btn:active {
+        transform: translateY(1px);
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+      }
+      .btn-primary:hover {
+        text-decoration: none;
+        background: color-mix(in srgb, var(--accent) 88%, #000);
+      }
+      .btn-ghost {
+        background: var(--bg-raised);
+        color: var(--ink);
+        border-color: var(--line-strong);
+      }
+      .btn-ghost:hover {
+        text-decoration: none;
+        border-color: var(--ink-faint);
+      }
+
+      /* ---------- hero ---------- */
+      .hero {
+        padding: 74px 0 40px;
+      }
+      .hero-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 44px;
+        align-items: center;
+      }
+      @media (min-width: 900px) {
+        .hero-grid {
+          grid-template-columns: 1.05fr 0.95fr;
+          gap: 56px;
+        }
+      }
+      .eyebrow {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        letter-spacing: 0.02em;
+        color: var(--ink-faint);
+        margin: 0 0 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .eyebrow .dot {
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--line-strong);
+      }
+      h1 {
+        font-size: clamp(34px, 5.2vw, 52px);
+        margin: 0 0 22px;
+      }
+      h1 .em {
+        color: var(--accent-ink);
+        font-style: italic;
+      }
+      .lede {
+        font-size: 19px;
+        color: var(--ink-soft);
+        margin: 0 0 30px;
+        max-width: 34em;
+      }
+      .hero-cta {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        align-items: center;
+        margin-top: 8px;
+      }
+      .hero-note {
+        margin: 20px 0 0;
+        font-size: 14px;
+        color: var(--ink-faint);
+      }
+
+      /* ---------- code / terminal ---------- */
+      .term {
+        background: var(--term-bg);
+        border-radius: var(--radius);
+        border: 1px solid var(--line-strong);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .term-bar {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 12px 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      }
+      .term-bar .light {
+        width: 11px;
+        height: 11px;
+        border-radius: 50%;
+        display: block;
+      }
+      .light.r {
+        background: #ff5f57;
+      }
+      .light.y {
+        background: #febc2e;
+      }
+      .light.g {
+        background: #28c840;
+      }
+      .term-title {
+        margin-left: 8px;
+        color: var(--term-faint);
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+      }
+      .term-body {
+        padding: 18px 18px 20px;
+        font-family: var(--font-mono);
+        font-size: 13.5px;
+        line-height: 1.7;
+        color: var(--term-ink);
+        overflow-x: auto;
+      }
+      .term-body .prompt {
+        color: var(--accent);
+      }
+      .term-body .user {
+        color: #e9e5db;
+      }
+      .term-body .assistant {
+        color: #cfe8d4;
+      }
+      .term-body .tool {
+        color: #f3c969;
+      }
+      .term-body .muted {
+        color: var(--term-faint);
+      }
+      .term-body .ok {
+        color: #7bd88f;
+      }
+      .term-body p {
+        margin: 0 0 2px;
+        white-space: pre-wrap;
+      }
+      .term-body .spacer {
+        height: 12px;
+      }
+
+      /* copy-able command block */
+      .cmd {
+        position: relative;
+        background: var(--term-bg);
+        border: 1px solid var(--line-strong);
+        border-radius: 10px;
+        margin: 0;
+        overflow: hidden;
+      }
+      .cmd pre {
+        margin: 0;
+        padding: 15px 52px 15px 16px;
+        overflow-x: auto;
+        color: var(--term-ink);
+        font-size: 13.5px;
+        line-height: 1.65;
+      }
+      .cmd pre .c {
+        color: var(--term-faint);
+      }
+      .cmd .prompt {
+        color: var(--accent);
+        user-select: none;
+      }
+      .copy {
+        position: absolute;
+        top: 9px;
+        right: 9px;
+        display: none;
+        background: rgba(255, 255, 255, 0.08);
+        color: #d9d5cb;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 7px;
+        padding: 5px 9px;
+        font-size: 12px;
+        font-family: var(--font-mono);
+        cursor: pointer;
+      }
+      .js .copy {
+        display: inline-block;
+      }
+      .copy:hover {
+        background: rgba(255, 255, 255, 0.16);
+      }
+      .copy.done {
+        color: #7bd88f;
+        border-color: rgba(123, 216, 143, 0.5);
+      }
+
+      /* ---------- preview card (live mermaid) ---------- */
+      .preview {
+        background: var(--bg-raised);
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .preview-bar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 14px;
+        border-bottom: 1px solid var(--line);
+        background: var(--bg-sunken);
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        color: var(--ink-faint);
+      }
+      .status-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #28c840;
+        box-shadow: 0 0 0 3px rgba(40, 200, 64, 0.18);
+        flex: none;
+      }
+      .preview-url {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .preview-tag {
+        margin-left: auto;
+        color: var(--ink-faint);
+      }
+      .preview-canvas {
+        padding: 22px 18px;
+        min-height: 220px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .preview-canvas .mermaid {
+        margin: 0;
+        width: 100%;
+        text-align: center;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        color: var(--ink-soft);
+        white-space: pre;
+        overflow-x: auto;
+      }
+      .preview-canvas svg {
+        max-width: 100%;
+        height: auto;
+      }
+
+      /* ---------- section scaffolding ---------- */
+      section {
+        padding: 60px 0;
+        border-top: 1px solid var(--line);
+      }
+      .kicker {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--accent-ink);
+        margin: 0 0 14px;
+      }
+      h2 {
+        font-size: clamp(26px, 3.4vw, 34px);
+        margin: 0 0 16px;
+      }
+      .section-lede {
+        color: var(--ink-soft);
+        max-width: 40em;
+        margin: 0 0 40px;
+        font-size: 18px;
+      }
+      h3 {
+        font-size: 20px;
+        margin: 0 0 8px;
+      }
+
+      /* demo */
+      .demo figure {
+        margin: 0;
+      }
+      .demo-frame {
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        background: var(--bg-raised);
+      }
+      .demo-frame img {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      figcaption {
+        margin-top: 14px;
+        color: var(--ink-faint);
+        font-size: 14.5px;
+      }
+
+      /* steps */
+      .steps {
+        list-style: none;
+        counter-reset: step;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 4px;
+      }
+      .steps li {
+        counter-increment: step;
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 20px;
+        padding: 22px 0;
+        border-bottom: 1px solid var(--line);
+      }
+      .steps li:last-child {
+        border-bottom: 0;
+      }
+      .steps li::before {
+        content: counter(step, decimal-leading-zero);
+        font-family: var(--font-mono);
+        font-size: 14px;
+        color: var(--accent-ink);
+        padding-top: 3px;
+      }
+      .steps h3 {
+        margin: 0 0 4px;
+      }
+      .steps p {
+        margin: 0;
+        color: var(--ink-soft);
+      }
+      .steps code {
+        background: var(--bg-sunken);
+        border: 1px solid var(--line);
+        border-radius: 5px;
+        padding: 1px 6px;
+        font-size: 0.86em;
+      }
+
+      /* features */
+      .feat-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 2px;
+      }
+      @media (min-width: 720px) {
+        .feat-grid {
+          grid-template-columns: 1fr 1fr;
+          column-gap: 48px;
+        }
+      }
+      .feat {
+        padding: 22px 0;
+        border-top: 1px solid var(--line);
+      }
+      .feat h3 {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        font-family: var(--font-sans);
+        font-size: 17px;
+        font-weight: 650;
+      }
+      .feat h3::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 2px;
+        background: var(--accent);
+        flex: none;
+        transform: translateY(-1px);
+      }
+      .feat p {
+        margin: 6px 0 0;
+        color: var(--ink-soft);
+        font-size: 15.5px;
+      }
+
+      /* install tabs (pure CSS) */
+      .tabs input {
+        position: absolute;
+        opacity: 0;
+        pointer-events: none;
+      }
+      .tablist {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        border-bottom: 1px solid var(--line);
+        margin-bottom: 24px;
+      }
+      .tablist label {
+        padding: 10px 15px;
+        border-radius: 8px 8px 0 0;
+        font-size: 15px;
+        font-weight: 600;
+        color: var(--ink-faint);
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+      }
+      .tablist label:hover {
+        color: var(--ink);
+      }
+      #tab-plugin:checked ~ .tablist label[for="tab-plugin"],
+      #tab-npm:checked ~ .tablist label[for="tab-npm"],
+      #tab-other:checked ~ .tablist label[for="tab-other"] {
+        color: var(--ink);
+        border-bottom-color: var(--accent);
+      }
+      .tabpanel {
+        display: none;
+      }
+      #tab-plugin:checked ~ .tabpanels #panel-plugin,
+      #tab-npm:checked ~ .tabpanels #panel-npm,
+      #tab-other:checked ~ .tabpanels #panel-other {
+        display: block;
+      }
+      .tabpanel p {
+        margin: 0 0 16px;
+        color: var(--ink-soft);
+      }
+      .tabpanel p.after {
+        margin: 16px 0 0;
+        font-size: 15px;
+      }
+      .badge {
+        display: inline-block;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        color: var(--accent-ink);
+        border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+        border-radius: 999px;
+        padding: 2px 9px;
+        margin-left: 8px;
+        vertical-align: 2px;
+      }
+
+      /* tables */
+      .table-scroll {
+        overflow-x: auto;
+        border: 1px solid var(--line);
+        border-radius: var(--radius);
+        margin-bottom: 32px;
+        background: var(--bg-raised);
+      }
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        min-width: 560px;
+        font-size: 15px;
+      }
+      caption {
+        text-align: left;
+        padding: 16px 18px 6px;
+        font-family: var(--font-mono);
+        font-size: 15px;
+        color: var(--ink);
+        font-weight: 600;
+      }
+      caption .muted {
+        color: var(--ink-faint);
+        font-weight: 400;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 11px 18px;
+        border-top: 1px solid var(--line);
+        vertical-align: top;
+      }
+      thead th {
+        font-size: 12.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--ink-faint);
+        font-weight: 600;
+      }
+      td code {
+        font-size: 13px;
+        color: var(--ink);
+      }
+      td.param code {
+        color: var(--accent-ink);
+      }
+      .req {
+        color: var(--accent-ink);
+        font-size: 12px;
+        font-family: var(--font-mono);
+      }
+
+      /* faq */
+      .faq details {
+        border-top: 1px solid var(--line);
+        padding: 4px 0;
+      }
+      .faq details:last-of-type {
+        border-bottom: 1px solid var(--line);
+      }
+      .faq summary {
+        cursor: pointer;
+        padding: 18px 0;
+        font-family: var(--font-serif);
+        font-size: 19px;
+        font-weight: 600;
+        list-style: none;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .faq summary::-webkit-details-marker {
+        display: none;
+      }
+      .faq summary::after {
+        content: "+";
+        color: var(--accent-ink);
+        font-family: var(--font-mono);
+        font-weight: 400;
+      }
+      .faq details[open] summary::after {
+        content: "\2212";
+      }
+      .faq p {
+        margin: 0 0 18px;
+        color: var(--ink-soft);
+        max-width: 46em;
+      }
+
+      /* footer */
+      footer {
+        border-top: 1px solid var(--line);
+        padding: 48px 0 60px;
+        color: var(--ink-faint);
+        font-size: 15px;
+      }
+      .foot-grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 28px;
+      }
+      .foot-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 22px;
+      }
+      .foot-links a {
+        color: var(--ink-soft);
+      }
+      footer .brand {
+        margin-bottom: 12px;
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+      }
+    </style>
+  </head>
+
+  <body>
+    <a class="sr-only" href="#main">Skip to content</a>
+
+    <nav class="nav" aria-label="Primary">
+      <div class="wrap nav-inner">
+        <a class="brand" href="#top" aria-label="Claude Mermaid home">
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <rect width="32" height="32" rx="7" fill="var(--ink)" />
+            <path
+              d="M9 11.4 16 19M23 11.4 16 19"
+              stroke="var(--bg)"
+              stroke-width="1.8"
+              fill="none"
+              stroke-linecap="round"
+            />
+            <circle cx="9" cy="9" r="3.3" fill="var(--accent)" />
+            <circle cx="23" cy="9" r="3.3" fill="none" stroke="var(--bg)" stroke-width="1.8" />
+            <circle cx="16" cy="22" r="3.3" fill="none" stroke="var(--bg)" stroke-width="1.8" />
+          </svg>
+          claude-mermaid
+        </a>
+        <div class="nav-links">
+          <a class="nav-sec" href="#how">How it works</a>
+          <a class="nav-sec" href="#features">Features</a>
+          <a class="nav-sec" href="#install">Install</a>
+          <a class="nav-sec" href="#tools">Tools</a>
+          <a href="https://github.com/veelenga/claude-mermaid">GitHub</a>
+          <a href="https://www.npmjs.com/package/claude-mermaid">npm</a>
+        </div>
+      </div>
+    </nav>
+
+    <main id="main">
+      <span id="top"></span>
+
+      <!-- hero -->
+      <header class="hero">
+        <div class="wrap hero-grid">
+          <div>
+            <p class="eyebrow">
+              MCP server <span class="dot"></span> Mermaid <span class="dot"></span> live reload
+            </p>
+            <h1>
+              Ask Claude for a diagram. Watch it <span class="em">render as you refine it.</span>
+            </h1>
+            <p class="lede">
+              claude-mermaid renders Mermaid diagrams in your browser and reloads them over a
+              WebSocket every time Claude edits the code. Flowcharts, sequence diagrams, ER diagrams
+              — previewed live, exported to SVG, PNG, or PDF.
+            </p>
+            <div
+              class="cmd"
+              data-copy="/plugin marketplace add veelenga/claude-mermaid&#10;/plugin install claude-mermaid@claude-mermaid"
+            >
+              <button class="copy" type="button" aria-label="Copy install commands">Copy</button>
+              <pre><span class="prompt">$</span> /plugin marketplace add veelenga/claude-mermaid
+<span class="prompt">$</span> /plugin install claude-mermaid@claude-mermaid</pre>
+            </div>
+            <div class="hero-cta">
+              <a class="btn btn-primary" href="#install">Install it</a>
+              <a class="btn btn-ghost" href="https://github.com/veelenga/claude-mermaid"
+                >View on GitHub</a
+              >
+            </div>
+            <p class="hero-note">Free and open source · MIT license · works with any MCP client.</p>
+          </div>
+
+          <div>
+            <div
+              class="preview"
+              role="img"
+              aria-label="A live Mermaid preview of an authentication flow, rendered in the browser with a connected status indicator."
+            >
+              <div class="preview-bar">
+                <span class="status-dot" aria-hidden="true"></span>
+                <span class="preview-url">localhost:3737/auth</span>
+                <span class="preview-tag">live · svg</span>
+              </div>
+              <div class="preview-canvas">
+                <pre class="mermaid" id="hero-diagram">
+graph LR
+    A([User login]) --> B{Valid credentials?}
+    B -->|Yes| C[Access granted]
+    B -->|No| D[Access denied]
+    C --> E[Dashboard]
+    D --> F[Try again]
+    classDef ok stroke:#28c840;
+    class C,E ok;
+</pre
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- demo -->
+      <section class="demo" aria-labelledby="demo-h">
+        <div class="wrap">
+          <p class="kicker">The loop</p>
+          <h2 id="demo-h">Edit the code, the browser catches up on its own</h2>
+          <p class="section-lede">
+            No screenshots, no copy-paste, no export-and-refresh. The preview reloads the instant
+            Claude changes the diagram.
+          </p>
+          <figure>
+            <div class="demo-frame">
+              <img
+                src="https://raw.githubusercontent.com/veelenga/claude-mermaid/main/assets/demo.gif"
+                alt="Claude edits a Mermaid diagram in Claude Code while the browser preview re-renders in real time after each change"
+                loading="lazy"
+                width="1200"
+                height="750"
+              />
+            </div>
+            <figcaption>
+              A diagram being refined in Claude Code — each edit pushes a live reload to the open
+              browser tab.
+            </figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <!-- how it works -->
+      <section id="how" aria-labelledby="how-h">
+        <div class="wrap">
+          <p class="kicker">How it works</p>
+          <h2 id="how-h">A local render loop, four moving parts</h2>
+          <p class="section-lede">
+            The server is small and predictable. Here is exactly what happens between your request
+            and the diagram on screen.
+          </p>
+          <ol class="steps">
+            <li>
+              <div>
+                <h3>Claude calls a tool</h3>
+                <p>
+                  When you ask for a diagram, Claude calls <code>mermaid_preview</code> with the
+                  Mermaid code and a <code>preview_id</code> that names the session.
+                </p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <h3>It renders with mermaid-cli</h3>
+                <p>
+                  The server writes the code to a working file and runs
+                  <code>@mermaid-js/mermaid-cli</code> to produce an SVG in your chosen theme,
+                  background, and scale.
+                </p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <h3>It serves the diagram locally</h3>
+                <p>
+                  A small local server hosts the result at
+                  <code>http://localhost:3737/{preview_id}</code> and opens it in your browser the
+                  first time.
+                </p>
+              </div>
+            </li>
+            <li>
+              <div>
+                <h3>It reloads live over WebSocket</h3>
+                <p>
+                  Every later edit re-renders the file and pushes a reload down a WebSocket. A green
+                  dot means the tab is connected; red means it is reconnecting.
+                </p>
+              </div>
+            </li>
+          </ol>
+
+          <div style="margin-top: 34px">
+            <div class="term" aria-label="Example Claude Code session">
+              <div class="term-bar">
+                <span class="light r" aria-hidden="true"></span>
+                <span class="light y" aria-hidden="true"></span>
+                <span class="light g" aria-hidden="true"></span>
+                <span class="term-title">claude — auth flow</span>
+              </div>
+              <div class="term-body">
+                <p>
+                  <span class="prompt">&gt;</span>
+                  <span class="user">Draw a sequence diagram for the OAuth login flow</span>
+                </p>
+                <div class="spacer"></div>
+                <p>
+                  <span class="assistant">●</span>
+                  <span class="user">I'll render that and open a live preview.</span>
+                </p>
+                <div class="spacer"></div>
+                <p>
+                  <span class="tool">mermaid</span> <span class="muted">▸</span>
+                  <span class="tool">mermaid_preview</span>
+                  <span class="muted">(preview_id: "oauth")</span>
+                </p>
+                <p>
+                  <span class="muted">⎿</span> <span class="ok">Rendered successfully</span>
+                  <span class="muted">· opened http://localhost:3737/oauth</span>
+                </p>
+                <p>
+                  <span class="muted"
+                    >Live reload URL is on — the diagram auto-refreshes when you update it.</span
+                  >
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- features -->
+      <section id="features" aria-labelledby="feat-h">
+        <div class="wrap">
+          <p class="kicker">Features</p>
+          <h2 id="feat-h">Built for iterating on diagrams, not admiring them once</h2>
+          <div class="feat-grid">
+            <div class="feat">
+              <h3>Live reload</h3>
+              <p>
+                The browser refreshes automatically as Claude edits the diagram, with a status dot
+                showing the WebSocket connection.
+              </p>
+            </div>
+            <div class="feat">
+              <h3>SVG, PNG, and PDF export</h3>
+              <p>
+                Preview in SVG and save to any of three formats. PNG and PDF render on demand when
+                you save them.
+              </p>
+            </div>
+            <div class="feat">
+              <h3>Four themes</h3>
+              <p>
+                Render in <code>default</code>, <code>forest</code>, <code>dark</code>, or
+                <code>neutral</code>, with control over background, dimensions, and scale.
+              </p>
+            </div>
+            <div class="feat">
+              <h3>Pan, zoom, and export in-preview</h3>
+              <p>
+                Drag to pan, use browser zoom, recenter with one click, and download the diagram as
+                SVG or PNG straight from the preview.
+              </p>
+            </div>
+            <div class="feat">
+              <h3>Multiple concurrent previews</h3>
+              <p>
+                Give each diagram its own <code>preview_id</code> and work on an architecture map
+                and a sequence flow side by side.
+              </p>
+            </div>
+            <div class="feat">
+              <h3>Persistent working files</h3>
+              <p>
+                Live previews are kept under <code>~/.config/claude-mermaid/live</code>, so your
+                diagrams survive between sessions.
+              </p>
+            </div>
+            <div class="feat">
+              <h3>Standalone gallery</h3>
+              <p>
+                Run <code>claude-mermaid --serve</code> to open a browser gallery of every diagram
+                you have rendered — no agent required.
+              </p>
+            </div>
+            <div class="feat">
+              <h3>Built-in diagram skill</h3>
+              <p>
+                The Claude Code plugin ships a skill with Mermaid best practices and workflow
+                guidance, so diagrams come out well-formed.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- install -->
+      <section id="install" aria-labelledby="install-h">
+        <div class="wrap">
+          <p class="kicker">Installation</p>
+          <h2 id="install-h">Pick your client and paste two commands</h2>
+          <p class="section-lede">
+            It is built for Claude Code, where the plugin also installs the diagram skill. Any
+            MCP-compatible client works with the same <code>claude-mermaid</code> command.
+          </p>
+
+          <div class="tabs">
+            <input type="radio" name="install" id="tab-plugin" checked />
+            <input type="radio" name="install" id="tab-npm" />
+            <input type="radio" name="install" id="tab-other" />
+
+            <div class="tablist" role="tablist" aria-label="Installation methods">
+              <label for="tab-plugin">Claude Code plugin</label>
+              <label for="tab-npm">npm</label>
+              <label for="tab-other">Other MCP clients</label>
+            </div>
+
+            <div class="tabpanels">
+              <section class="tabpanel" id="panel-plugin" aria-labelledby="tab-plugin">
+                <p>
+                  <span class="badge">Recommended</span> Add the marketplace and install the plugin
+                  from inside Claude Code, then restart to activate it.
+                </p>
+                <div
+                  class="cmd"
+                  data-copy="/plugin marketplace add veelenga/claude-mermaid&#10;/plugin install claude-mermaid@claude-mermaid"
+                >
+                  <button class="copy" type="button" aria-label="Copy plugin install commands">
+                    Copy
+                  </button>
+                  <pre><span class="prompt">$</span> /plugin marketplace add veelenga/claude-mermaid
+<span class="prompt">$</span> /plugin install claude-mermaid@claude-mermaid</pre>
+                </div>
+                <p class="after">
+                  Restart Claude Code, then run <code>/mcp</code> — you should see
+                  <code>mermaid</code> in the server list.
+                </p>
+              </section>
+
+              <section class="tabpanel" id="panel-npm" aria-labelledby="tab-npm">
+                <p>
+                  Install the CLI globally from npm and register it as a user-scoped MCP server.
+                </p>
+                <div
+                  class="cmd"
+                  data-copy="npm install -g claude-mermaid&#10;claude mcp add --scope user mermaid claude-mermaid"
+                >
+                  <button class="copy" type="button" aria-label="Copy npm install commands">
+                    Copy
+                  </button>
+                  <pre><span class="prompt">$</span> npm install -g claude-mermaid
+<span class="prompt">$</span> claude mcp add --scope user mermaid claude-mermaid</pre>
+                </div>
+                <p class="after">
+                  Verify with <code>claude mcp list</code> — you should see
+                  <code>mermaid: claude-mermaid - ✓ Connected</code>.
+                </p>
+              </section>
+
+              <section class="tabpanel" id="panel-other" aria-labelledby="tab-other">
+                <p>
+                  For Cursor, Codex, Windsurf, Cline, Gemini CLI, or any other MCP client, install
+                  the package and add this to the client's MCP configuration.
+                </p>
+                <div
+                  class="cmd"
+                  data-copy='{&#10;  "mcpServers": {&#10;    "mermaid": {&#10;      "command": "claude-mermaid"&#10;    }&#10;  }&#10;}'
+                >
+                  <button class="copy" type="button" aria-label="Copy MCP configuration">
+                    Copy
+                  </button>
+                  <pre>{
+  <span class="c">"mcpServers"</span>: {
+    <span class="c">"mermaid"</span>: {
+      <span class="c">"command"</span>: <span class="c">"claude-mermaid"</span>
+    }
+  }
+}</pre>
+                </div>
+                <p class="after">
+                  Some clients want an absolute path — find it with
+                  <code>which claude-mermaid</code> and use that as the command.
+                </p>
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- tools -->
+      <section id="tools" aria-labelledby="tools-h">
+        <div class="wrap">
+          <p class="kicker">Tools reference</p>
+          <h2 id="tools-h">Two tools, no ceremony</h2>
+          <p class="section-lede">
+            The server exposes exactly two tools. Claude calls them for you, but here is the full
+            surface.
+          </p>
+
+          <div class="table-scroll">
+            <table>
+              <caption>
+                <code>mermaid_preview</code>
+                <span class="muted">— render and open a live preview</span>
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Parameter</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Default</th>
+                  <th scope="col">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="param"><code>diagram</code> <span class="req">required</span></td>
+                  <td>string</td>
+                  <td>—</td>
+                  <td>The Mermaid diagram code to render.</td>
+                </tr>
+                <tr>
+                  <td class="param"><code>preview_id</code> <span class="req">required</span></td>
+                  <td>string</td>
+                  <td>—</td>
+                  <td>Names the preview session. Use different IDs for concurrent diagrams.</td>
+                </tr>
+                <tr>
+                  <td class="param"><code>format</code></td>
+                  <td>string</td>
+                  <td><code>svg</code></td>
+                  <td>
+                    One of <code>svg</code>, <code>png</code>, <code>pdf</code>. Live preview is
+                    SVG-only.
+                  </td>
+                </tr>
+                <tr>
+                  <td class="param"><code>theme</code></td>
+                  <td>string</td>
+                  <td><code>default</code></td>
+                  <td>
+                    One of <code>default</code>, <code>forest</code>, <code>dark</code>,
+                    <code>neutral</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td class="param"><code>background</code></td>
+                  <td>string</td>
+                  <td><code>white</code></td>
+                  <td>
+                    Background color, e.g. <code>transparent</code>, <code>white</code>,
+                    <code>#F0F0F0</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td class="param"><code>width</code></td>
+                  <td>number</td>
+                  <td><code>800</code></td>
+                  <td>Diagram width in pixels.</td>
+                </tr>
+                <tr>
+                  <td class="param"><code>height</code></td>
+                  <td>number</td>
+                  <td><code>600</code></td>
+                  <td>Diagram height in pixels.</td>
+                </tr>
+                <tr>
+                  <td class="param"><code>scale</code></td>
+                  <td>number</td>
+                  <td><code>2</code></td>
+                  <td>Scale factor for higher-quality output.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-scroll">
+            <table>
+              <caption>
+                <code>mermaid_save</code>
+                <span class="muted">— save the current diagram to a path</span>
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Parameter</th>
+                  <th scope="col">Type</th>
+                  <th scope="col">Default</th>
+                  <th scope="col">Description</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td class="param"><code>save_path</code> <span class="req">required</span></td>
+                  <td>string</td>
+                  <td>—</td>
+                  <td>Destination path, e.g. <code>./docs/diagram.svg</code>.</td>
+                </tr>
+                <tr>
+                  <td class="param"><code>preview_id</code> <span class="req">required</span></td>
+                  <td>string</td>
+                  <td>—</td>
+                  <td>
+                    Must match the <code>preview_id</code> used in <code>mermaid_preview</code>.
+                  </td>
+                </tr>
+                <tr>
+                  <td class="param"><code>format</code></td>
+                  <td>string</td>
+                  <td><code>svg</code></td>
+                  <td>
+                    One of <code>svg</code>, <code>png</code>, <code>pdf</code>. Rendered on demand
+                    if the working file does not exist yet.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- faq -->
+      <section id="faq" class="faq" aria-labelledby="faq-h">
+        <div class="wrap">
+          <p class="kicker">FAQ</p>
+          <h2 id="faq-h">Questions worth answering</h2>
+          <div style="margin-top: 28px">
+            <details>
+              <summary>Which clients are supported?</summary>
+              <p>
+                It is built for Claude Code, where the plugin also installs a diagram skill. Because
+                it speaks the Model Context Protocol, it works with any MCP client — Cursor, Codex,
+                Windsurf, Cline, and Gemini CLI included — using the standard command configuration.
+              </p>
+            </details>
+            <details>
+              <summary>Does live reload work for PNG and PDF?</summary>
+              <p>
+                Live preview in the browser is SVG-only. PNG and PDF still render and can be saved
+                or exported, but they do not auto-reload. The browser always previews SVG while
+                saving to the format you ask for.
+              </p>
+            </details>
+            <details>
+              <summary>Where are my diagrams stored?</summary>
+              <p>
+                Live working files are kept under <code>~/.config/claude-mermaid/live</code> so
+                previews persist between sessions, and logs live under
+                <code>~/.config/claude-mermaid/logs</code>. The <code>mermaid_save</code> tool
+                copies the rendered diagram to any path you choose, such as
+                <code>./docs/diagram.svg</code>.
+              </p>
+            </details>
+            <details>
+              <summary>What ports does it use?</summary>
+              <p>
+                The local preview server uses ports <code>3737</code>–<code>3747</code> and
+                automatically picks the first one that is free.
+              </p>
+            </details>
+            <details>
+              <summary>Can I preview several diagrams at once?</summary>
+              <p>
+                Yes. Give each diagram its own <code>preview_id</code>, such as
+                <code>architecture</code> or <code>flow</code>, and each gets its own live URL that
+                reloads independently.
+              </p>
+            </details>
+            <details>
+              <summary>Is it free?</summary>
+              <p>Yes. claude-mermaid is open source under the MIT license.</p>
+            </details>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="wrap">
+        <div class="foot-grid">
+          <div>
+            <a class="brand" href="#top" aria-label="Claude Mermaid home">
+              <svg viewBox="0 0 32 32" aria-hidden="true">
+                <rect width="32" height="32" rx="7" fill="var(--ink)" />
+                <path
+                  d="M9 11.4 16 19M23 11.4 16 19"
+                  stroke="var(--bg)"
+                  stroke-width="1.8"
+                  fill="none"
+                  stroke-linecap="round"
+                />
+                <circle cx="9" cy="9" r="3.3" fill="var(--accent)" />
+                <circle cx="23" cy="9" r="3.3" fill="none" stroke="var(--bg)" stroke-width="1.8" />
+                <circle cx="16" cy="22" r="3.3" fill="none" stroke="var(--bg)" stroke-width="1.8" />
+              </svg>
+              claude-mermaid
+            </a>
+            <div>
+              MIT licensed · built by
+              <a href="https://github.com/veelenga">Vitalii Elenhaupt</a>
+            </div>
+          </div>
+          <nav class="foot-links" aria-label="Footer">
+            <a href="https://github.com/veelenga/claude-mermaid">GitHub</a>
+            <a href="https://www.npmjs.com/package/claude-mermaid">npm</a>
+            <a href="https://mermaid.js.org/">Mermaid docs</a>
+            <a href="https://docs.claude.com/claude-code">Claude Code docs</a>
+          </nav>
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      document.documentElement.classList.add("js");
+
+      // Click-to-copy for command blocks.
+      document.querySelectorAll(".cmd").forEach((block) => {
+        const button = block.querySelector(".copy");
+        if (!button) return;
+        button.addEventListener("click", async () => {
+          const text = (block.getAttribute("data-copy") || "").replace(/\r/g, "");
+          try {
+            await navigator.clipboard.writeText(text);
+            const original = button.textContent;
+            button.textContent = "Copied";
+            button.classList.add("done");
+            setTimeout(() => {
+              button.textContent = original;
+              button.classList.remove("done");
+            }, 1600);
+          } catch (err) {
+            button.textContent = "Copy failed";
+          }
+        });
+      });
+    </script>
+
+    <script type="module">
+      const el = document.getElementById("hero-diagram");
+      if (el) {
+        const source = el.textContent;
+        try {
+          const { default: mermaid } =
+            await import("https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs");
+          const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+
+          const render = async () => {
+            mermaid.initialize({
+              startOnLoad: false,
+              securityLevel: "loose",
+              theme: prefersDark.matches ? "dark" : "default",
+              fontFamily: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
+            });
+            el.removeAttribute("data-processed");
+            el.innerHTML = source;
+            await mermaid.run({ nodes: [el] });
+          };
+
+          await render();
+          if (prefersDark.addEventListener) {
+            prefersDark.addEventListener("change", render);
+          }
+        } catch (err) {
+          // Leaves the <pre class="mermaid"> source visible as a graceful fallback.
+        }
+      }
+    </script>
+  </body>
+</html>
