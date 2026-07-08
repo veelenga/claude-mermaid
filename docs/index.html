@@ -339,6 +339,11 @@
           gap: 56px;
         }
       }
+      .hero-grid > *,
+      .steps li > *,
+      .feat-grid > * {
+        min-width: 0;
+      }
       .eyebrow {
         font-family: var(--font-mono);
         font-size: 13px;
@@ -447,7 +452,6 @@
       }
       .term-body p {
         margin: 0 0 2px;
-        white-space: pre-wrap;
       }
       .term-body .spacer {
         height: 12px;
@@ -482,9 +486,10 @@
         top: 9px;
         right: 9px;
         display: none;
-        background: rgba(255, 255, 255, 0.08);
+        background: #33322d;
         color: #d9d5cb;
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow: -6px 0 10px -2px var(--term-bg);
         border-radius: 7px;
         padding: 5px 9px;
         font-size: 12px;
@@ -495,7 +500,7 @@
         display: inline-block;
       }
       .copy:hover {
-        background: rgba(255, 255, 255, 0.16);
+        background: #45443d;
       }
       .copy.done {
         color: #7bd88f;
@@ -969,8 +974,7 @@ graph LR
     D --> F[Try again]
     classDef ok stroke:#28c840;
     class C,E ok;
-</pre
-                >
+</pre>
               </div>
             </div>
           </div>
@@ -1510,12 +1514,11 @@ graph LR
           const render = async () => {
             mermaid.initialize({
               startOnLoad: false,
-              securityLevel: "loose",
               theme: prefersDark.matches ? "dark" : "default",
               fontFamily: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
             });
             el.removeAttribute("data-processed");
-            el.innerHTML = source;
+            el.textContent = source;
             await mermaid.run({ nodes: [el] });
           };
 
