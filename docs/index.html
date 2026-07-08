@@ -1514,12 +1514,11 @@ graph LR
           const render = async () => {
             mermaid.initialize({
               startOnLoad: false,
-              securityLevel: "loose",
               theme: prefersDark.matches ? "dark" : "default",
               fontFamily: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
             });
             el.removeAttribute("data-processed");
-            el.innerHTML = source;
+            el.textContent = source;
             await mermaid.run({ nodes: [el] });
           };
 
