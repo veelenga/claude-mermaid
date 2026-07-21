@@ -1,4 +1,10 @@
 User-agent: *
 Allow: /
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
 
 Sitemap: https://veelenga.github.io/claude-mermaid/sitemap.xml
+
+# AI agents: a structured index is available at
+# https://veelenga.github.io/claude-mermaid/llms.txt
+# and a markdown version of the site at
+# https://veelenga.github.io/claude-mermaid/index.md

@@ -1,0 +1,27 @@
+# Claude Mermaid
+
+> claude-mermaid is an MCP (Model Context Protocol) server that renders Mermaid diagrams in the browser with live reload as Claude edits the code. It exposes two tools — mermaid_preview and mermaid_save — supports SVG, PNG, and PDF export, and ships as a Claude Code plugin with a built-in diagram skill. Free and MIT-licensed.
+
+Key facts:
+
+- Install as a Claude Code plugin: `/plugin marketplace add veelenga/claude-mermaid` then `/plugin install claude-mermaid@claude-mermaid`
+- Or from npm: `npm install -g claude-mermaid` then `claude mcp add --scope user mermaid claude-mermaid`
+- Works with any MCP client (Cursor, Codex, Windsurf, Cline, Gemini CLI) via the `claude-mermaid` command
+- Runs locally: renders with @mermaid-js/mermaid-cli, serves previews at http://localhost:3737 (ports 3737–3747), reloads over WebSocket
+- Working files persist under ~/.config/claude-mermaid/live; `claude-mermaid --serve` opens a standalone gallery
+
+## Documentation
+
+- [Website (markdown version)](https://veelenga.github.io/claude-mermaid/index.md): Full product page as clean markdown — features, installation for each client, tools reference, and FAQ
+- [README](https://raw.githubusercontent.com/veelenga/claude-mermaid/main/README.md): Source-of-truth documentation with quick start, architecture diagrams, and configuration details
+- [Changelog](https://raw.githubusercontent.com/veelenga/claude-mermaid/main/CHANGELOG.md): Release history
+
+## Source code
+
+- [GitHub repository](https://github.com/veelenga/claude-mermaid): TypeScript source, issues, and releases (MIT license)
+- [npm package](https://www.npmjs.com/package/claude-mermaid): Published package `claude-mermaid`
+
+## Related
+
+- [Mermaid documentation](https://mermaid.js.org/): Syntax reference for the diagrams this server renders
+- [Claude Code documentation](https://docs.anthropic.com/en/docs/claude-code): The primary client this server is built for
