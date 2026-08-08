@@ -7,9 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.5] - 2026-08-08
+
 ### Security
 
-- Validate diagram ID in `/view/` route to prevent path traversal in `handleViewRequest`
+- Validate diagram ID in `/view/` route to prevent path traversal in `handleViewRequest` (#136)
+- Restricted CI `GITHUB_TOKEN` to `contents: read` (#137)
+- Patched transitive advisories in `dompurify`, `hono`, `@hono/node-server`, `mermaid`, `nanoid`, `js-yaml`, `postcss`, `fast-uri`, `ip-address`, and `body-parser`
+
+### Added
+
+- Project website served via GitHub Pages
+- `llms.txt` and a Markdown version of the website for AI agents
+
+### Fixed
+
+- Mobile layout on the project landing page (#155)
+
+### Changed
+
+- Bumped `pako` to 3.0.1
+- Bumped `@mermaid-js/mermaid-cli` to 11.16.0
+- Bumped `@modelcontextprotocol/sdk` to 1.30.0
+- Bumped `ws` to 8.21.1
+- Bumped development tooling to TypeScript 7.0.2, `@types/node` 26.1.2, Prettier 3.9.6, and Vitest 4.1.10
 
 ## [1.6.4] - 2026-05-28
 
