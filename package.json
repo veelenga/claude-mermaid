@@ -53,7 +53,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.0.0",
-    "@types/pako": "^2.0.4",
+    "@types/pako": "^3.0.0",
     "@types/ws": "^8.18.1",
     "prettier": "^3.6.2",
     "typescript": "^7.0.2",
