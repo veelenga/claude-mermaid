@@ -49,7 +49,8 @@
     "@hono/node-server": "^2.0.5",
     "dompurify": "^3.4.13",
     "lodash-es": "^4.18.0",
-    "nanoid": "^3.3.17"
+    "nanoid": "^3.3.17",
+    "puppeteer": "^25.8.0"
   },
   "devDependencies": {
     "@types/node": "^26.0.0",
