@@ -11,6 +11,8 @@ import {
   getConfigDir,
   validateBackground,
   validateSavePath,
+  validateTheme,
+  validateFormat,
 } from "../src/file-utils.js";
 import { unlink, mkdir, rmdir, readdir, mkdtemp, rm } from "fs/promises";
 import { tmpdir } from "os";
@@ -365,6 +367,62 @@ describe("File Utilities", () => {
       expect(() => validateBackground("#ff")).toThrow("Invalid background color");
       expect(() => validateBackground("rgb(255, 0, 0")).toThrow("Invalid background color");
       expect(() => validateBackground("javascript:alert(1)")).toThrow("Invalid background color");
+    });
+  });
+
+  describe("validateTheme", () => {
+    it("should accept allowed themes", () => {
+      expect(() => validateTheme("default")).not.toThrow();
+      expect(() => validateTheme("forest")).not.toThrow();
+      expect(() => validateTheme("dark")).not.toThrow();
+      expect(() => validateTheme("neutral")).not.toThrow();
+    });
+
+    it("should reject empty or missing values", () => {
+      expect(() => validateTheme("")).toThrow("Invalid theme");
+      expect(() => validateTheme(undefined as unknown as string)).toThrow("Invalid theme");
+    });
+
+    it("should reject shell metacharacters (Windows cmd.exe /c)", () => {
+      // theme flows verbatim into `npx ... -t <theme>` → `cmd.exe /c` on Windows
+      expect(() => validateTheme("default & calc.exe")).toThrow("Invalid theme");
+      expect(() => validateTheme("dark|whoami")).toThrow("Invalid theme");
+      expect(() => validateTheme("default && calc.exe")).toThrow("Invalid theme");
+      expect(() => validateTheme("dark||whoami")).toThrow("Invalid theme");
+      expect(() => validateTheme("default`whoami")).toThrow("Invalid theme");
+    });
+
+    it("should reject values outside the allowlist", () => {
+      expect(() => validateTheme("cyberpunk")).toThrow("Invalid theme");
+      expect(() => validateTheme("DARK")).toThrow("Invalid theme"); // case-sensitive
+      expect(() => validateTheme("default ")).toThrow("Invalid theme"); // trailing space
+    });
+  });
+
+  describe("validateFormat", () => {
+    it("should accept allowed formats", () => {
+      expect(() => validateFormat("svg")).not.toThrow();
+      expect(() => validateFormat("png")).not.toThrow();
+      expect(() => validateFormat("pdf")).not.toThrow();
+    });
+
+    it("should reject empty or missing values", () => {
+      expect(() => validateFormat("")).toThrow("Invalid format");
+      expect(() => validateFormat(undefined as unknown as string)).toThrow("Invalid format");
+    });
+
+    it("should reject shell metacharacters (Windows cmd.exe /c)", () => {
+      // format builds the output path `diagram-<id>.<format>` → `cmd.exe /c`
+      expect(() => validateFormat("svg & calc.exe")).toThrow("Invalid format");
+      expect(() => validateFormat("png|whoami")).toThrow("Invalid format");
+      expect(() => validateFormat("svg&&calc")).toThrow("Invalid format");
+      expect(() => validateFormat("png`id")).toThrow("Invalid format");
+    });
+
+    it("should reject values outside the allowlist", () => {
+      expect(() => validateFormat("jpg")).toThrow("Invalid format");
+      expect(() => validateFormat("SVG")).toThrow("Invalid format"); // case-sensitive
+      expect(() => validateFormat("svg ")).toThrow("Invalid format"); // trailing space
     });
   });
 });

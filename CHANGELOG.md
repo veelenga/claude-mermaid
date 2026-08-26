@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- Validate theme, format, width, height and scale before rendering to prevent command injection via `cmd.exe /c` on Windows; re-render paths (`mermaid_save`, `/export/`) are validated too
+
 ## [1.6.5] - 2026-08-08
 
 ### Security

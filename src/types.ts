@@ -15,6 +15,12 @@ export interface DiagramOptions {
   scale: number;
 }
 
+export interface RenderOptions extends DiagramOptions {
+  diagram: string;
+  previewId: string;
+  format: string;
+}
+
 export interface DiagramInfo {
   id: string;
   format: DiagramFormat;

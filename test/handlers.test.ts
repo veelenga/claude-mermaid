@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { handleMermaidPreview, handleMermaidSave } from "../src/handlers.js";
-import { getPreviewDir, getDiagramFilePath } from "../src/file-utils.js";
-import { readdir, unlink, access } from "fs/promises";
+import { getPreviewDir, getDiagramFilePath, getDiagramOptionsPath } from "../src/file-utils.js";
+import { readdir, unlink, access, writeFile } from "fs/promises";
 import { execFile } from "child_process";
 import { setupTestEnvWithPreview, restoreTestEnv } from "./helpers/env-helpers.js";
 
@@ -239,6 +239,27 @@ describe("handleMermaidPreview", () => {
     expect(result.content[0].text).toContain("Invalid background");
     expect(mockExecFile).not.toHaveBeenCalled();
   });
+
+  it.each([
+    ["theme", { theme: "dark|whoami" }, "Invalid theme"],
+    ["format", { format: "svg&calc" }, "Invalid format"],
+    ["width", { width: "800&calc" }, "Invalid width"],
+    ["height", { height: -1 }, "Invalid height"],
+    ["scale", { scale: Infinity }, "Invalid scale"],
+  ])("should reject invalid %s without invoking npx", async (_label, overrides, message) => {
+    const mockExecFile = vi.mocked(execFile);
+    mockExecFile.mockClear();
+
+    const result = await handleMermaidPreview({
+      diagram: "graph TD; A-->B",
+      preview_id: testPreviewId,
+      ...overrides,
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain(message);
+    expect(mockExecFile).not.toHaveBeenCalled();
+  });
 });
 
 describe("handleMermaidSave", () => {
@@ -307,6 +328,46 @@ describe("handleMermaidSave", () => {
     const pngPath = getDiagramFilePath(testPreviewId, "png");
     await access(pngPath);
     await unlink(pngPath);
+  });
+
+  it("should reject invalid format without invoking npx", async () => {
+    const mockExecFile = vi.mocked(execFile);
+    mockExecFile.mockClear();
+
+    const result = await handleMermaidSave({
+      save_path: "/tmp/test-diagram.svg",
+      preview_id: testPreviewId,
+      format: "svg&calc",
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Invalid format");
+    expect(mockExecFile).not.toHaveBeenCalled();
+  });
+
+  it("should not re-render with tampered stored options", async () => {
+    const mockExecFile = vi.mocked(execFile);
+    mockExecFile.mockClear();
+    await writeFile(
+      getDiagramOptionsPath(testPreviewId),
+      JSON.stringify({
+        theme: "dark & calc.exe",
+        background: "white",
+        width: 800,
+        height: 600,
+        scale: 2,
+      })
+    );
+
+    const result = await handleMermaidSave({
+      save_path: "/tmp/test-diagram.pdf",
+      preview_id: testPreviewId,
+      format: "pdf",
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Invalid theme");
+    expect(mockExecFile).not.toHaveBeenCalled();
   });
 
   it("should handle missing diagram source when saving", async () => {

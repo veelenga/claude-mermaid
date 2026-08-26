@@ -100,6 +100,9 @@ export const PREVIEW_ID_REGEX = /^[a-zA-Z0-9_-]+$/;
 export const BACKGROUND_REGEX =
   /^(?:[a-zA-Z]+|#[0-9a-fA-F]{3,8}|(?:rgb|rgba|hsl|hsla)\(\s*[0-9.,%\s]+\s*\))$/;
 
+export const ALLOWED_THEMES = ["default", "forest", "dark", "neutral"] as const;
+export const ALLOWED_FORMATS = ["svg", "png", "pdf"] as const;
+
 // ===== System Paths (Security) =====
 export const UNIX_SYSTEM_PATHS = [
   "/etc",

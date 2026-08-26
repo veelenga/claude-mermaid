@@ -10,26 +10,18 @@ import {
   saveDiagramSource,
   loadDiagramSource,
   loadDiagramOptions,
-  validateBackground,
   validateSavePath,
+  validateFormat,
+  validateRenderOptions,
   getOpenCommand,
 } from "./file-utils.js";
 import { mcpLogger } from "./logger.js";
+import type { RenderOptions } from "./types.js";
 
 const execFileAsync = promisify(execFile);
 
-export interface RenderOptions {
-  diagram: string;
-  previewId: string;
-  format: string;
-  theme: string;
-  background: string;
-  width: number;
-  height: number;
-  scale: number;
-}
-
 export async function renderDiagram(options: RenderOptions, liveFilePath: string): Promise<void> {
+  validateRenderOptions(options);
   const { diagram, previewId, format, theme, background, width, height, scale } = options;
 
   mcpLogger.info(`Rendering diagram: ${previewId}`, { format, theme, width, height });
@@ -169,14 +161,16 @@ export async function handleMermaidPreview(args: any) {
     throw new Error("preview_id parameter is required");
   }
 
+  const renderOptions = { diagram, previewId, format, theme, background, width, height, scale };
+
   try {
-    validateBackground(background);
+    validateRenderOptions(renderOptions);
   } catch (error) {
     return {
       content: [
         {
           type: "text",
-          text: `Invalid background: ${error instanceof Error ? error.message : String(error)}`,
+          text: error instanceof Error ? error.message : String(error),
         },
       ],
       isError: true,
@@ -189,10 +183,7 @@ export async function handleMermaidPreview(args: any) {
 
   try {
     await saveDiagramSource(previewId, diagram, { theme, background, width, height, scale });
-    await renderDiagram(
-      { diagram, previewId, format, theme, background, width, height, scale },
-      liveFilePath
-    );
+    await renderDiagram(renderOptions, liveFilePath);
 
     if (format === "svg") {
       const { serverUrl, hasConnections } = await setupLivePreview(previewId, liveFilePath);
@@ -245,6 +236,20 @@ export async function handleMermaidSave(args: any) {
   }
 
   try {
+    validateFormat(format);
+  } catch (error) {
+    return {
+      content: [
+        {
+          type: "text",
+          text: error instanceof Error ? error.message : String(error),
+        },
+      ],
+      isError: true,
+    };
+  }
+
+  try {
     const liveFilePath = getDiagramFilePath(previewId, format);
 
     try {
@@ -252,15 +257,7 @@ export async function handleMermaidSave(args: any) {
     } catch {
       const diagram = await loadDiagramSource(previewId);
       const options = await loadDiagramOptions(previewId);
-      await renderDiagram(
-        {
-          diagram,
-          previewId,
-          format,
-          ...options,
-        },
-        liveFilePath
-      );
+      await renderDiagram({ ...options, diagram, previewId, format }, liveFilePath);
     }
 
     const saveDir = dirname(savePath);

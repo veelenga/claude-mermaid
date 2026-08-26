@@ -9,8 +9,10 @@ import {
   WINDOWS_SYSTEM_PATHS,
   FILE_NAMES,
   DIR_NAMES,
+  ALLOWED_THEMES,
+  ALLOWED_FORMATS,
 } from "./constants.js";
-import type { DiagramOptions } from "./types.js";
+import type { DiagramOptions, RenderOptions } from "./types.js";
 
 export function getConfigDir(): string {
   const xdg = process.env.XDG_CONFIG_HOME;
@@ -55,6 +57,35 @@ export function validateBackground(background: string): void {
       "Invalid background color. Use a CSS named color (e.g. 'transparent'), hex (e.g. '#F0F0F0'), or rgb/rgba/hsl/hsla(...)."
     );
   }
+}
+
+function validateAllowed(label: string, value: string, allowed: readonly string[]): void {
+  if (!allowed.includes(value)) {
+    throw new Error(`Invalid ${label}: "${value}". Allowed values: ${allowed.join(", ")}.`);
+  }
+}
+
+export function validateTheme(theme: string): void {
+  validateAllowed("theme", theme, ALLOWED_THEMES);
+}
+
+export function validateFormat(format: string): void {
+  validateAllowed("format", format, ALLOWED_FORMATS);
+}
+
+export function validateDimension(label: string, value: number): void {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    throw new Error(`Invalid ${label}: "${value}". Must be a positive number.`);
+  }
+}
+
+export function validateRenderOptions(options: RenderOptions): void {
+  validateFormat(options.format);
+  validateTheme(options.theme);
+  validateBackground(options.background);
+  validateDimension("width", options.width);
+  validateDimension("height", options.height);
+  validateDimension("scale", options.scale);
 }
 
 export function getPreviewDir(previewId: string): string {
