@@ -17,8 +17,17 @@ import {
 } from "./file-utils.js";
 import { mcpLogger } from "./logger.js";
 import type { RenderOptions } from "./types.js";
+import { DEFAULT_DIAGRAM_OPTIONS, DEFAULT_FORMAT } from "./constants.js";
 
 const execFileAsync = promisify(execFile);
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function createErrorResponse(text: string) {
+  return { content: [{ type: "text", text }], isError: true };
+}
 
 export async function renderDiagram(options: RenderOptions, liveFilePath: string): Promise<void> {
   validateRenderOptions(options);
@@ -76,7 +85,7 @@ export async function renderDiagram(options: RenderOptions, liveFilePath: string
     await copyFile(outputFile, liveFilePath);
     mcpLogger.info(`Diagram rendered successfully: ${previewId}`);
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    const message = errorMessage(error);
     const stderrValue = error instanceof Error && "stderr" in error ? (error as any).stderr : "";
     const stderr = stderrValue ? `\n${stderrValue}` : "";
     mcpLogger.error(`Diagram rendering failed: ${previewId}`, { error: message });
@@ -147,12 +156,12 @@ function createStaticRenderResponse(liveFilePath: string, format: string): any {
 export async function handleMermaidPreview(args: any) {
   const diagram = args.diagram as string;
   const previewId = args.preview_id as string;
-  const format = (args.format as string) || "svg";
-  const theme = (args.theme as string) || "default";
-  const background = (args.background as string) || "white";
-  const width = (args.width as number) || 800;
-  const height = (args.height as number) || 600;
-  const scale = (args.scale as number) || 2;
+  const format = (args.format as string) ?? DEFAULT_FORMAT;
+  const theme = (args.theme as string) ?? DEFAULT_DIAGRAM_OPTIONS.theme;
+  const background = (args.background as string) ?? DEFAULT_DIAGRAM_OPTIONS.background;
+  const width = (args.width as number) ?? DEFAULT_DIAGRAM_OPTIONS.width;
+  const height = (args.height as number) ?? DEFAULT_DIAGRAM_OPTIONS.height;
+  const scale = (args.scale as number) ?? DEFAULT_DIAGRAM_OPTIONS.scale;
 
   if (!diagram) {
     throw new Error("diagram parameter is required");
@@ -166,15 +175,7 @@ export async function handleMermaidPreview(args: any) {
   try {
     validateRenderOptions(renderOptions);
   } catch (error) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: error instanceof Error ? error.message : String(error),
-        },
-      ],
-      isError: true,
-    };
+    return createErrorResponse(errorMessage(error));
   }
 
   const previewDir = getPreviewDir(previewId);
@@ -192,22 +193,14 @@ export async function handleMermaidPreview(args: any) {
       return createStaticRenderResponse(liveFilePath, format);
     }
   } catch (error) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error rendering Mermaid diagram: ${error instanceof Error ? error.message : String(error)}`,
-        },
-      ],
-      isError: true,
-    };
+    return createErrorResponse(`Error rendering Mermaid diagram: ${errorMessage(error)}`);
   }
 }
 
 export async function handleMermaidSave(args: any) {
   const savePath = args.save_path as string;
   const previewId = args.preview_id as string;
-  const format = (args.format as string) || "svg";
+  const format = (args.format as string) ?? DEFAULT_FORMAT;
 
   if (!savePath) {
     throw new Error("save_path parameter is required");
@@ -222,31 +215,15 @@ export async function handleMermaidSave(args: any) {
   } catch (error) {
     mcpLogger.error("Save path validation failed", {
       savePath,
-      error: error instanceof Error ? error.message : String(error),
+      error: errorMessage(error),
     });
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Invalid save path: ${error instanceof Error ? error.message : String(error)}`,
-        },
-      ],
-      isError: true,
-    };
+    return createErrorResponse(`Invalid save path: ${errorMessage(error)}`);
   }
 
   try {
     validateFormat(format);
   } catch (error) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: error instanceof Error ? error.message : String(error),
-        },
-      ],
-      isError: true,
-    };
+    return createErrorResponse(errorMessage(error));
   }
 
   try {
@@ -273,14 +250,6 @@ export async function handleMermaidSave(args: any) {
       ],
     };
   } catch (error) {
-    return {
-      content: [
-        {
-          type: "text",
-          text: `Error saving diagram: ${error instanceof Error ? error.message : String(error)}`,
-        },
-      ],
-      isError: true,
-    };
+    return createErrorResponse(`Error saving diagram: ${errorMessage(error)}`);
   }
 }
