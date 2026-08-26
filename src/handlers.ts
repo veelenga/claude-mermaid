@@ -12,6 +12,8 @@ import {
   loadDiagramOptions,
   validateBackground,
   validateSavePath,
+  validateTheme,
+  validateFormat,
   getOpenCommand,
 } from "./file-utils.js";
 import { mcpLogger } from "./logger.js";
@@ -170,13 +172,15 @@ export async function handleMermaidPreview(args: any) {
   }
 
   try {
+    validateFormat(format);
+    validateTheme(theme);
     validateBackground(background);
   } catch (error) {
     return {
       content: [
         {
           type: "text",
-          text: `Invalid background: ${error instanceof Error ? error.message : String(error)}`,
+          text: `Invalid parameter: ${error instanceof Error ? error.message : String(error)}`,
         },
       ],
       isError: true,
@@ -238,6 +242,25 @@ export async function handleMermaidSave(args: any) {
         {
           type: "text",
           text: `Invalid save path: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+      isError: true,
+    };
+  }
+
+  // Validate format to prevent command injection via cmd.exe /c on Windows
+  try {
+    validateFormat(format);
+  } catch (error) {
+    mcpLogger.error("Format validation failed", {
+      format,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      content: [
+        {
+          type: "text",
+          text: `Invalid format: ${error instanceof Error ? error.message : String(error)}`,
         },
       ],
       isError: true,

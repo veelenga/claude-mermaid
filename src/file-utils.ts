@@ -9,6 +9,8 @@ import {
   WINDOWS_SYSTEM_PATHS,
   FILE_NAMES,
   DIR_NAMES,
+  ALLOWED_THEMES,
+  ALLOWED_FORMATS,
 } from "./constants.js";
 import type { DiagramOptions } from "./types.js";
 
@@ -53,6 +55,34 @@ export function validateBackground(background: string): void {
   if (!background || !BACKGROUND_REGEX.test(background)) {
     throw new Error(
       "Invalid background color. Use a CSS named color (e.g. 'transparent'), hex (e.g. '#F0F0F0'), or rgb/rgba/hsl/hsla(...)."
+    );
+  }
+}
+
+/**
+ * Validates that a theme string is an allowed value. The theme is passed
+ * verbatim into the mermaid-cli argv (`-t <theme>`), which on Windows runs
+ * through `cmd.exe /c` — a non-allowlisted value carrying shell
+ * metacharacters would be interpreted as a command separator (CWE-78).
+ */
+export function validateTheme(theme: string): void {
+  if (!theme || !(ALLOWED_THEMES as readonly string[]).includes(theme)) {
+    throw new Error(
+      `Invalid theme: "${theme}". Allowed values: ${ALLOWED_THEMES.join(", ")}.`
+    );
+  }
+}
+
+/**
+ * Validates that a format string is an allowed value. The format is used to
+ * build the output file path (`diagram-<id>.<format>`) which is passed into
+ * the mermaid-cli argv (`-o <path>`), running through `cmd.exe /c` on
+ * Windows — a non-allowlisted value could inject shell commands (CWE-78).
+ */
+export function validateFormat(format: string): void {
+  if (!format || !(ALLOWED_FORMATS as readonly string[]).includes(format)) {
+    throw new Error(
+      `Invalid format: "${format}". Allowed values: ${ALLOWED_FORMATS.join(", ")}.`
     );
   }
 }
