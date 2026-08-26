@@ -100,9 +100,6 @@ export const PREVIEW_ID_REGEX = /^[a-zA-Z0-9_-]+$/;
 export const BACKGROUND_REGEX =
   /^(?:[a-zA-Z]+|#[0-9a-fA-F]{3,8}|(?:rgb|rgba|hsl|hsla)\(\s*[0-9.,%\s]+\s*\))$/;
 
-export const ALLOWED_THEMES = ["default", "forest", "dark", "neutral"] as const;
-export const ALLOWED_FORMATS = ["svg", "png", "pdf"] as const;
-
 // ===== System Paths (Security) =====
 export const UNIX_SYSTEM_PATHS = [
   "/etc",
@@ -154,3 +151,7 @@ export const DIAGRAM_FORMATS = {
 } as const;
 
 export type DiagramFormat = (typeof DIAGRAM_FORMATS)[keyof typeof DIAGRAM_FORMATS];
+
+export const DEFAULT_FORMAT: DiagramFormat = DIAGRAM_FORMATS.SVG;
+export const ALLOWED_FORMATS: readonly DiagramFormat[] = Object.values(DIAGRAM_FORMATS);
+export const ALLOWED_THEMES = ["default", "forest", "dark", "neutral"] as const;

@@ -11,6 +11,12 @@ import { readFile } from "fs/promises";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { handleMermaidPreview, handleMermaidSave } from "./handlers.js";
+import {
+  ALLOWED_FORMATS,
+  ALLOWED_THEMES,
+  DEFAULT_FORMAT,
+  DEFAULT_DIAGRAM_OPTIONS,
+} from "./constants.js";
 import { mcpLogger } from "./logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -36,7 +42,7 @@ const TOOL_DEFINITIONS: Tool[] = [
     description:
       "Render a Mermaid diagram and open it in browser with live reload. " +
       "Takes Mermaid diagram code as input and generates a live preview. " +
-      "Supports themes (default, forest, dark, neutral), custom backgrounds, dimensions, and quality scaling. " +
+      `Supports themes (${ALLOWED_THEMES.join(", ")}), custom backgrounds, dimensions, and quality scaling. ` +
       "The diagram will auto-refresh when updated. Use mermaid_save to save to disk. " +
       "IMPORTANT: Automatically use this tool whenever you create a Mermaid diagram for the user. " +
       "NOTE: Sequence diagrams do not support style directives - avoid using 'style' statements in sequenceDiagram.",
@@ -54,15 +60,15 @@ const TOOL_DEFINITIONS: Tool[] = [
         },
         format: {
           type: "string",
-          enum: ["png", "svg", "pdf"],
-          description: "Output format (default: svg)",
-          default: "svg",
+          enum: [...ALLOWED_FORMATS],
+          description: `Output format (default: ${DEFAULT_FORMAT})`,
+          default: DEFAULT_FORMAT,
         },
         theme: {
           type: "string",
-          enum: ["default", "forest", "dark", "neutral"],
-          description: "Theme of the chart (default: default)",
-          default: "default",
+          enum: [...ALLOWED_THEMES],
+          description: `Theme of the chart (default: ${DEFAULT_DIAGRAM_OPTIONS.theme})`,
+          default: DEFAULT_DIAGRAM_OPTIONS.theme,
         },
         background: {
           type: "string",
@@ -109,10 +115,9 @@ const TOOL_DEFINITIONS: Tool[] = [
         },
         format: {
           type: "string",
-          enum: ["png", "svg", "pdf"],
-          description:
-            "Output format (default: svg). Must match the format used in mermaid_preview.",
-          default: "svg",
+          enum: [...ALLOWED_FORMATS],
+          description: `Output format (default: ${DEFAULT_FORMAT}). Must match the format used in mermaid_preview.`,
+          default: DEFAULT_FORMAT,
         },
       },
       required: ["save_path", "preview_id"],

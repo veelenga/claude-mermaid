@@ -80,6 +80,7 @@ export function validateDimension(label: string, value: number): void {
 }
 
 export function validateRenderOptions(options: RenderOptions): void {
+  validatePreviewId(options.previewId);
   validateFormat(options.format);
   validateTheme(options.theme);
   validateBackground(options.background);

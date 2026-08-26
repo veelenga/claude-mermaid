@@ -241,7 +241,10 @@ describe("handleMermaidPreview", () => {
   });
 
   it.each([
+    ["preview_id", { preview_id: "../escape" }, "Invalid preview ID"],
     ["theme", { theme: "dark|whoami" }, "Invalid theme"],
+    ["format", { format: "" }, "Invalid format"],
+    ["width", { width: 0 }, "Invalid width"],
     ["format", { format: "svg&calc" }, "Invalid format"],
     ["width", { width: "800&calc" }, "Invalid width"],
     ["height", { height: -1 }, "Invalid height"],

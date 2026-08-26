@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFile } from "fs/promises";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import { ALLOWED_FORMATS, ALLOWED_THEMES } from "../src/constants.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -20,12 +21,11 @@ describe("MCP server tool definitions", () => {
       expect(indexSource).toContain('required: ["diagram", "preview_id"]');
     });
 
-    it("should support format options: png, svg, pdf", () => {
-      expect(indexSource).toContain('enum: ["png", "svg", "pdf"]');
-    });
-
-    it("should support theme options: default, forest, dark, neutral", () => {
-      expect(indexSource).toContain('enum: ["default", "forest", "dark", "neutral"]');
+    it("should build format and theme enums from the allowlists", () => {
+      expect(indexSource).toContain("enum: [...ALLOWED_FORMATS]");
+      expect(indexSource).toContain("enum: [...ALLOWED_THEMES]");
+      expect(ALLOWED_FORMATS).toEqual(["svg", "png", "pdf"]);
+      expect(ALLOWED_THEMES).toEqual(["default", "forest", "dark", "neutral"]);
     });
 
     it("should define width, height, and scale as number parameters", () => {
@@ -40,8 +40,8 @@ describe("MCP server tool definitions", () => {
     });
 
     it("should have default values for optional parameters", () => {
-      expect(indexSource).toContain('default: "svg"');
-      expect(indexSource).toContain('default: "default"');
+      expect(indexSource).toContain("default: DEFAULT_FORMAT");
+      expect(indexSource).toContain("default: DEFAULT_DIAGRAM_OPTIONS.theme");
       expect(indexSource).toContain('default: "white"');
       expect(indexSource).toContain("default: 800");
       expect(indexSource).toContain("default: 600");
@@ -58,9 +58,8 @@ describe("MCP server tool definitions", () => {
       expect(indexSource).toContain('required: ["save_path", "preview_id"]');
     });
 
-    it("should support format options: png, svg, pdf", () => {
-      // Both tools share the same format enum
-      const formatEnums = indexSource.match(/enum: \["png", "svg", "pdf"\]/g);
+    it("should share the format allowlist with mermaid_preview", () => {
+      const formatEnums = indexSource.match(/enum: \[\.\.\.ALLOWED_FORMATS\]/g);
       expect(formatEnums).not.toBeNull();
       expect(formatEnums!.length).toBeGreaterThanOrEqual(2);
     });
