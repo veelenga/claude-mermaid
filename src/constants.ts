@@ -100,13 +100,6 @@ export const PREVIEW_ID_REGEX = /^[a-zA-Z0-9_-]+$/;
 export const BACKGROUND_REGEX =
   /^(?:[a-zA-Z]+|#[0-9a-fA-F]{3,8}|(?:rgb|rgba|hsl|hsla)\(\s*[0-9.,%\s]+\s*\))$/;
 
-// Strict allowlists for theme/format. These values are passed verbatim into
-// the mermaid-cli child argv (e.g. `-t <theme>`, `-o diagram-<id>.<format>`)
-// and on Windows that argv runs through `cmd.exe /c`, which re-parses `&`,
-// `|`, `&&`, `||`, etc. as command separators. The MCP tool's inputSchema
-// declares matching `enum` values, but that only constrains the AI caller —
-// the server must enforce it too (never trust schema validation as a
-// security boundary). See: CWE-78.
 export const ALLOWED_THEMES = ["default", "forest", "dark", "neutral"] as const;
 export const ALLOWED_FORMATS = ["svg", "png", "pdf"] as const;
 

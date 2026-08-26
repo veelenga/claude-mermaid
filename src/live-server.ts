@@ -239,7 +239,7 @@ async function handleExportPngRequest(url: string, res: ServerResponse): Promise
     ]);
 
     const pngPath = getDiagramFilePath(diagramId, "png");
-    await renderDiagram({ diagram, previewId: diagramId, format: "png", ...options }, pngPath);
+    await renderDiagram({ ...options, diagram, previewId: diagramId, format: "png" }, pngPath);
 
     const pngData = await readFile(pngPath);
     res.writeHead(200, {

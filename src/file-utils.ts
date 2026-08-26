@@ -12,7 +12,7 @@ import {
   ALLOWED_THEMES,
   ALLOWED_FORMATS,
 } from "./constants.js";
-import type { DiagramOptions } from "./types.js";
+import type { DiagramOptions, RenderOptions } from "./types.js";
 
 export function getConfigDir(): string {
   const xdg = process.env.XDG_CONFIG_HOME;
@@ -59,32 +59,33 @@ export function validateBackground(background: string): void {
   }
 }
 
-/**
- * Validates that a theme string is an allowed value. The theme is passed
- * verbatim into the mermaid-cli argv (`-t <theme>`), which on Windows runs
- * through `cmd.exe /c` — a non-allowlisted value carrying shell
- * metacharacters would be interpreted as a command separator (CWE-78).
- */
-export function validateTheme(theme: string): void {
-  if (!theme || !(ALLOWED_THEMES as readonly string[]).includes(theme)) {
-    throw new Error(
-      `Invalid theme: "${theme}". Allowed values: ${ALLOWED_THEMES.join(", ")}.`
-    );
+function validateAllowed(label: string, value: string, allowed: readonly string[]): void {
+  if (!allowed.includes(value)) {
+    throw new Error(`Invalid ${label}: "${value}". Allowed values: ${allowed.join(", ")}.`);
   }
 }
 
-/**
- * Validates that a format string is an allowed value. The format is used to
- * build the output file path (`diagram-<id>.<format>`) which is passed into
- * the mermaid-cli argv (`-o <path>`), running through `cmd.exe /c` on
- * Windows — a non-allowlisted value could inject shell commands (CWE-78).
- */
+export function validateTheme(theme: string): void {
+  validateAllowed("theme", theme, ALLOWED_THEMES);
+}
+
 export function validateFormat(format: string): void {
-  if (!format || !(ALLOWED_FORMATS as readonly string[]).includes(format)) {
-    throw new Error(
-      `Invalid format: "${format}". Allowed values: ${ALLOWED_FORMATS.join(", ")}.`
-    );
+  validateAllowed("format", format, ALLOWED_FORMATS);
+}
+
+export function validateDimension(label: string, value: number): void {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    throw new Error(`Invalid ${label}: "${value}". Must be a positive number.`);
   }
+}
+
+export function validateRenderOptions(options: RenderOptions): void {
+  validateFormat(options.format);
+  validateTheme(options.theme);
+  validateBackground(options.background);
+  validateDimension("width", options.width);
+  validateDimension("height", options.height);
+  validateDimension("scale", options.scale);
 }
 
 export function getPreviewDir(previewId: string): string {
