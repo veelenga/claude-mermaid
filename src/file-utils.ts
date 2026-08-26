@@ -45,12 +45,6 @@ export function validatePreviewId(previewId: string): void {
   }
 }
 
-/**
- * Validates that a background color string is safe to pass as a CLI argument.
- * Accepts CSS named colors, hex, and rgb/rgba/hsl/hsla functions — rejects
- * anything that could be interpreted as a shell metacharacter on Windows,
- * where the child process is launched via `cmd.exe /c`.
- */
 export function validateBackground(background: string): void {
   if (!background || !BACKGROUND_REGEX.test(background)) {
     throw new Error(
