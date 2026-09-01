@@ -35,6 +35,7 @@ const PREVIEW_DIR = join(__dirname, "preview");
 const TEMPLATE_PATH = join(PREVIEW_DIR, "template.html");
 const STYLE_PATH = join(PREVIEW_DIR, "style.css");
 const SCRIPT_PATH = join(PREVIEW_DIR, "script.js");
+const VIEWER_SCRIPT_PATH = join(PREVIEW_DIR, "viewer.js");
 const FAVICON_PATH = join(PREVIEW_DIR, "favicon.svg");
 
 let liveServer: HttpServer | null = null;
@@ -288,8 +289,9 @@ export async function ensureLiveServer(): Promise<number> {
         return;
       }
 
-      if (url === ROUTES.SCRIPT) {
-        const js = await readFile(SCRIPT_PATH, "utf-8");
+      if (url === ROUTES.SCRIPT || url === ROUTES.VIEWER_SCRIPT) {
+        const scriptPath = url === ROUTES.SCRIPT ? SCRIPT_PATH : VIEWER_SCRIPT_PATH;
+        const js = await readFile(scriptPath, "utf-8");
         res.writeHead(200, { "Content-Type": CONTENT_TYPES.JAVASCRIPT });
         res.end(js);
         return;

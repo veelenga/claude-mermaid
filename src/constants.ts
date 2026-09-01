@@ -45,6 +45,7 @@ export const ASSET_FILES = {
   SCRIPT: "script.js",
   GALLERY_SCRIPT: "gallery.js",
   FAVICON: "favicon.svg",
+  VIEWER_SCRIPT: "viewer.js",
 } as const;
 
 // ===== HTTP Routes =====
@@ -64,6 +65,7 @@ export const ROUTES = {
   SCRIPT: "/script.js",
   GALLERY_SCRIPT: "/gallery.js",
 } as const;
+  VIEWER_SCRIPT: "/viewer.js",
 
 // ===== HTTP Headers =====
 export const CONTENT_TYPES = {

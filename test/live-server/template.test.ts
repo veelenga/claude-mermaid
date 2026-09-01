@@ -35,6 +35,7 @@ describe("Preview template", () => {
 
   it("references CSS and script assets", () => {
     expect(template).toContain('<link rel="stylesheet" href="/style.css"');
+    expect(template).toContain('<script src="/viewer.js"></script>');
     expect(template).toContain('<script src="/script.js"></script>');
   });
 
