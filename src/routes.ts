@@ -33,8 +33,8 @@ async function serveStaticFile(
   contentType: string,
   cacheControl: string = CACHE_CONTROL.NO_STORE
 ): Promise<{ content: Buffer | string; contentType: string; cacheControl: string }> {
-  const content = await readFile(filePath, contentType.includes("text") ? "utf-8" : undefined);
-  return { content: content as Buffer | string, contentType, cacheControl };
+  const content = await readFile(filePath, contentType.includes("text") ? "utf-8" : null);
+  return { content, contentType, cacheControl };
 }
 
 /**
