@@ -9,6 +9,7 @@ Automatically renders diagrams in your browser with real-time updates as you ref
 ## ✨ Features
 
 - 🔄 **Live Reload** - Diagrams auto-refresh in your browser as you edit
+- 🪄 **Artifact Mode** - Optionally publish diagrams as shareable Claude artifacts instead of running a local server
 - 🎨 **Multiple Save Formats** - Export to SVG, PNG, or PDF
 - 🌈 **Themes** - Choose from default, forest, dark, or neutral themes
 - 📐 **Customizable** - Control dimensions, scale, and background colors
@@ -335,6 +336,44 @@ The live server uses ports 3737-3747 and automatically finds an available port.
 
 - Live preview is available for `svg` format only; PNG/PDF are rendered without live reload.
 - For sequence diagrams, Mermaid does not support `style` directives inside `sequenceDiagram`.
+
+## 🪄 Artifact mode
+
+By default, previews are served by a local HTTP server with live reload. In Claude Code you can instead have `mermaid_preview` produce a self-contained HTML page that Claude publishes as a [Claude artifact](https://claude.ai/code/artifacts). Artifacts are easy to share and update in place: republishing the same page updates the existing URL.
+
+Enable it with a CLI flag or an environment variable in your MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "mermaid": {
+      "command": "npx",
+      "args": ["-y", "claude-mermaid", "--preview", "artifact"]
+    }
+  }
+}
+```
+
+```json
+{
+  "mcpServers": {
+    "mermaid": {
+      "command": "npx",
+      "args": ["-y", "claude-mermaid"],
+      "env": { "CLAUDE_MERMAID_PREVIEW": "artifact" }
+    }
+  }
+}
+```
+
+In artifact mode:
+
+- `mermaid_preview` renders and validates the diagram with mermaid-cli as usual, then writes `artifact.html` next to the working files under `~/.config/claude-mermaid/live/{preview_id}/`.
+- The tool response tells Claude to publish that page with the Artifact tool and to republish the same path after every update, so the artifact URL stays stable per `preview_id`.
+- The page includes pan, zoom and copy-SVG controls and has no external dependencies.
+- No local server is started and no browser tab is opened. `mermaid_save` works unchanged.
+
+Artifact mode requires a host with the Artifact tool, such as Claude Code. Other MCP clients should keep the default `live` backend.
 
 ## 🖥️ Standalone server
 

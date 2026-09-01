@@ -41,6 +41,15 @@ Use after the diagram is finalized:
 - `preview_id`: Must match the preview ID used earlier
 - `format`: Must match format from preview
 
+### Artifact mode
+
+When the server runs with the artifact preview backend, `mermaid_preview` does not open a browser. Instead its response contains an `Artifact page:` path.
+
+- Publish that path with the Artifact tool right away, using the 📊 favicon on the first publish
+- After every refinement, call `mermaid_preview` with the same `preview_id`, then republish the same path so the existing artifact URL is updated in place
+- Never publish a different path for the same diagram; that would create a new artifact
+- Share the artifact URL with the user once, and mention that later updates appear at the same URL
+
 ## Diagram Types
 
 ### Flowcharts (`graph` or `flowchart`)
@@ -203,7 +212,7 @@ When a user requests a diagram:
 **User**: "Add database and error handling"
 
 **You**: "I'll add database interaction and error paths."
-[Use mermaid_preview with same preview_id - browser auto-refreshes]
+[Use mermaid_preview with same preview_id - browser auto-refreshes, or republish the artifact page in artifact mode]
 
 **User**: "Save it"
 
