@@ -1,10 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { handleMermaidPreview, handleMermaidSave } from "../src/handlers.js";
+import { handleMermaidPreview as previewWithBackend, handleMermaidSave } from "../src/handlers.js";
+import { LiveServerPreviewBackend } from "../src/live-preview-backend.js";
 import { getPreviewDir, getDiagramFilePath, getDiagramOptionsPath } from "../src/file-utils.js";
 import { readdir, unlink, access, writeFile } from "fs/promises";
 import { execFile } from "child_process";
 import { setupTestEnvWithPreview, restoreTestEnv } from "./helpers/env-helpers.js";
 import type { PreviewBackend } from "../src/types.js";
+
+const liveBackend = new LiveServerPreviewBackend();
+const handleMermaidPreview = (args: any, backend: PreviewBackend = liveBackend) =>
+  previewWithBackend(args, backend);
+
+function fakeBackend(text: string): PreviewBackend {
+  return { toolDescription: "fake backend", present: vi.fn(async () => text) };
+}
 
 // Mock child_process to avoid actually running mmdc and opening browser
 vi.mock("child_process", () => ({
@@ -129,7 +138,7 @@ describe("handleMermaidPreview", () => {
       format: "png",
     });
 
-    expect(result.content[0].text).toContain("Live preview is only available for SVG");
+    expect(result.content[0].text).toContain("Preview is only available for SVG");
   });
 
   it("should indicate static render for PDF format", async () => {
@@ -139,7 +148,7 @@ describe("handleMermaidPreview", () => {
       format: "pdf",
     });
 
-    expect(result.content[0].text).toContain("Live preview is only available for SVG");
+    expect(result.content[0].text).toContain("Preview is only available for SVG");
   });
 
   it("should include stderr details in error when rendering fails", async () => {
@@ -278,11 +287,7 @@ describe("handleMermaidPreview with a custom backend", () => {
   });
 
   it("delegates svg previews to the backend and returns its message", async () => {
-    const backend: PreviewBackend = {
-      name: "fake",
-      toolDescription: "fake backend",
-      present: vi.fn(async () => "presented by fake backend"),
-    };
+    const backend = fakeBackend("presented by fake backend");
 
     const result = await handleMermaidPreview(
       { diagram: "graph TD\n A --> B", preview_id: testPreviewId, background: "transparent" },
@@ -293,17 +298,12 @@ describe("handleMermaidPreview with a custom backend", () => {
     expect(backend.present).toHaveBeenCalledWith({
       previewId: testPreviewId,
       filePath: getDiagramFilePath(testPreviewId, "svg"),
-      format: "svg",
       background: "transparent",
     });
   });
 
   it("skips the backend for non-svg formats", async () => {
-    const backend: PreviewBackend = {
-      name: "fake",
-      toolDescription: "fake backend",
-      present: vi.fn(async () => "unexpected"),
-    };
+    const backend = fakeBackend("unexpected");
 
     const result = await handleMermaidPreview(
       { diagram: "graph TD\n A --> B", preview_id: testPreviewId, format: "png" },
@@ -311,7 +311,7 @@ describe("handleMermaidPreview with a custom backend", () => {
     );
 
     expect(backend.present).not.toHaveBeenCalled();
-    expect(result.content[0].text).toContain("Live preview is only available for SVG format");
+    expect(result.content[0].text).toContain("Preview is only available for SVG format");
   });
 });
 

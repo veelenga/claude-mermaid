@@ -3,7 +3,11 @@
 
 (function () {
   const viewer = window.ClaudeMermaidViewer;
-  const config = viewer.config;
+  const config = {
+    diagramId: viewer.diagramId,
+    port: viewer.root.dataset.port,
+    liveEnabled: viewer.root.dataset.liveEnabled === "true",
+  };
 
   const elements = {
     statusText: document.getElementById("status-text"),
@@ -112,7 +116,7 @@
   }
 
   function exportSvg() {
-    if (!viewer.hasSvg()) {
+    if (!viewer.svg) {
       alert("No diagram found to export.");
       return;
     }

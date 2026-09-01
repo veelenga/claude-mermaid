@@ -167,72 +167,26 @@ export async function handleApiDiagramDelete(context: RouteContext): Promise<voi
   res.end(JSON.stringify({ error: "Not found" }));
 }
 
-/**
- * Static Asset Handlers
- */
-
-export async function handleSharedCss(context: RouteContext): Promise<void> {
-  const { res } = context;
-  try {
-    const { content, contentType, cacheControl } = await serveStaticFile(
-      join(PREVIEW_DIR, ASSET_FILES.SHARED_STYLE),
-      CONTENT_TYPES.CSS
-    );
-    res.writeHead(200, {
-      "Content-Type": contentType,
-      "Cache-Control": cacheControl,
-    });
-    res.end(content);
-  } catch (error) {
-    webLogger.error("Failed to serve shared.css", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    res.writeHead(404, { "Content-Type": CONTENT_TYPES.PLAIN });
-    res.end("Not found");
-  }
+function staticAsset(file: string, contentType: string) {
+  return async ({ res }: RouteContext): Promise<void> => {
+    try {
+      const { content, cacheControl } = await serveStaticFile(join(PREVIEW_DIR, file), contentType);
+      res.writeHead(200, { "Content-Type": contentType, "Cache-Control": cacheControl });
+      res.end(content);
+    } catch (error) {
+      webLogger.error(`Failed to serve ${file}`, {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      res.writeHead(404, { "Content-Type": CONTENT_TYPES.PLAIN });
+      res.end("Not found");
+    }
+  };
 }
 
-export async function handleGalleryCss(context: RouteContext): Promise<void> {
-  const { res } = context;
-  try {
-    const { content, contentType, cacheControl } = await serveStaticFile(
-      join(PREVIEW_DIR, ASSET_FILES.GALLERY_STYLE),
-      CONTENT_TYPES.CSS
-    );
-    res.writeHead(200, {
-      "Content-Type": contentType,
-      "Cache-Control": cacheControl,
-    });
-    res.end(content);
-  } catch (error) {
-    webLogger.error("Failed to serve gallery.css", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    res.writeHead(404, { "Content-Type": CONTENT_TYPES.PLAIN });
-    res.end("Not found");
-  }
-}
-
-export async function handleGalleryJs(context: RouteContext): Promise<void> {
-  const { res } = context;
-  try {
-    const { content, contentType, cacheControl } = await serveStaticFile(
-      join(PREVIEW_DIR, ASSET_FILES.GALLERY_SCRIPT),
-      CONTENT_TYPES.JAVASCRIPT
-    );
-    res.writeHead(200, {
-      "Content-Type": contentType,
-      "Cache-Control": cacheControl,
-    });
-    res.end(content);
-  } catch (error) {
-    webLogger.error("Failed to serve gallery.js", {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    res.writeHead(404, { "Content-Type": CONTENT_TYPES.PLAIN });
-    res.end("Not found");
-  }
-}
+export const handleSharedCss = staticAsset(ASSET_FILES.SHARED_STYLE, CONTENT_TYPES.CSS);
+export const handleGalleryCss = staticAsset(ASSET_FILES.GALLERY_STYLE, CONTENT_TYPES.CSS);
+export const handleGalleryJs = staticAsset(ASSET_FILES.GALLERY_SCRIPT, CONTENT_TYPES.JAVASCRIPT);
+export const handleViewerJs = staticAsset(ASSET_FILES.VIEWER_SCRIPT, CONTENT_TYPES.JAVASCRIPT);
 
 /**
  * Route Configuration
@@ -250,6 +204,7 @@ export const ROUTE_CONFIG: Route[] = [
   { path: ROUTES.SHARED_STYLE, exact: true, handler: handleSharedCss },
   { path: ROUTES.GALLERY_STYLE, exact: true, handler: handleGalleryCss },
   { path: ROUTES.GALLERY_SCRIPT, exact: true, handler: handleGalleryJs },
+  { path: ROUTES.VIEWER_SCRIPT, exact: true, handler: handleViewerJs },
 ];
 
 /**

@@ -36,7 +36,7 @@ export const TEMPLATE_FILES = {
   LAYOUT: "layout.html",
   GALLERY: "gallery.html",
   DIAGRAM: "template.html",
-  ARTIFACT: "artifact.html",
+  ARTIFACT: "artifact-template.html",
 } as const;
 
 // ===== Static Asset Files =====
@@ -123,24 +123,6 @@ export const WS_MESSAGES = {
   RELOAD: "reload",
 } as const;
 
-// ===== Template Placeholders =====
-export const TEMPLATE_VARS = {
-  CONTENT: "{{CONTENT}}",
-  NAV: "{{NAV}}",
-  FOOTER: "{{FOOTER}}",
-  DIAGRAM_ID: "{{DIAGRAM_ID}}",
-  PORT: "{{PORT}}",
-  BACKGROUND: "{{BACKGROUND}}",
-  TIMESTAMP: "{{TIMESTAMP}}",
-  LIVE_ENABLED: "{{LIVE_ENABLED}}",
-  PAGE_TITLE: "{{PAGE_TITLE}}",
-  PAGE_SCRIPTS: "{{PAGE_SCRIPTS}}",
-  PAGE_STYLES: "{{PAGE_STYLES}}",
-  TITLE: "{{TITLE}}",
-  STYLES: "{{STYLES}}",
-  SCRIPT: "{{SCRIPT}}",
-} as const;
-
 // ===== Diagram Options Defaults =====
 export const DEFAULT_DIAGRAM_OPTIONS = {
   theme: "default",
@@ -176,4 +158,3 @@ export const ALLOWED_PREVIEW_BACKENDS: readonly PreviewBackendName[] =
   Object.values(PREVIEW_BACKENDS);
 export const PREVIEW_BACKEND_ENV_VAR = "CLAUDE_MERMAID_PREVIEW";
 export const PREVIEW_BACKEND_FLAG = "--preview";
-export const ARTIFACT_FAVICON = "📊";

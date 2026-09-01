@@ -11,6 +11,8 @@ import {
   DIR_NAMES,
   ALLOWED_THEMES,
   ALLOWED_FORMATS,
+  ALLOWED_PREVIEW_BACKENDS,
+  type PreviewBackendName,
 } from "./constants.js";
 import type { DiagramOptions, RenderOptions } from "./types.js";
 
@@ -71,6 +73,10 @@ export function validateTheme(theme: string): void {
 
 export function validateFormat(format: string): void {
   validateAllowed("format", format, ALLOWED_FORMATS);
+}
+
+export function validatePreviewBackend(name: string): asserts name is PreviewBackendName {
+  validateAllowed("preview backend", name, ALLOWED_PREVIEW_BACKENDS);
 }
 
 export function validateDimension(label: string, value: number): void {

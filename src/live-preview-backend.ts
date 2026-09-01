@@ -2,7 +2,6 @@ import { spawn } from "child_process";
 import { ensureLiveServer, addLiveDiagram, hasActiveConnections } from "./live-server.js";
 import { getOpenCommand } from "./file-utils.js";
 import { mcpLogger } from "./logger.js";
-import { PREVIEW_BACKENDS } from "./constants.js";
 import type { PreviewBackend, PreviewRequest } from "./types.js";
 
 function openBrowser(previewId: string, serverUrl: string): void {
@@ -16,14 +15,12 @@ function openBrowser(previewId: string, serverUrl: string): void {
 }
 
 export class LiveServerPreviewBackend implements PreviewBackend {
-  readonly name = PREVIEW_BACKENDS.LIVE;
-
   readonly toolDescription =
     "Render a Mermaid diagram and open it in browser with live reload. " +
     "Takes Mermaid diagram code as input and generates a live preview. " +
     "The diagram will auto-refresh when updated.";
 
-  async present({ previewId, filePath, format }: PreviewRequest): Promise<string> {
+  async present({ previewId, filePath }: PreviewRequest): Promise<string> {
     const port = await ensureLiveServer();
     const hasConnections = hasActiveConnections(previewId);
 
@@ -36,15 +33,10 @@ export class LiveServerPreviewBackend implements PreviewBackend {
       openBrowser(previewId, serverUrl);
     }
 
-    return this.describe(filePath, format, serverUrl, hasConnections);
+    return this.describe(filePath, serverUrl, hasConnections);
   }
 
-  private describe(
-    filePath: string,
-    format: string,
-    serverUrl: string,
-    hasConnections: boolean
-  ): string {
+  private describe(filePath: string, serverUrl: string, hasConnections: boolean): string {
     const actionMessage = hasConnections
       ? "Mermaid diagram updated successfully."
       : "Mermaid diagram rendered successfully and opened in browser.";
@@ -53,6 +45,6 @@ export class LiveServerPreviewBackend implements PreviewBackend {
       ? "\nDiagram updated. Browser will refresh automatically."
       : `\nLive reload URL: ${serverUrl}\nThe diagram will auto-refresh when you update it.`;
 
-    return `${actionMessage}\nWorking file: ${filePath} (${format.toUpperCase()})${liveMessage}`;
+    return `${actionMessage}\nWorking file: ${filePath} (SVG)${liveMessage}`;
   }
 }

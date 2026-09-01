@@ -14,7 +14,6 @@ import {
   validateRenderOptions,
 } from "./file-utils.js";
 import { mcpLogger } from "./logger.js";
-import { createPreviewBackend } from "./preview-backend.js";
 import type { PreviewBackend, RenderOptions } from "./types.js";
 import { DEFAULT_DIAGRAM_OPTIONS, DEFAULT_FORMAT, DIAGRAM_FORMATS } from "./constants.js";
 
@@ -97,16 +96,13 @@ function createStaticRenderResponse(liveFilePath: string, format: string): any {
     content: [
       {
         type: "text",
-        text: `Mermaid diagram rendered successfully.\nWorking file: ${liveFilePath} (${format.toUpperCase()})\n\nNote: Live preview is only available for SVG format. Use mermaid_save to save this diagram to a permanent location.`,
+        text: `Mermaid diagram rendered successfully.\nWorking file: ${liveFilePath} (${format.toUpperCase()})\n\nNote: Preview is only available for SVG format. Use mermaid_save to save this diagram to a permanent location.`,
       },
     ],
   };
 }
 
-export async function handleMermaidPreview(
-  args: any,
-  previewBackend: PreviewBackend = createPreviewBackend()
-) {
+export async function handleMermaidPreview(args: any, previewBackend: PreviewBackend) {
   const diagram = args.diagram as string;
   const previewId = args.preview_id as string;
   const format = (args.format as string) ?? DEFAULT_FORMAT;
@@ -143,12 +139,7 @@ export async function handleMermaidPreview(
       return createStaticRenderResponse(liveFilePath, format);
     }
 
-    const text = await previewBackend.present({
-      previewId,
-      filePath: liveFilePath,
-      format,
-      background,
-    });
+    const text = await previewBackend.present({ previewId, filePath: liveFilePath, background });
     return { content: [{ type: "text", text }] };
   } catch (error) {
     return createErrorResponse(`Error rendering Mermaid diagram: ${errorMessage(error)}`);

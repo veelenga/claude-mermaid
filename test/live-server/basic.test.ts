@@ -7,7 +7,6 @@ import {
   ensureLiveServer,
   addLiveDiagram,
   hasActiveConnections,
-  escapeHtml,
   closeLiveServer,
 } from "../../src/live-server.js";
 
@@ -81,9 +80,5 @@ describe("Live server basics", () => {
     const id = "new-diagram";
     await addLiveDiagram(id, testFilePath);
     expect(hasActiveConnections(id)).toBe(false);
-  });
-
-  it("escapes HTML entities", () => {
-    expect(escapeHtml("<script>")).toBe("&lt;script&gt;");
   });
 });

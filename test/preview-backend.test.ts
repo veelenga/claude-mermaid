@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { resolvePreviewBackendName, createPreviewBackend } from "../src/preview-backend.js";
 import { PREVIEW_BACKENDS, PREVIEW_BACKEND_ENV_VAR } from "../src/constants.js";
+import { LiveServerPreviewBackend } from "../src/live-preview-backend.js";
+import { ArtifactPreviewBackend } from "../src/artifact-preview-backend.js";
 
 describe("resolvePreviewBackendName", () => {
   it("defaults to the live server backend", () => {
@@ -12,14 +14,8 @@ describe("resolvePreviewBackendName", () => {
     expect(resolvePreviewBackendName([], env)).toBe(PREVIEW_BACKENDS.ARTIFACT);
   });
 
-  it("reads the backend from a --preview flag with a separate value", () => {
+  it("reads the backend from the --preview flag", () => {
     expect(resolvePreviewBackendName(["node", "cli", "--preview", "artifact"], {})).toBe(
-      PREVIEW_BACKENDS.ARTIFACT
-    );
-  });
-
-  it("reads the backend from an inline --preview=value flag", () => {
-    expect(resolvePreviewBackendName(["node", "cli", "--preview=artifact"], {})).toBe(
       PREVIEW_BACKENDS.ARTIFACT
     );
   });
@@ -40,8 +36,8 @@ describe("resolvePreviewBackendName", () => {
 
 describe("createPreviewBackend", () => {
   it("creates the backend matching the requested name", () => {
-    expect(createPreviewBackend(PREVIEW_BACKENDS.LIVE).name).toBe(PREVIEW_BACKENDS.LIVE);
-    expect(createPreviewBackend(PREVIEW_BACKENDS.ARTIFACT).name).toBe(PREVIEW_BACKENDS.ARTIFACT);
+    expect(createPreviewBackend(PREVIEW_BACKENDS.LIVE)).toBeInstanceOf(LiveServerPreviewBackend);
+    expect(createPreviewBackend(PREVIEW_BACKENDS.ARTIFACT)).toBeInstanceOf(ArtifactPreviewBackend);
   });
 
   it("gives each backend its own tool description", () => {

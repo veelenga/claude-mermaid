@@ -25,7 +25,6 @@ describe("buildArtifactPage", () => {
     expect(page).toContain("<title>Auth flow</title>");
     expect(page).toContain(SVG);
     expect(page).toContain('data-diagram-id="auth-flow"');
-    expect(page).toContain('data-live-enabled="false"');
     expect(page).toContain("background: white");
     expect(page).toMatch(/<style>[\s\S]*\.viewport[\s\S]*<\/style>/);
     expect(page).toMatch(/<script>[\s\S]*zoomAtPoint[\s\S]*<\/script>/);
@@ -67,7 +66,6 @@ describe("ArtifactPreviewBackend", () => {
     const text = await new ArtifactPreviewBackend().present({
       previewId,
       filePath,
-      format: "svg",
       background: "transparent",
     });
 

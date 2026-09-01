@@ -1,20 +1,13 @@
 // Diagram viewer: pan, zoom and copy controls shared by the live preview and artifact pages
-// Configuration is read from data attributes on the element carrying data-diagram-id
 
 (function () {
-  const configRoot = document.querySelector("[data-diagram-id]") || document.body;
-  const config = {
-    diagramId: configRoot.dataset.diagramId,
-    port: configRoot.dataset.port,
-    liveEnabled: configRoot.dataset.liveEnabled === "true",
-  };
+  const root = document.querySelector(".preview");
 
   const MIN_SCALE = 0.1;
   const MAX_SCALE = 10;
   const ZOOM_BUTTON_FACTOR = 1.2;
   const WHEEL_ZOOM_FACTOR = 0.001;
   const COPY_FEEDBACK_MS = 1500;
-  const COPY_DONE_LABEL = "✓";
 
   const elements = {
     viewport: document.querySelector(".viewport"),
@@ -164,7 +157,7 @@
     navigator.clipboard
       .writeText(serializeSvg())
       .then(function () {
-        flashButtonLabel(elements.copySvgButton, COPY_DONE_LABEL);
+        flashButtonLabel(elements.copySvgButton, "✓");
       })
       .catch(function (error) {
         console.error("Copy SVG failed", error);
@@ -204,10 +197,9 @@
   initialize();
 
   window.ClaudeMermaidViewer = {
-    config: config,
-    hasSvg: function () {
-      return Boolean(elements.svg);
-    },
+    root: root,
+    diagramId: root.dataset.diagramId,
+    svg: elements.svg,
     serializeSvg: serializeSvg,
   };
 })();
