@@ -13,6 +13,23 @@ body {
   flex-direction: column;
 }
 
+.preview {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.status-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-title {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .status-bar {
   height: 32px;
   padding: 8px 16px;

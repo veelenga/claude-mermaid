@@ -1,0 +1,22 @@
+<title>{{TITLE}}</title>
+{{STYLES}}
+<div class="preview" data-diagram-id="{{DIAGRAM_ID}}" data-live-enabled="false">
+  <div class="status-bar">
+    <div class="status-group">
+      <span class="status-title">{{TITLE}}</span>
+      <div class="toolbar-buttons">
+        <button class="toolbar-btn" id="zoom-out" title="Zoom out">−</button>
+        <span class="zoom-level" id="zoom-level">100%</span>
+        <button class="toolbar-btn" id="zoom-in" title="Zoom in">+</button>
+        <button class="toolbar-btn" id="reset-pan" title="Reset position">⊙</button>
+        <button class="toolbar-btn" id="copy-svg" title="Copy SVG to clipboard">⎘</button>
+      </div>
+    </div>
+    <div id="last-update">Last updated: {{TIMESTAMP}}</div>
+  </div>
+
+  <div class="viewport" style="background: {{BACKGROUND}}">
+    <div class="diagram-wrapper">{{CONTENT}}</div>
+  </div>
+</div>
+{{SCRIPT}}

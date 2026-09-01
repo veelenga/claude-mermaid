@@ -106,6 +106,10 @@ export function getDiagramOptionsPath(previewId: string): string {
   return join(getPreviewDir(previewId), FILE_NAMES.DIAGRAM_OPTIONS);
 }
 
+export function getArtifactPagePath(previewId: string): string {
+  return join(getPreviewDir(previewId), FILE_NAMES.ARTIFACT_PAGE);
+}
+
 // Re-export DiagramOptions type from types.ts for backward compatibility
 export type { DiagramOptions } from "./types.js";
 

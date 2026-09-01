@@ -24,7 +24,7 @@ const templateCache = new Map<string, string>();
  * @param filename Template filename
  * @returns Template content
  */
-async function loadTemplate(filename: string): Promise<string> {
+export async function loadTemplate(filename: string): Promise<string> {
   if (templateCache.has(filename)) {
     return templateCache.get(filename)!;
   }

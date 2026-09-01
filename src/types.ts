@@ -33,6 +33,21 @@ export interface DiagramDetails extends DiagramInfo {
   options: DiagramOptions;
 }
 
+// ===== Preview Backend Types =====
+
+export interface PreviewRequest {
+  previewId: string;
+  filePath: string;
+  format: string;
+  background: string;
+}
+
+export interface PreviewBackend {
+  readonly name: string;
+  readonly toolDescription: string;
+  present(request: PreviewRequest): Promise<string>;
+}
+
 // ===== Route Types =====
 
 export interface RouteContext {

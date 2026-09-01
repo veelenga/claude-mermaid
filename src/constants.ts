@@ -21,6 +21,7 @@ export const FILE_NAMES = {
   DIAGRAM_SVG: "diagram.svg",
   DIAGRAM_PNG: "diagram.png",
   DIAGRAM_PDF: "diagram.pdf",
+  ARTIFACT_PAGE: "artifact.html",
 } as const;
 
 // ===== Directory Names =====
@@ -35,6 +36,7 @@ export const TEMPLATE_FILES = {
   LAYOUT: "layout.html",
   GALLERY: "gallery.html",
   DIAGRAM: "template.html",
+  ARTIFACT: "artifact.html",
 } as const;
 
 // ===== Static Asset Files =====
@@ -43,9 +45,9 @@ export const ASSET_FILES = {
   SHARED_STYLE: "shared.css",
   GALLERY_STYLE: "gallery.css",
   SCRIPT: "script.js",
+  VIEWER_SCRIPT: "viewer.js",
   GALLERY_SCRIPT: "gallery.js",
   FAVICON: "favicon.svg",
-  VIEWER_SCRIPT: "viewer.js",
 } as const;
 
 // ===== HTTP Routes =====
@@ -63,9 +65,9 @@ export const ROUTES = {
   SHARED_STYLE: "/shared.css",
   GALLERY_STYLE: "/gallery.css",
   SCRIPT: "/script.js",
+  VIEWER_SCRIPT: "/viewer.js",
   GALLERY_SCRIPT: "/gallery.js",
 } as const;
-  VIEWER_SCRIPT: "/viewer.js",
 
 // ===== HTTP Headers =====
 export const CONTENT_TYPES = {
@@ -134,6 +136,9 @@ export const TEMPLATE_VARS = {
   PAGE_TITLE: "{{PAGE_TITLE}}",
   PAGE_SCRIPTS: "{{PAGE_SCRIPTS}}",
   PAGE_STYLES: "{{PAGE_STYLES}}",
+  TITLE: "{{TITLE}}",
+  STYLES: "{{STYLES}}",
+  SCRIPT: "{{SCRIPT}}",
 } as const;
 
 // ===== Diagram Options Defaults =====
@@ -157,3 +162,18 @@ export type DiagramFormat = (typeof DIAGRAM_FORMATS)[keyof typeof DIAGRAM_FORMAT
 export const DEFAULT_FORMAT: DiagramFormat = DIAGRAM_FORMATS.SVG;
 export const ALLOWED_FORMATS: readonly DiagramFormat[] = Object.values(DIAGRAM_FORMATS);
 export const ALLOWED_THEMES = ["default", "forest", "dark", "neutral"] as const;
+
+// ===== Preview Backends =====
+export const PREVIEW_BACKENDS = {
+  LIVE: "live",
+  ARTIFACT: "artifact",
+} as const;
+
+export type PreviewBackendName = (typeof PREVIEW_BACKENDS)[keyof typeof PREVIEW_BACKENDS];
+
+export const DEFAULT_PREVIEW_BACKEND: PreviewBackendName = PREVIEW_BACKENDS.LIVE;
+export const ALLOWED_PREVIEW_BACKENDS: readonly PreviewBackendName[] =
+  Object.values(PREVIEW_BACKENDS);
+export const PREVIEW_BACKEND_ENV_VAR = "CLAUDE_MERMAID_PREVIEW";
+export const PREVIEW_BACKEND_FLAG = "--preview";
+export const ARTIFACT_FAVICON = "📊";

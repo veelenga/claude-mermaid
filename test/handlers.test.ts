@@ -4,6 +4,7 @@ import { getPreviewDir, getDiagramFilePath, getDiagramOptionsPath } from "../src
 import { readdir, unlink, access, writeFile } from "fs/promises";
 import { execFile } from "child_process";
 import { setupTestEnvWithPreview, restoreTestEnv } from "./helpers/env-helpers.js";
+import type { PreviewBackend } from "../src/types.js";
 
 // Mock child_process to avoid actually running mmdc and opening browser
 vi.mock("child_process", () => ({
@@ -262,6 +263,55 @@ describe("handleMermaidPreview", () => {
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain(message);
     expect(mockExecFile).not.toHaveBeenCalled();
+  });
+});
+
+describe("handleMermaidPreview with a custom backend", () => {
+  const testPreviewId = "custom-backend";
+
+  beforeEach(async () => {
+    await setupTestEnvWithPreview(testPreviewId);
+  });
+
+  afterEach(async () => {
+    await restoreTestEnv();
+  });
+
+  it("delegates svg previews to the backend and returns its message", async () => {
+    const backend: PreviewBackend = {
+      name: "fake",
+      toolDescription: "fake backend",
+      present: vi.fn(async () => "presented by fake backend"),
+    };
+
+    const result = await handleMermaidPreview(
+      { diagram: "graph TD\n A --> B", preview_id: testPreviewId, background: "transparent" },
+      backend
+    );
+
+    expect(result.content[0].text).toBe("presented by fake backend");
+    expect(backend.present).toHaveBeenCalledWith({
+      previewId: testPreviewId,
+      filePath: getDiagramFilePath(testPreviewId, "svg"),
+      format: "svg",
+      background: "transparent",
+    });
+  });
+
+  it("skips the backend for non-svg formats", async () => {
+    const backend: PreviewBackend = {
+      name: "fake",
+      toolDescription: "fake backend",
+      present: vi.fn(async () => "unexpected"),
+    };
+
+    const result = await handleMermaidPreview(
+      { diagram: "graph TD\n A --> B", preview_id: testPreviewId, format: "png" },
+      backend
+    );
+
+    expect(backend.present).not.toHaveBeenCalled();
+    expect(result.content[0].text).toContain("Live preview is only available for SVG format");
   });
 });
 

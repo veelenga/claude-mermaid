@@ -18,6 +18,7 @@ import {
   DEFAULT_DIAGRAM_OPTIONS,
 } from "./constants.js";
 import { mcpLogger } from "./logger.js";
+import { createPreviewBackend } from "./preview-backend.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -36,14 +37,15 @@ if (isServeMode) {
   await startServeMode();
 }
 
+const previewBackend = createPreviewBackend();
+
 const TOOL_DEFINITIONS: Tool[] = [
   {
     name: "mermaid_preview",
     description:
-      "Render a Mermaid diagram and open it in browser with live reload. " +
-      "Takes Mermaid diagram code as input and generates a live preview. " +
+      `${previewBackend.toolDescription} ` +
       `Supports themes (${ALLOWED_THEMES.join(", ")}), custom backgrounds, dimensions, and quality scaling. ` +
-      "The diagram will auto-refresh when updated. Use mermaid_save to save to disk. " +
+      "Use mermaid_save to save to disk. " +
       "IMPORTANT: Automatically use this tool whenever you create a Mermaid diagram for the user. " +
       "NOTE: Sequence diagrams do not support style directives - avoid using 'style' statements in sequenceDiagram.",
     inputSchema: {
@@ -152,7 +154,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     let result;
     switch (toolName) {
       case "mermaid_preview":
-        result = await handleMermaidPreview(args);
+        result = await handleMermaidPreview(args, previewBackend);
         mcpLogger.info(`CallTool completed: ${toolName}`);
         return result;
       case "mermaid_save":
