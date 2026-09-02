@@ -15,6 +15,7 @@ import {
 import { renderDiagram } from "./handlers.js";
 import { webLogger } from "./logger.js";
 import { matchRoute } from "./routes.js";
+import { loadTemplate, fillTemplate, diagramPageData } from "./page-renderer.js";
 import { DiagramState } from "./types.js";
 import {
   CSP_HEADER,
@@ -26,13 +27,12 @@ import {
   CACHE_CONTROL,
   WS_MESSAGES,
   DEFAULT_DIAGRAM_OPTIONS,
-  TEMPLATE_VARS,
+  TEMPLATE_FILES,
 } from "./constants.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PREVIEW_DIR = join(__dirname, "preview");
-const TEMPLATE_PATH = join(PREVIEW_DIR, "template.html");
 const STYLE_PATH = join(PREVIEW_DIR, "style.css");
 const SCRIPT_PATH = join(PREVIEW_DIR, "script.js");
 const FAVICON_PATH = join(PREVIEW_DIR, "favicon.svg");
@@ -435,27 +435,6 @@ function notifyClients(diagramId: string): void {
   }
 }
 
-let templateCache: string | null = null;
-
-async function loadTemplate(): Promise<string> {
-  if (!templateCache) {
-    templateCache = await readFile(TEMPLATE_PATH, "utf-8");
-  }
-  return templateCache;
-}
-
-/**
- * Escapes HTML special characters to prevent XSS attacks
- */
-export function escapeHtml(unsafe: string): string {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
 /**
  * Closes the live server and cleans up all resources.
  * This is safe to call multiple times and useful for graceful shutdown.
@@ -504,16 +483,10 @@ async function createLiveHtmlWrapper(
   background: string = "white",
   liveEnabled: boolean = true
 ): Promise<string> {
-  const template = await loadTemplate();
-
-  // Escape user-controlled values
-  // CONTENT is SVG from mermaid-cli - trusted
-  // DIAGRAM_ID, BACKGROUND, TIMESTAMP need escaping
-  return template
-    .replaceAll(TEMPLATE_VARS.CONTENT, content)
-    .replaceAll(TEMPLATE_VARS.DIAGRAM_ID, escapeHtml(diagramId))
-    .replaceAll(TEMPLATE_VARS.PORT, port.toString())
-    .replaceAll(TEMPLATE_VARS.BACKGROUND, escapeHtml(background))
-    .replaceAll(TEMPLATE_VARS.TIMESTAMP, escapeHtml(new Date().toLocaleTimeString()))
-    .replaceAll(TEMPLATE_VARS.LIVE_ENABLED, liveEnabled ? "true" : "false");
+  const template = await loadTemplate(TEMPLATE_FILES.DIAGRAM);
+  return fillTemplate(template, {
+    PORT: port.toString(),
+    LIVE_ENABLED: liveEnabled ? "true" : "false",
+    ...diagramPageData(diagramId, content, background),
+  });
 }
