@@ -153,7 +153,7 @@
   }
 
   function copySvg() {
-    if (!elements.svg || !navigator.clipboard) return;
+    if (!elements.svg) return;
     navigator.clipboard
       .writeText(serializeSvg())
       .then(function () {
@@ -161,7 +161,17 @@
       })
       .catch(function (error) {
         console.error("Copy SVG failed", error);
+        flashButtonLabel(elements.copySvgButton, "✕");
       });
+  }
+
+  function initializeCopyButton(button) {
+    if (!navigator.clipboard) {
+      button.disabled = true;
+      button.title = "Clipboard is not available in this context";
+      return;
+    }
+    button.addEventListener("click", copySvg);
   }
 
   // ===== Initialization =====
@@ -190,7 +200,7 @@
       });
     }
     if (elements.copySvgButton) {
-      elements.copySvgButton.addEventListener("click", copySvg);
+      initializeCopyButton(elements.copySvgButton);
     }
   }
 
