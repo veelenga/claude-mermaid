@@ -1,8 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { handleMermaidPreview as previewWithBackend, handleMermaidSave } from "../src/handlers.js";
 import { LiveServerPreviewBackend } from "../src/live-preview-backend.js";
-import { getPreviewDir, getDiagramFilePath, getDiagramOptionsPath } from "../src/file-utils.js";
-import { readdir, unlink, access, writeFile } from "fs/promises";
+import { ArtifactPreviewBackend } from "../src/artifact-preview-backend.js";
+import {
+  getPreviewDir,
+  getDiagramFilePath,
+  getDiagramOptionsPath,
+  getArtifactPagePath,
+} from "../src/file-utils.js";
+import { readdir, unlink, access, writeFile, readFile } from "fs/promises";
 import { execFile } from "child_process";
 import { setupTestEnvWithPreview, restoreTestEnv } from "./helpers/env-helpers.js";
 import type { PreviewBackend } from "../src/types.js";
@@ -300,6 +306,20 @@ describe("handleMermaidPreview with a custom backend", () => {
       filePath: getDiagramFilePath(testPreviewId, "svg"),
       background: "transparent",
     });
+  });
+
+  it("writes a complete artifact page through the artifact backend", async () => {
+    const result = await handleMermaidPreview(
+      { diagram: "graph TD\n A --> B", preview_id: testPreviewId },
+      new ArtifactPreviewBackend()
+    );
+
+    const pagePath = getArtifactPagePath(testPreviewId);
+    const page = await readFile(pagePath, "utf-8");
+
+    expect(result.content[0].text).toContain(`Artifact page: ${pagePath}`);
+    expect(page).toContain("<svg>test</svg>");
+    expect(page).not.toMatch(/\{\{\w+\}\}/);
   });
 
   it("skips the backend for non-svg formats", async () => {
