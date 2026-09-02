@@ -1,7 +1,7 @@
 ---
 name: mermaid-diagrams
-description: Creating and refining Mermaid diagrams with live reload. Use when users want flowcharts, sequence diagrams, class diagrams, ER diagrams, state diagrams, or any other Mermaid visualization. Provides best practices for syntax, styling, and the iterative workflow using mermaid_preview and mermaid_save tools.
-allowed-tools: mcp__mermaid__mermaid_preview, mcp__mermaid__mermaid_save
+description: Creating and refining Mermaid diagrams with live reload or as shareable Claude artifacts. Use when users want flowcharts, sequence diagrams, class diagrams, ER diagrams, state diagrams, or any other Mermaid visualization. Provides best practices for syntax, styling, and the iterative workflow using mermaid_preview and mermaid_save tools.
+allowed-tools: mcp__mermaid__mermaid_preview, mcp__mermaid__mermaid_save, Artifact
 ---
 
 # Mermaid Diagram Expert

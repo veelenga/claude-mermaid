@@ -373,6 +373,12 @@ In artifact mode:
 - The page includes pan, zoom and copy-SVG controls and has no external dependencies.
 - No local server is started and no browser tab is opened. `mermaid_save` works unchanged.
 
+**Plugin installs:** the plugin forwards the `CLAUDE_MERMAID_PREVIEW` variable from your shell, so export it before starting Claude Code:
+
+```bash
+export CLAUDE_MERMAID_PREVIEW=artifact
+```
+
 Artifact mode requires a host with the Artifact tool, such as Claude Code. Other MCP clients should keep the default `live` backend.
 
 ## 🖥️ Standalone server
