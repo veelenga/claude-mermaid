@@ -6,29 +6,21 @@ import { ArtifactPreviewBackend } from "../src/artifact-preview-backend.js";
 
 describe("resolvePreviewBackendName", () => {
   it("defaults to the live server backend", () => {
-    expect(resolvePreviewBackendName([], {})).toBe(PREVIEW_BACKENDS.LIVE);
+    expect(resolvePreviewBackendName(undefined, {})).toBe(PREVIEW_BACKENDS.LIVE);
   });
 
   it("reads the backend from the environment", () => {
     const env = { [PREVIEW_BACKEND_ENV_VAR]: "artifact" };
-    expect(resolvePreviewBackendName([], env)).toBe(PREVIEW_BACKENDS.ARTIFACT);
+    expect(resolvePreviewBackendName(undefined, env)).toBe(PREVIEW_BACKENDS.ARTIFACT);
   });
 
-  it("reads the backend from the --preview flag", () => {
-    expect(resolvePreviewBackendName(["node", "cli", "--preview", "artifact"], {})).toBe(
-      PREVIEW_BACKENDS.ARTIFACT
-    );
-  });
-
-  it("prefers the flag over the environment", () => {
+  it("prefers an explicit request over the environment", () => {
     const env = { [PREVIEW_BACKEND_ENV_VAR]: "artifact" };
-    expect(resolvePreviewBackendName(["node", "cli", "--preview", "live"], env)).toBe(
-      PREVIEW_BACKENDS.LIVE
-    );
+    expect(resolvePreviewBackendName("live", env)).toBe(PREVIEW_BACKENDS.LIVE);
   });
 
   it("rejects unknown backends", () => {
-    expect(() => resolvePreviewBackendName([], { [PREVIEW_BACKEND_ENV_VAR]: "cloud" })).toThrow(
+    expect(() => resolvePreviewBackendName("cloud", {})).toThrow(
       /Invalid preview backend: "cloud"/
     );
   });

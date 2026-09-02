@@ -157,4 +157,3 @@ export const DEFAULT_PREVIEW_BACKEND: PreviewBackendName = PREVIEW_BACKENDS.LIVE
 export const ALLOWED_PREVIEW_BACKENDS: readonly PreviewBackendName[] =
   Object.values(PREVIEW_BACKENDS);
 export const PREVIEW_BACKEND_ENV_VAR = "CLAUDE_MERMAID_PREVIEW";
-export const PREVIEW_BACKEND_FLAG = "--preview";
