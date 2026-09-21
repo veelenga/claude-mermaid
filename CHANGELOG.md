@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Artifact preview backend: run with `--preview artifact` or `CLAUDE_MERMAID_PREVIEW=artifact` to have `mermaid_preview` write a self-contained HTML page for publishing as a Claude artifact instead of starting the local live server
+- Copy SVG button in the diagram viewer toolbar
+- Plugin and example MCP configs forward `CLAUDE_MERMAID_PREVIEW` from the shell so plugin installs can enable artifact mode
+
+### Changed
+
+- CLI flags are parsed with `util.parseArgs`; unknown flags and a missing `--preview` value now fail fast with a clear error
+- Split the preview page script into a shared viewer (pan, zoom, copy) and live-server-only features (websocket reload, export, editor links)
+
 ### Security
 
 - Validate theme, format, width, height and scale before rendering to prevent command injection via `cmd.exe /c` on Windows; re-render paths (`mermaid_save`, `/export/`) are validated too

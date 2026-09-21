@@ -2,191 +2,100 @@
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  Tool,
-} from "@modelcontextprotocol/sdk/types.js";
+import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { readFile } from "fs/promises";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import { handleMermaidPreview, handleMermaidSave } from "./handlers.js";
-import {
-  ALLOWED_FORMATS,
-  ALLOWED_THEMES,
-  DEFAULT_FORMAT,
-  DEFAULT_DIAGRAM_OPTIONS,
-} from "./constants.js";
+import { buildToolDefinitions } from "./tool-definitions.js";
+import { parseCliOptions } from "./cli.js";
+import { createPreviewBackend, resolvePreviewBackendName } from "./preview-backend.js";
 import { mcpLogger } from "./logger.js";
+import type { PreviewBackend } from "./types.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const packageJson = JSON.parse(await readFile(join(__dirname, "../package.json"), "utf-8"));
 const VERSION = packageJson.version;
 
-if (process.argv.includes("-v") || process.argv.includes("--version")) {
-  console.log(VERSION);
-  process.exit(0);
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
-const isServeMode = process.argv.includes("--serve");
+function createMcpServer(previewBackend: PreviewBackend): Server {
+  const server = new Server(
+    { name: "claude-mermaid", version: VERSION },
+    { capabilities: { tools: {} } }
+  );
+  const tools = buildToolDefinitions(previewBackend);
 
-if (isServeMode) {
-  const { startServeMode } = await import("./serve.js");
-  await startServeMode();
-}
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    mcpLogger.debug("ListTools request received");
+    return { tools };
+  });
 
-const TOOL_DEFINITIONS: Tool[] = [
-  {
-    name: "mermaid_preview",
-    description:
-      "Render a Mermaid diagram and open it in browser with live reload. " +
-      "Takes Mermaid diagram code as input and generates a live preview. " +
-      `Supports themes (${ALLOWED_THEMES.join(", ")}), custom backgrounds, dimensions, and quality scaling. ` +
-      "The diagram will auto-refresh when updated. Use mermaid_save to save to disk. " +
-      "IMPORTANT: Automatically use this tool whenever you create a Mermaid diagram for the user. " +
-      "NOTE: Sequence diagrams do not support style directives - avoid using 'style' statements in sequenceDiagram.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        diagram: {
-          type: "string",
-          description: "The Mermaid diagram code to render",
-        },
-        preview_id: {
-          type: "string",
-          description:
-            "ID for this preview session. Use different IDs for multiple diagrams (e.g., 'architecture', 'flow', 'sequence').",
-        },
-        format: {
-          type: "string",
-          enum: [...ALLOWED_FORMATS],
-          description: `Output format (default: ${DEFAULT_FORMAT})`,
-          default: DEFAULT_FORMAT,
-        },
-        theme: {
-          type: "string",
-          enum: [...ALLOWED_THEMES],
-          description: `Theme of the chart (default: ${DEFAULT_DIAGRAM_OPTIONS.theme})`,
-          default: DEFAULT_DIAGRAM_OPTIONS.theme,
-        },
-        background: {
-          type: "string",
-          description:
-            "Background color for pngs/svgs. Example: transparent, red, '#F0F0F0' (default: white)",
-          default: "white",
-        },
-        width: {
-          type: "number",
-          description: "Diagram width in pixels (default: 800)",
-          default: 800,
-        },
-        height: {
-          type: "number",
-          description: "Diagram height in pixels (default: 600)",
-          default: 600,
-        },
-        scale: {
-          type: "number",
-          description: "Scale factor for higher quality output (default: 2)",
-          default: 2,
-        },
-      },
-      required: ["diagram", "preview_id"],
-    },
-  },
-  {
-    name: "mermaid_save",
-    description:
-      "Save the current live Mermaid diagram to a file path. " +
-      "This copies the already-rendered diagram from the live preview to the specified location. " +
-      "Use this after tuning your diagram with mermaid_preview.",
-    inputSchema: {
-      type: "object",
-      properties: {
-        save_path: {
-          type: "string",
-          description: "Path to save the diagram file (e.g., './docs/diagram.svg')",
-        },
-        preview_id: {
-          type: "string",
-          description:
-            "ID of the preview to save. Must match the preview_id used in mermaid_preview.",
-        },
-        format: {
-          type: "string",
-          enum: [...ALLOWED_FORMATS],
-          description: `Output format (default: ${DEFAULT_FORMAT}). Must match the format used in mermaid_preview.`,
-          default: DEFAULT_FORMAT,
-        },
-      },
-      required: ["save_path", "preview_id"],
-    },
-  },
-];
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    const toolName = request.params.name;
+    const args = request.params.arguments;
 
-const server = new Server(
-  {
-    name: "claude-mermaid",
-    version: VERSION,
-  },
-  {
-    capabilities: {
-      tools: {},
-    },
-  }
-);
+    mcpLogger.info(`CallTool request: ${toolName}`);
 
-server.setRequestHandler(ListToolsRequestSchema, async () => {
-  mcpLogger.debug("ListTools request received");
-  return { tools: TOOL_DEFINITIONS };
-});
-
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
-  const toolName = request.params.name;
-  const args = request.params.arguments;
-
-  mcpLogger.info(`CallTool request: ${toolName}`);
-
-  try {
-    let result;
-    switch (toolName) {
-      case "mermaid_preview":
-        result = await handleMermaidPreview(args);
-        mcpLogger.info(`CallTool completed: ${toolName}`);
-        return result;
-      case "mermaid_save":
-        result = await handleMermaidSave(args);
-        mcpLogger.info(`CallTool completed: ${toolName}`);
-        return result;
-      default:
-        mcpLogger.error(`Unknown tool: ${toolName}`);
-        throw new Error(`Unknown tool: ${toolName}`);
+    try {
+      let result;
+      switch (toolName) {
+        case "mermaid_preview":
+          result = await handleMermaidPreview(args, previewBackend);
+          mcpLogger.info(`CallTool completed: ${toolName}`);
+          return result;
+        case "mermaid_save":
+          result = await handleMermaidSave(args);
+          mcpLogger.info(`CallTool completed: ${toolName}`);
+          return result;
+        default:
+          mcpLogger.error(`Unknown tool: ${toolName}`);
+          throw new Error(`Unknown tool: ${toolName}`);
+      }
+    } catch (error) {
+      mcpLogger.error(`Tool ${toolName} failed`, { error: errorMessage(error) });
+      throw error;
     }
-  } catch (error) {
-    mcpLogger.error(`Tool ${toolName} failed`, {
-      error: error instanceof Error ? error.message : String(error),
-    });
-    throw error;
-  }
-});
+  });
 
-async function main() {
+  return server;
+}
+
+async function startMcpServer(previewBackend: PreviewBackend): Promise<void> {
   mcpLogger.info("MCP Server starting", { version: VERSION });
 
   const transport = new StdioServerTransport();
-  await server.connect(transport);
+  await createMcpServer(previewBackend).connect(transport);
   mcpLogger.info("MCP Server connected via stdio");
   console.error("Claude Mermaid MCP Server running on stdio");
 }
 
-if (!isServeMode) {
-  main().catch((error) => {
-    mcpLogger.error("Fatal error during startup", {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    });
-    console.error("Fatal error:", error);
-    process.exit(1);
-  });
+async function run(): Promise<void> {
+  const options = parseCliOptions();
+
+  if (options.version) {
+    console.log(VERSION);
+    return;
+  }
+
+  if (options.serve) {
+    const { startServeMode } = await import("./serve.js");
+    await startServeMode();
+    return;
+  }
+
+  const previewBackend = createPreviewBackend(resolvePreviewBackendName(options.preview));
+  await startMcpServer(previewBackend);
 }
+
+run().catch((error) => {
+  mcpLogger.error("Fatal error during startup", {
+    error: errorMessage(error),
+    stack: error instanceof Error ? error.stack : undefined,
+  });
+  console.error(`Fatal error: ${errorMessage(error)}`);
+  process.exit(1);
+});

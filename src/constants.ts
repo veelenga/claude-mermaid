@@ -21,6 +21,7 @@ export const FILE_NAMES = {
   DIAGRAM_SVG: "diagram.svg",
   DIAGRAM_PNG: "diagram.png",
   DIAGRAM_PDF: "diagram.pdf",
+  ARTIFACT_PAGE: "artifact.html",
 } as const;
 
 // ===== Directory Names =====
@@ -35,6 +36,7 @@ export const TEMPLATE_FILES = {
   LAYOUT: "layout.html",
   GALLERY: "gallery.html",
   DIAGRAM: "template.html",
+  ARTIFACT: "artifact-template.html",
 } as const;
 
 // ===== Static Asset Files =====
@@ -43,6 +45,7 @@ export const ASSET_FILES = {
   SHARED_STYLE: "shared.css",
   GALLERY_STYLE: "gallery.css",
   SCRIPT: "script.js",
+  VIEWER_SCRIPT: "viewer.js",
   GALLERY_SCRIPT: "gallery.js",
   FAVICON: "favicon.svg",
 } as const;
@@ -62,6 +65,7 @@ export const ROUTES = {
   SHARED_STYLE: "/shared.css",
   GALLERY_STYLE: "/gallery.css",
   SCRIPT: "/script.js",
+  VIEWER_SCRIPT: "/viewer.js",
   GALLERY_SCRIPT: "/gallery.js",
 } as const;
 
@@ -119,21 +123,6 @@ export const WS_MESSAGES = {
   RELOAD: "reload",
 } as const;
 
-// ===== Template Placeholders =====
-export const TEMPLATE_VARS = {
-  CONTENT: "{{CONTENT}}",
-  NAV: "{{NAV}}",
-  FOOTER: "{{FOOTER}}",
-  DIAGRAM_ID: "{{DIAGRAM_ID}}",
-  PORT: "{{PORT}}",
-  BACKGROUND: "{{BACKGROUND}}",
-  TIMESTAMP: "{{TIMESTAMP}}",
-  LIVE_ENABLED: "{{LIVE_ENABLED}}",
-  PAGE_TITLE: "{{PAGE_TITLE}}",
-  PAGE_SCRIPTS: "{{PAGE_SCRIPTS}}",
-  PAGE_STYLES: "{{PAGE_STYLES}}",
-} as const;
-
 // ===== Diagram Options Defaults =====
 export const DEFAULT_DIAGRAM_OPTIONS = {
   theme: "default",
@@ -155,3 +144,16 @@ export type DiagramFormat = (typeof DIAGRAM_FORMATS)[keyof typeof DIAGRAM_FORMAT
 export const DEFAULT_FORMAT: DiagramFormat = DIAGRAM_FORMATS.SVG;
 export const ALLOWED_FORMATS: readonly DiagramFormat[] = Object.values(DIAGRAM_FORMATS);
 export const ALLOWED_THEMES = ["default", "forest", "dark", "neutral"] as const;
+
+// ===== Preview Backends =====
+export const PREVIEW_BACKENDS = {
+  LIVE: "live",
+  ARTIFACT: "artifact",
+} as const;
+
+export type PreviewBackendName = (typeof PREVIEW_BACKENDS)[keyof typeof PREVIEW_BACKENDS];
+
+export const DEFAULT_PREVIEW_BACKEND: PreviewBackendName = PREVIEW_BACKENDS.LIVE;
+export const ALLOWED_PREVIEW_BACKENDS: readonly PreviewBackendName[] =
+  Object.values(PREVIEW_BACKENDS);
+export const PREVIEW_BACKEND_ENV_VAR = "CLAUDE_MERMAID_PREVIEW";

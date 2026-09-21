@@ -7,36 +7,46 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/style.css" />
   </head>
-  <body data-diagram-id="{{DIAGRAM_ID}}" data-port="{{PORT}}" data-live-enabled="{{LIVE_ENABLED}}">
-    <div class="status-bar">
-      <div style="display: flex; align-items: center; gap: 12px">
-        <div>
-          <span class="status-indicator" id="status-indicator"></span>
-          <span id="status-text">Live Reload Active</span>
-        </div>
-        <div class="toolbar-buttons">
-          <button class="toolbar-btn" id="back-to-gallery" title="Back to gallery">◄</button>
-          <button class="toolbar-btn" id="zoom-out" title="Zoom out">−</button>
-          <span class="zoom-level" id="zoom-level">100%</span>
-          <button class="toolbar-btn" id="zoom-in" title="Zoom in">+</button>
-          <button class="toolbar-btn" id="reset-pan" title="Reset position">⊙</button>
-          <div class="export-dropdown">
-            <button class="toolbar-btn" id="export-btn" title="Export diagram">⬇</button>
-            <div class="export-menu" id="export-menu">
-              <button class="export-option" data-format="svg">Download SVG</button>
-              <button class="export-option" data-format="png">Download PNG</button>
-            </div>
+  <body>
+    <div
+      class="preview"
+      data-diagram-id="{{DIAGRAM_ID}}"
+      data-port="{{PORT}}"
+      data-live-enabled="{{LIVE_ENABLED}}"
+    >
+      <div class="status-bar">
+        <div class="status-group">
+          <div>
+            <span class="status-indicator" id="status-indicator"></span>
+            <span id="status-text">Live Reload Active</span>
           </div>
-          <button class="toolbar-btn" id="open-mermaid-live" title="Open in Mermaid Live">⧉</button>
+          <div class="toolbar-buttons">
+            <button class="toolbar-btn" id="back-to-gallery" title="Back to gallery">◄</button>
+            <button class="toolbar-btn" id="zoom-out" title="Zoom out">−</button>
+            <span class="zoom-level" id="zoom-level">100%</span>
+            <button class="toolbar-btn" id="zoom-in" title="Zoom in">+</button>
+            <button class="toolbar-btn" id="reset-pan" title="Reset position">⊙</button>
+            <div class="export-dropdown">
+              <button class="toolbar-btn" id="export-btn" title="Export diagram">⬇</button>
+              <div class="export-menu" id="export-menu">
+                <button class="export-option" data-format="svg">Download SVG</button>
+                <button class="export-option" data-format="png">Download PNG</button>
+              </div>
+            </div>
+            <button class="toolbar-btn" id="open-mermaid-live" title="Open in Mermaid Live">
+              ⧉
+            </button>
+          </div>
         </div>
+        <div id="last-update">Last updated: {{TIMESTAMP}}</div>
       </div>
-      <div id="last-update">Last updated: {{TIMESTAMP}}</div>
+
+      <div class="viewport" style="background: {{BACKGROUND}}">
+        <div class="diagram-wrapper">{{CONTENT}}</div>
+      </div>
     </div>
 
-    <div class="viewport" style="background: {{BACKGROUND}}">
-      <div class="diagram-wrapper">{{CONTENT}}</div>
-    </div>
-
+    <script src="/viewer.js"></script>
     <script src="/script.js"></script>
   </body>
 </html>

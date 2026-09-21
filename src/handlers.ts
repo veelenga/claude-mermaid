@@ -1,9 +1,8 @@
-import { execFile, spawn } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 import { writeFile, mkdir, copyFile, access } from "fs/promises";
 import { join, dirname } from "path";
 import { tmpdir } from "os";
-import { ensureLiveServer, addLiveDiagram, hasActiveConnections } from "./live-server.js";
 import {
   getDiagramFilePath,
   getPreviewDir,
@@ -13,11 +12,10 @@ import {
   validateSavePath,
   validateFormat,
   validateRenderOptions,
-  getOpenCommand,
 } from "./file-utils.js";
 import { mcpLogger } from "./logger.js";
-import type { RenderOptions } from "./types.js";
-import { DEFAULT_DIAGRAM_OPTIONS, DEFAULT_FORMAT } from "./constants.js";
+import type { PreviewBackend, RenderOptions } from "./types.js";
+import { DEFAULT_DIAGRAM_OPTIONS, DEFAULT_FORMAT, DIAGRAM_FORMATS } from "./constants.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -93,67 +91,18 @@ export async function renderDiagram(options: RenderOptions, liveFilePath: string
   }
 }
 
-async function setupLivePreview(
-  previewId: string,
-  liveFilePath: string
-): Promise<{ serverUrl: string; hasConnections: boolean }> {
-  const port = await ensureLiveServer();
-  const hasConnections = hasActiveConnections(previewId);
-
-  await addLiveDiagram(previewId, liveFilePath);
-  const serverUrl = `http://localhost:${port}/${previewId}`;
-
-  if (!hasConnections) {
-    mcpLogger.info(`Opening browser for new diagram: ${previewId}`, { serverUrl });
-    const { command, args } = getOpenCommand(serverUrl);
-    const child = spawn(command, args, { detached: true, stdio: "ignore" });
-    child.on("error", (error) => {
-      mcpLogger.warn("Failed to open browser", { error: error.message, serverUrl });
-    });
-    child.unref();
-  } else {
-    mcpLogger.info(`Reusing existing browser tab for diagram: ${previewId}`);
-  }
-
-  return { serverUrl, hasConnections };
-}
-
-function createLivePreviewResponse(
-  liveFilePath: string,
-  format: string,
-  serverUrl: string,
-  hasConnections: boolean
-): any {
-  const actionMessage = hasConnections
-    ? `Mermaid diagram updated successfully.`
-    : `Mermaid diagram rendered successfully and opened in browser.`;
-
-  const liveMessage = hasConnections
-    ? `\nDiagram updated. Browser will refresh automatically.`
-    : `\nLive reload URL: ${serverUrl}\nThe diagram will auto-refresh when you update it.`;
-
-  return {
-    content: [
-      {
-        type: "text",
-        text: `${actionMessage}\nWorking file: ${liveFilePath} (${format.toUpperCase()})${liveMessage}`,
-      },
-    ],
-  };
-}
-
 function createStaticRenderResponse(liveFilePath: string, format: string): any {
   return {
     content: [
       {
         type: "text",
-        text: `Mermaid diagram rendered successfully.\nWorking file: ${liveFilePath} (${format.toUpperCase()})\n\nNote: Live preview is only available for SVG format. Use mermaid_save to save this diagram to a permanent location.`,
+        text: `Mermaid diagram rendered successfully.\nWorking file: ${liveFilePath} (${format.toUpperCase()})\n\nNote: Preview is only available for SVG format. Use mermaid_save to save this diagram to a permanent location.`,
       },
     ],
   };
 }
 
-export async function handleMermaidPreview(args: any) {
+export async function handleMermaidPreview(args: any, previewBackend: PreviewBackend) {
   const diagram = args.diagram as string;
   const previewId = args.preview_id as string;
   const format = (args.format as string) ?? DEFAULT_FORMAT;
@@ -186,12 +135,12 @@ export async function handleMermaidPreview(args: any) {
     await saveDiagramSource(previewId, diagram, { theme, background, width, height, scale });
     await renderDiagram(renderOptions, liveFilePath);
 
-    if (format === "svg") {
-      const { serverUrl, hasConnections } = await setupLivePreview(previewId, liveFilePath);
-      return createLivePreviewResponse(liveFilePath, format, serverUrl, hasConnections);
-    } else {
+    if (format !== DIAGRAM_FORMATS.SVG) {
       return createStaticRenderResponse(liveFilePath, format);
     }
+
+    const text = await previewBackend.present({ previewId, filePath: liveFilePath, background });
+    return { content: [{ type: "text", text }] };
   } catch (error) {
     return createErrorResponse(`Error rendering Mermaid diagram: ${errorMessage(error)}`);
   }

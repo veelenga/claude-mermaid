@@ -8,7 +8,7 @@ import { readFile } from "fs/promises";
 import { join } from "path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import { TEMPLATE_VARS, ROUTES } from "./constants.js";
+import { ROUTES } from "./constants.js";
 import { PageData, PageRenderOptions } from "./types.js";
 import { webLogger } from "./logger.js";
 
@@ -24,7 +24,7 @@ const templateCache = new Map<string, string>();
  * @param filename Template filename
  * @returns Template content
  */
-async function loadTemplate(filename: string): Promise<string> {
+export async function loadTemplate(filename: string): Promise<string> {
   if (templateCache.has(filename)) {
     return templateCache.get(filename)!;
   }
@@ -59,16 +59,33 @@ export function escapeHtml(unsafe: string): string {
  * @returns Processed template
  */
 function replaceVariables(template: string, data: PageData, escape: boolean = true): string {
-  let result = template;
+  const values = Object.fromEntries(
+    Object.entries(data).map(([key, value]) => {
+      const stringValue = String(value ?? "");
+      return [key, escape ? escapeHtml(stringValue) : stringValue];
+    })
+  );
+  return fillTemplate(template, values);
+}
 
-  for (const [key, value] of Object.entries(data)) {
-    const placeholder = `{{${key}}}`;
-    const stringValue = String(value ?? "");
-    const processedValue = escape ? escapeHtml(stringValue) : stringValue;
-    result = result.replaceAll(placeholder, processedValue);
-  }
+export function fillTemplate(template: string, values: Record<string, string>): string {
+  return Object.entries(values).reduce(
+    (page, [key, value]) => page.replaceAll(`{{${key}}}`, () => value),
+    template
+  );
+}
 
-  return result;
+export function diagramPageData(
+  previewId: string,
+  svg: string,
+  background: string
+): Record<string, string> {
+  return {
+    DIAGRAM_ID: escapeHtml(previewId),
+    BACKGROUND: escapeHtml(background),
+    TIMESTAMP: escapeHtml(new Date().toLocaleTimeString()),
+    CONTENT: svg,
+  };
 }
 
 /**
