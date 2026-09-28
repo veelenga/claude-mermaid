@@ -383,8 +383,8 @@ describe("File Utilities", () => {
       expect(() => validateTheme(undefined as unknown as string)).toThrow("Invalid theme");
     });
 
-    it("should reject shell metacharacters (Windows cmd.exe /c)", () => {
-      // theme flows verbatim into `npx ... -t <theme>` → `cmd.exe /c` on Windows
+    it("should reject shell metacharacters", () => {
+      // theme flows verbatim into the mermaid-cli argv as `-t <theme>`
       expect(() => validateTheme("default & calc.exe")).toThrow("Invalid theme");
       expect(() => validateTheme("dark|whoami")).toThrow("Invalid theme");
       expect(() => validateTheme("default && calc.exe")).toThrow("Invalid theme");
