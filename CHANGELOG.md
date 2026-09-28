@@ -7,9 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.6] - 2026-09-28
+
 ### Security
 
-- Validate theme, format, width, height and scale before rendering to prevent command injection via `cmd.exe /c` on Windows; re-render paths (`mermaid_save`, `/export/`) are validated too
+- Validate theme, format, width, height and scale before rendering to prevent command injection via `cmd.exe /c` on Windows; re-render paths (`mermaid_save`, `/export/`) are validated too (#179)
+- Rendering no longer goes through a shell on Windows (#198)
+- Dropped the vulnerable `extract-zip` by moving to `puppeteer` 25 (#177)
+- Patched transitive advisories in `qs`, `fast-uri`, `hono`, and `postcss-selector-parser`
+
+### Fixed
+
+- Rendering failed with `unknown option '-w'` after mermaid-cli 12 was released. The server now runs the mermaid-cli installed with claude-mermaid instead of fetching the latest one with npx (#198)
+
+### Changed
+
+- The first render no longer downloads mermaid-cli (#198)
+- Bumped `@mermaid-js/mermaid-cli` to 11.17.0
+- Bumped `pako` to 3.0.2
+- Bumped `ws` to 8.21.3
+- Bumped development tooling to `@types/node` 26.6.1, `@types/pako` 3.0.0, Prettier 3.9.8, and Vitest 4.1.11
 
 ## [1.6.5] - 2026-08-08
 
