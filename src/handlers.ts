@@ -45,7 +45,8 @@ export async function renderDiagram(options: RenderOptions, liveFilePath: string
 
   const args = [
     "-y",
-    "@mermaid-js/mermaid-cli",
+    // Pinned to the major we pass flags for: v12 replaced -w/-H with --size
+    "@mermaid-js/mermaid-cli@11",
     "-i",
     inputFile,
     "-o",

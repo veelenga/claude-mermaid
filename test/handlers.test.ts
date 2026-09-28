@@ -192,7 +192,7 @@ describe("handleMermaidPreview", () => {
       expect(file).toBe("cmd.exe");
       expect(args[0]).toBe("/c");
       expect(args[1]).toBe("npx");
-      expect(args).toContain("@mermaid-js/mermaid-cli");
+      expect(args).toContain("@mermaid-js/mermaid-cli@11");
     } finally {
       Object.defineProperty(process, "platform", {
         value: originalPlatform,
