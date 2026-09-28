@@ -3,6 +3,7 @@ import { handleMermaidPreview, handleMermaidSave } from "../src/handlers.js";
 import { getPreviewDir, getDiagramFilePath, getDiagramOptionsPath } from "../src/file-utils.js";
 import { readdir, unlink, access, writeFile } from "fs/promises";
 import { execFile } from "child_process";
+import { getMermaidCliPath } from "../src/mermaid-cli.js";
 import { setupTestEnvWithPreview, restoreTestEnv } from "./helpers/env-helpers.js";
 
 // Mock child_process to avoid actually running mmdc and opening browser
@@ -175,57 +176,22 @@ describe("handleMermaidPreview", () => {
     expect(result.content[0].text).toContain("Command failed");
   });
 
-  it("should invoke cmd.exe /c npx on win32", async () => {
-    const originalPlatform = process.platform;
-    Object.defineProperty(process, "platform", { value: "win32", configurable: true });
+  it("should run the bundled mermaid-cli with the current node binary", async () => {
     const mockExecFile = vi.mocked(execFile);
     mockExecFile.mockClear();
 
-    try {
-      await handleMermaidPreview({
-        diagram: "graph TD; A-->B",
-        preview_id: testPreviewId,
-      });
+    await handleMermaidPreview({
+      diagram: "graph TD; A-->B",
+      preview_id: testPreviewId,
+    });
 
-      expect(mockExecFile).toHaveBeenCalled();
-      const [file, args] = mockExecFile.mock.calls[0] as [string, string[], unknown];
-      expect(file).toBe("cmd.exe");
-      expect(args[0]).toBe("/c");
-      expect(args[1]).toBe("npx");
-      expect(args).toContain("@mermaid-js/mermaid-cli");
-    } finally {
-      Object.defineProperty(process, "platform", {
-        value: originalPlatform,
-        configurable: true,
-      });
-    }
+    expect(mockExecFile).toHaveBeenCalled();
+    const [file, args] = mockExecFile.mock.calls[0] as [string, string[], unknown];
+    expect(file).toBe(process.execPath);
+    expect(args[0]).toBe(getMermaidCliPath());
   });
 
-  it("should invoke npx directly on non-win32 platforms", async () => {
-    const originalPlatform = process.platform;
-    Object.defineProperty(process, "platform", { value: "linux", configurable: true });
-    const mockExecFile = vi.mocked(execFile);
-    mockExecFile.mockClear();
-
-    try {
-      await handleMermaidPreview({
-        diagram: "graph TD; A-->B",
-        preview_id: testPreviewId,
-      });
-
-      expect(mockExecFile).toHaveBeenCalled();
-      const [file, args] = mockExecFile.mock.calls[0] as [string, string[], unknown];
-      expect(file).toBe("npx");
-      expect(args[0]).not.toBe("/c");
-    } finally {
-      Object.defineProperty(process, "platform", {
-        value: originalPlatform,
-        configurable: true,
-      });
-    }
-  });
-
-  it("should reject background with shell metacharacters without invoking npx", async () => {
+  it("should reject background with shell metacharacters without invoking mermaid-cli", async () => {
     const mockExecFile = vi.mocked(execFile);
     mockExecFile.mockClear();
 
@@ -249,20 +215,23 @@ describe("handleMermaidPreview", () => {
     ["width", { width: "800&calc" }, "Invalid width"],
     ["height", { height: -1 }, "Invalid height"],
     ["scale", { scale: Infinity }, "Invalid scale"],
-  ])("should reject invalid %s without invoking npx", async (_label, overrides, message) => {
-    const mockExecFile = vi.mocked(execFile);
-    mockExecFile.mockClear();
+  ])(
+    "should reject invalid %s without invoking mermaid-cli",
+    async (_label, overrides, message) => {
+      const mockExecFile = vi.mocked(execFile);
+      mockExecFile.mockClear();
 
-    const result = await handleMermaidPreview({
-      diagram: "graph TD; A-->B",
-      preview_id: testPreviewId,
-      ...overrides,
-    });
+      const result = await handleMermaidPreview({
+        diagram: "graph TD; A-->B",
+        preview_id: testPreviewId,
+        ...overrides,
+      });
 
-    expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain(message);
-    expect(mockExecFile).not.toHaveBeenCalled();
-  });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toContain(message);
+      expect(mockExecFile).not.toHaveBeenCalled();
+    }
+  );
 });
 
 describe("handleMermaidSave", () => {
@@ -333,7 +302,7 @@ describe("handleMermaidSave", () => {
     await unlink(pngPath);
   });
 
-  it("should reject invalid format without invoking npx", async () => {
+  it("should reject invalid format without invoking mermaid-cli", async () => {
     const mockExecFile = vi.mocked(execFile);
     mockExecFile.mockClear();
 
