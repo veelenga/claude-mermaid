@@ -16,6 +16,7 @@ import {
   getOpenCommand,
 } from "./file-utils.js";
 import { mcpLogger } from "./logger.js";
+import { buildMermaidCliArgs, getMermaidCliPath } from "./mermaid-cli.js";
 import type { RenderOptions } from "./types.js";
 import { DEFAULT_DIAGRAM_OPTIONS, DEFAULT_FORMAT } from "./constants.js";
 
@@ -31,7 +32,7 @@ function createErrorResponse(text: string) {
 
 export async function renderDiagram(options: RenderOptions, liveFilePath: string): Promise<void> {
   validateRenderOptions(options);
-  const { diagram, previewId, format, theme, background, width, height, scale } = options;
+  const { diagram, previewId, format, theme, width, height } = options;
 
   mcpLogger.info(`Rendering diagram: ${previewId}`, { format, theme, width, height });
 
@@ -43,42 +44,12 @@ export async function renderDiagram(options: RenderOptions, liveFilePath: string
 
   await writeFile(inputFile, diagram, "utf-8");
 
-  const args = [
-    "-y",
-    "@mermaid-js/mermaid-cli",
-    "-i",
-    inputFile,
-    "-o",
-    outputFile,
-    "-t",
-    theme,
-    "-b",
-    background,
-    "-w",
-    width.toString(),
-    "-H",
-    height.toString(),
-    "-s",
-    scale.toString(),
-  ];
-
-  if (format === "pdf") {
-    args.push("--pdfFit");
-  }
+  const args = [getMermaidCliPath(), ...buildMermaidCliArgs(inputFile, outputFile, options)];
 
   mcpLogger.debug(`Executing mermaid-cli`, { args });
 
   try {
-    // On Windows, `execFile`/`spawn` cannot invoke `npx` directly: the real
-    // binary is `npx.cmd`, and Node no longer allows direct spawn of `.cmd`
-    // files (see CVE-2024-27980 / spawn EINVAL). `{ shell: true }` would work
-    // but is deprecated in Node 24+ (DEP0190) because args aren't escaped.
-    // The Node-documented pattern is to go through `cmd.exe /c` explicitly.
-    // See: https://nodejs.org/api/child_process.html#spawning-bat-and-cmd-files-on-windows
-    const isWin = process.platform === "win32";
-    const command = isWin ? "cmd.exe" : "npx";
-    const finalArgs = isWin ? ["/c", "npx", ...args] : args;
-    const { stdout, stderr } = await execFileAsync(command, finalArgs);
+    const { stderr } = await execFileAsync(process.execPath, args);
     if (stderr) {
       mcpLogger.debug(`mermaid-cli stderr`, { stderr });
     }
