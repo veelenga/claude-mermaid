@@ -47,7 +47,7 @@
   },
   "overrides": {
     "@hono/node-server": "^2.0.5",
-    "dompurify": "^3.4.13",
+    "dompurify": "^3.4.16",
     "lodash-es": "^4.18.0",
     "nanoid": "^3.3.17",
     "puppeteer": "^25.8.0"
