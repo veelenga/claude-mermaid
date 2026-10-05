@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Artifact mode: run with `--preview artifact` or `CLAUDE_MERMAID_PREVIEW=artifact` to have `mermaid_preview` write a self-contained HTML page for publishing as a Claude artifact instead of starting the local live server
+
 ## [1.6.6] - 2026-09-28
 
 ### Security

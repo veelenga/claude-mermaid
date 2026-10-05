@@ -21,6 +21,7 @@ export const FILE_NAMES = {
   DIAGRAM_SVG: "diagram.svg",
   DIAGRAM_PNG: "diagram.png",
   DIAGRAM_PDF: "diagram.pdf",
+  ARTIFACT_PAGE: "artifact.html",
 } as const;
 
 // ===== Directory Names =====
@@ -151,3 +152,6 @@ export type DiagramFormat = (typeof DIAGRAM_FORMATS)[keyof typeof DIAGRAM_FORMAT
 export const DEFAULT_FORMAT: DiagramFormat = DIAGRAM_FORMATS.SVG;
 export const ALLOWED_FORMATS: readonly DiagramFormat[] = Object.values(DIAGRAM_FORMATS);
 export const ALLOWED_THEMES = ["default", "forest", "dark", "neutral"] as const;
+export const PREVIEW_MODES = ["live", "artifact"] as const;
+export type PreviewMode = (typeof PREVIEW_MODES)[number];
+export const DEFAULT_PREVIEW_MODE: PreviewMode = "live";
