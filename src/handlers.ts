@@ -3,6 +3,7 @@ import { promisify } from "util";
 import { writeFile, mkdir, copyFile, access } from "fs/promises";
 import { join, dirname } from "path";
 import { tmpdir } from "os";
+import { writeArtifactPage } from "./artifact-page.js";
 import { ensureLiveServer, addLiveDiagram, hasActiveConnections } from "./live-server.js";
 import {
   getDiagramFilePath,
@@ -18,7 +19,12 @@ import {
 import { mcpLogger } from "./logger.js";
 import { buildMermaidCliArgs, getMermaidCliPath } from "./mermaid-cli.js";
 import type { RenderOptions } from "./types.js";
-import { DEFAULT_DIAGRAM_OPTIONS, DEFAULT_FORMAT } from "./constants.js";
+import {
+  DEFAULT_DIAGRAM_OPTIONS,
+  DEFAULT_FORMAT,
+  DEFAULT_PREVIEW_MODE,
+  type PreviewMode,
+} from "./constants.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -113,6 +119,20 @@ function createLivePreviewResponse(
   };
 }
 
+function createArtifactResponse(liveFilePath: string, pagePath: string, previewId: string): any {
+  return {
+    content: [
+      {
+        type: "text",
+        text:
+          `Mermaid diagram rendered successfully.\nWorking file: ${liveFilePath} (SVG)\nArtifact page: ${pagePath}\n\n` +
+          `Publish the artifact page with the Artifact tool to show it to the user. ` +
+          `Republish this same path after every update of preview "${previewId}" so the artifact URL stays the same.`,
+      },
+    ],
+  };
+}
+
 function createStaticRenderResponse(liveFilePath: string, format: string): any {
   return {
     content: [
@@ -124,7 +144,10 @@ function createStaticRenderResponse(liveFilePath: string, format: string): any {
   };
 }
 
-export async function handleMermaidPreview(args: any) {
+export async function handleMermaidPreview(
+  args: any,
+  previewMode: PreviewMode = DEFAULT_PREVIEW_MODE
+) {
   const diagram = args.diagram as string;
   const previewId = args.preview_id as string;
   const format = (args.format as string) ?? DEFAULT_FORMAT;
@@ -158,6 +181,10 @@ export async function handleMermaidPreview(args: any) {
     await renderDiagram(renderOptions, liveFilePath);
 
     if (format === "svg") {
+      if (previewMode === "artifact") {
+        const pagePath = await writeArtifactPage(previewId, liveFilePath, background);
+        return createArtifactResponse(liveFilePath, pagePath, previewId);
+      }
       const { serverUrl, hasConnections } = await setupLivePreview(previewId, liveFilePath);
       return createLivePreviewResponse(liveFilePath, format, serverUrl, hasConnections);
     } else {
