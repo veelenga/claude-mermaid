@@ -9,6 +9,7 @@ Automatically renders diagrams in your browser with real-time updates as you ref
 ## ✨ Features
 
 - 🔄 **Live Reload** - Diagrams auto-refresh in your browser as you edit
+- 🪄 **Artifact Mode** - Optionally publish diagrams as shareable Claude artifacts instead of running a local server
 - 🎨 **Multiple Save Formats** - Export to SVG, PNG, or PDF
 - 🌈 **Themes** - Choose from default, forest, dark, or neutral themes
 - 📐 **Customizable** - Control dimensions, scale, and background colors
@@ -335,6 +336,35 @@ The live server uses ports 3737-3747 and automatically finds an available port.
 
 - Live preview is available for `svg` format only; PNG/PDF are rendered without live reload.
 - For sequence diagrams, Mermaid does not support `style` directives inside `sequenceDiagram`.
+
+## 🪄 Artifact mode
+
+By default, previews are served by a local HTTP server with live reload. In Claude Code you can instead have `mermaid_preview` write a self-contained HTML page that Claude publishes as a [Claude artifact](https://claude.ai/code/artifacts). Republishing the same page updates the existing URL, so artifacts are easy to share.
+
+Enable it with the `--preview artifact` flag or the `CLAUDE_MERMAID_PREVIEW` environment variable:
+
+```json
+{
+  "mcpServers": {
+    "mermaid": {
+      "command": "npx",
+      "args": ["-y", "claude-mermaid"],
+      "env": { "CLAUDE_MERMAID_PREVIEW": "artifact" }
+    }
+  }
+}
+```
+
+Plugin installs forward the variable from your shell, so run `export CLAUDE_MERMAID_PREVIEW=artifact` before starting Claude Code.
+
+In artifact mode:
+
+- `mermaid_preview` renders the diagram with mermaid-cli as usual, then writes `artifact.html` next to the working files under `~/.config/claude-mermaid/live/{preview_id}/`.
+- The tool response tells Claude to publish that page with the Artifact tool and to republish the same path after every update.
+- The page has pan, zoom and copy SVG controls and no external dependencies.
+- No local server is started and no browser tab is opened. `mermaid_save` works unchanged.
+
+Artifact mode needs a host with the Artifact tool, such as Claude Code. Other MCP clients should keep the default `live` mode.
 
 ## 🖥️ Standalone server
 

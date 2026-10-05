@@ -14,6 +14,7 @@
   const MAX_SCALE = 10;
   const ZOOM_BUTTON_FACTOR = 1.2;
   const WHEEL_ZOOM_FACTOR = 0.001;
+  const COPY_FEEDBACK_MS = 1500;
 
   // ===== DOM Elements =====
   const elements = {
@@ -30,6 +31,7 @@
     backToGalleryButton: document.getElementById("back-to-gallery"),
     exportButton: document.getElementById("export-btn"),
     exportMenu: document.getElementById("export-menu"),
+    copyButton: document.getElementById("copy-svg"),
   };
 
   // ===== Pan/Zoom State =====
@@ -248,20 +250,44 @@
     URL.revokeObjectURL(url);
   }
 
+  function serializeSvg() {
+    const svgClone = elements.svg.cloneNode(true);
+    svgClone.removeAttribute("style");
+    svgClone.style.maxWidth = "none";
+    svgClone.style.maxHeight = "none";
+    return new XMLSerializer().serializeToString(svgClone);
+  }
+
   function exportSvg() {
     if (!elements.svg) {
       alert("No diagram found to export.");
       return;
     }
 
-    const svgClone = elements.svg.cloneNode(true);
-    svgClone.removeAttribute("style");
-    svgClone.style.maxWidth = "none";
-    svgClone.style.maxHeight = "none";
-
-    const svgData = new XMLSerializer().serializeToString(svgClone);
-    const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const blob = new Blob([serializeSvg()], { type: "image/svg+xml;charset=utf-8" });
     downloadBlob(blob, getFilename("svg"));
+  }
+
+  function copySvg() {
+    const button = elements.copyButton;
+    const label = button.textContent;
+    const showResult = function (result) {
+      button.textContent = result;
+      setTimeout(function () {
+        button.textContent = label;
+        button.disabled = false;
+      }, COPY_FEEDBACK_MS);
+    };
+
+    button.disabled = true;
+    navigator.clipboard.writeText(serializeSvg()).then(
+      function () {
+        showResult("✓");
+      },
+      function () {
+        showResult("✕");
+      }
+    );
   }
 
   function exportPng() {
@@ -386,6 +412,10 @@
       elements.backToGalleryButton.addEventListener("click", function () {
         window.location.href = "/";
       });
+    }
+
+    if (elements.copyButton) {
+      elements.copyButton.addEventListener("click", copySvg);
     }
 
     if (elements.exportButton) {

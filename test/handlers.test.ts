@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { handleMermaidPreview, handleMermaidSave } from "../src/handlers.js";
 import { getPreviewDir, getDiagramFilePath, getDiagramOptionsPath } from "../src/file-utils.js";
+import { ensureLiveServer } from "../src/live-server.js";
 import { readdir, unlink, access, writeFile, readFile } from "fs/promises";
 import { execFile } from "child_process";
 import { getMermaidCliPath } from "../src/mermaid-cli.js";
@@ -131,6 +132,26 @@ describe("handleMermaidPreview", () => {
     });
 
     expect(result.content[0].text).toContain("Live reload");
+  });
+
+  it("should write a self-contained artifact page in artifact mode", async () => {
+    vi.mocked(ensureLiveServer).mockClear();
+
+    const result = await handleMermaidPreview(
+      { diagram: "graph TD; A-->B", preview_id: testPreviewId, background: "#F0F0F0" },
+      "artifact"
+    );
+
+    const pagePath = `${getPreviewDir(testPreviewId)}/artifact.html`;
+    const page = await readFile(pagePath, "utf-8");
+
+    expect(result.content[0].text).toContain(`Artifact page: ${pagePath}`);
+    expect(page).toContain(`<title>${testPreviewId}</title>`);
+    expect(page).toContain("<svg>test</svg>");
+    expect(page).toContain("background: #F0F0F0");
+    expect(page).toContain('id="copy-svg"');
+    expect(page).not.toMatch(/\{\{\w+\}\}|<link|<script src|<!doctype/i);
+    expect(ensureLiveServer).not.toHaveBeenCalled();
   });
 
   it("should indicate static render for PNG format", async () => {
