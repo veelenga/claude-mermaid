@@ -11,6 +11,8 @@ import {
   DIR_NAMES,
   ALLOWED_THEMES,
   ALLOWED_FORMATS,
+  PREVIEW_MODES,
+  type PreviewMode,
 } from "./constants.js";
 import type { DiagramOptions, RenderOptions } from "./types.js";
 
@@ -71,6 +73,10 @@ export function validateTheme(theme: string): void {
 
 export function validateFormat(format: string): void {
   validateAllowed("format", format, ALLOWED_FORMATS);
+}
+
+export function validatePreviewMode(mode: string): asserts mode is PreviewMode {
+  validateAllowed("preview mode", mode, PREVIEW_MODES);
 }
 
 export function validateDimension(label: string, value: number): void {

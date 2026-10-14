@@ -2,7 +2,10 @@
   "mcpServers": {
     "mermaid": {
       "command": "npx",
-      "args": ["-y", "claude-mermaid"]
+      "args": ["-y", "claude-mermaid"],
+      "env": {
+        "CLAUDE_MERMAID_PREVIEW": "${CLAUDE_MERMAID_PREVIEW:-live}"
+      }
     }
   }
 }
