@@ -32,9 +32,9 @@ function createErrorResponse(text: string) {
 
 export async function renderDiagram(options: RenderOptions, liveFilePath: string): Promise<void> {
   validateRenderOptions(options);
-  const { diagram, previewId, format, theme, width, height } = options;
+  const { diagram, previewId, format, theme, size } = options;
 
-  mcpLogger.info(`Rendering diagram: ${previewId}`, { format, theme, width, height });
+  mcpLogger.info(`Rendering diagram: ${previewId}`, { format, theme, size });
 
   const tempDir = join(tmpdir(), "claude-mermaid");
   await mkdir(tempDir, { recursive: true });
@@ -130,8 +130,7 @@ export async function handleMermaidPreview(args: any) {
   const format = (args.format as string) ?? DEFAULT_FORMAT;
   const theme = (args.theme as string) ?? DEFAULT_DIAGRAM_OPTIONS.theme;
   const background = (args.background as string) ?? DEFAULT_DIAGRAM_OPTIONS.background;
-  const width = (args.width as number) ?? DEFAULT_DIAGRAM_OPTIONS.width;
-  const height = (args.height as number) ?? DEFAULT_DIAGRAM_OPTIONS.height;
+  const size = (args.size as number) ?? DEFAULT_DIAGRAM_OPTIONS.size;
   const scale = (args.scale as number) ?? DEFAULT_DIAGRAM_OPTIONS.scale;
 
   if (!diagram) {
@@ -141,7 +140,7 @@ export async function handleMermaidPreview(args: any) {
     throw new Error("preview_id parameter is required");
   }
 
-  const renderOptions = { diagram, previewId, format, theme, background, width, height, scale };
+  const renderOptions = { diagram, previewId, format, theme, background, size, scale };
 
   try {
     validateRenderOptions(renderOptions);
@@ -154,7 +153,7 @@ export async function handleMermaidPreview(args: any) {
   const liveFilePath = getDiagramFilePath(previewId, format);
 
   try {
-    await saveDiagramSource(previewId, diagram, { theme, background, width, height, scale });
+    await saveDiagramSource(previewId, diagram, { theme, background, size, scale });
     await renderDiagram(renderOptions, liveFilePath);
 
     if (format === "svg") {

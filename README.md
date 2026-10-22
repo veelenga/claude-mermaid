@@ -305,8 +305,7 @@ There are two tools exposed by the MCP server:
 - `format` (string, default `svg`) — One of `svg`, `png`, `pdf`. Live preview is available only for `svg`.
 - `theme` (string, default `default`) — One of `default`, `forest`, `dark`, `neutral`.
 - `background` (string, default `white`) — Background color. Examples: `transparent`, `white`, `#F0F0F0`.
-- `width` (number, default `800`) — Diagram width in pixels.
-- `height` (number, default `600`) — Diagram height in pixels.
+- `size` (number, default `800`) — Maximum diagram width or height in pixels.
 - `scale` (number, default `2`) — Scale factor for higher quality output.
 
 2. `mermaid_save` — save the current live diagram to a path

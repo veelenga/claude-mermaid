@@ -25,7 +25,7 @@ Always use this when creating or updating diagrams:
 - `format`: Use `svg` for live reload (default)
 - `theme`: `default`, `forest`, `dark`, or `neutral`
 - `background`: `white`, `transparent`, or hex colors
-- `width`, `height`, `scale`: Adjust for quality/size
+- `size`, `scale`: Adjust for quality/size
 
 **Key Points:**
 

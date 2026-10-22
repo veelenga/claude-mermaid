@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Upgrade `@mermaid-js/mermaid-cli` to v12, which renders with Mermaid v12 and requires Node.js 22.13 or later
+- Replace the `width` and `height` options of `mermaid_preview` with a single `size` option, the maximum width or height in pixels, following the mermaid-cli v12 `--size` flag; options saved by earlier versions fall back to the default size
 - The `mermaid-diagrams` skill also loads when a Mermaid block in a Markdown file is written, edited, restyled, or reviewed, and gains a short section on diagrams in Markdown files
 
 ### Fixed

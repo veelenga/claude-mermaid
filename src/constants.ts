@@ -134,8 +134,7 @@ export const TEMPLATE_VARS = {
 export const DEFAULT_DIAGRAM_OPTIONS = {
   theme: "default",
   background: "white",
-  width: 800,
-  height: 600,
+  size: 800,
   scale: 2,
 } as const;
 

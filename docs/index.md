@@ -82,8 +82,7 @@ The server exposes exactly two tools.
 | `format`     | string | `svg`     | One of `svg`, `png`, `pdf`. Live preview is SVG-only.                 |
 | `theme`      | string | `default` | One of `default`, `forest`, `dark`, `neutral`.                        |
 | `background` | string | `white`   | Background color, e.g. `transparent`, `white`, `#F0F0F0`.             |
-| `width`      | number | `800`     | Diagram width in pixels.                                              |
-| `height`     | number | `600`     | Diagram height in pixels.                                             |
+| `size`       | number | `800`     | Maximum diagram width or height in pixels.                            |
 | `scale`      | number | `2`       | Scale factor for higher-quality output.                               |
 
 ### mermaid_save — save the current diagram to a path

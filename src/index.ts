@@ -76,15 +76,10 @@ const TOOL_DEFINITIONS: Tool[] = [
             "Background color for pngs/svgs. Example: transparent, red, '#F0F0F0' (default: white)",
           default: "white",
         },
-        width: {
+        size: {
           type: "number",
-          description: "Diagram width in pixels (default: 800)",
+          description: "Maximum diagram width or height in pixels (default: 800)",
           default: 800,
-        },
-        height: {
-          type: "number",
-          description: "Diagram height in pixels (default: 600)",
-          default: 600,
         },
         scale: {
           type: "number",

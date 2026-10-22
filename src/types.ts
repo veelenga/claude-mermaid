@@ -10,8 +10,7 @@ import { DiagramFormat } from "./constants.js";
 export interface DiagramOptions {
   theme: string;
   background: string;
-  width: number;
-  height: number;
+  size: number;
   scale: number;
 }
 

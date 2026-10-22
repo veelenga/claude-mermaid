@@ -14,7 +14,7 @@ import {
   validateTheme,
   validateFormat,
 } from "../src/file-utils.js";
-import { unlink, mkdir, rmdir, readdir, mkdtemp, rm } from "fs/promises";
+import { unlink, mkdir, rmdir, readdir, mkdtemp, rm, writeFile } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
 import { setupTestEnv, restoreTestEnv } from "./helpers/env-helpers.js";
@@ -201,8 +201,7 @@ describe("File Utilities", () => {
     const testOptions = {
       theme: "dark",
       background: "transparent",
-      width: 1024,
-      height: 768,
+      size: 1024,
       scale: 3,
     };
 
@@ -239,9 +238,17 @@ describe("File Utilities", () => {
       const loadedOptions = await loadDiagramOptions(testPreviewId);
       expect(loadedOptions.theme).toBe("dark");
       expect(loadedOptions.background).toBe("transparent");
-      expect(loadedOptions.width).toBe(1024);
-      expect(loadedOptions.height).toBe(768);
+      expect(loadedOptions.size).toBe(1024);
       expect(loadedOptions.scale).toBe(3);
+    });
+
+    it("should fill options missing from older saved files with defaults", async () => {
+      await writeFile(
+        getDiagramOptionsPath(testPreviewId),
+        JSON.stringify({ theme: "dark", background: "white", width: 1024, height: 768, scale: 3 })
+      );
+      const loadedOptions = await loadDiagramOptions(testPreviewId);
+      expect(loadedOptions).toEqual({ theme: "dark", background: "white", size: 800, scale: 3 });
     });
   });
 

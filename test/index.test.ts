@@ -28,14 +28,11 @@ describe("MCP server tool definitions", () => {
       expect(ALLOWED_THEMES).toEqual(["default", "forest", "dark", "neutral"]);
     });
 
-    it("should define width, height, and scale as number parameters", () => {
-      // These appear in the properties section for mermaid_preview
-      const widthMatch = indexSource.match(/width:\s*\{[^}]*type:\s*"number"/);
-      const heightMatch = indexSource.match(/height:\s*\{[^}]*type:\s*"number"/);
+    it("should define size and scale as number parameters", () => {
+      const sizeMatch = indexSource.match(/size:\s*\{[^}]*type:\s*"number"/);
       const scaleMatch = indexSource.match(/scale:\s*\{[^}]*type:\s*"number"/);
 
-      expect(widthMatch).not.toBeNull();
-      expect(heightMatch).not.toBeNull();
+      expect(sizeMatch).not.toBeNull();
       expect(scaleMatch).not.toBeNull();
     });
 
@@ -44,7 +41,6 @@ describe("MCP server tool definitions", () => {
       expect(indexSource).toContain("default: DEFAULT_DIAGRAM_OPTIONS.theme");
       expect(indexSource).toContain('default: "white"');
       expect(indexSource).toContain("default: 800");
-      expect(indexSource).toContain("default: 600");
       expect(indexSource).toContain("default: 2");
     });
   });
