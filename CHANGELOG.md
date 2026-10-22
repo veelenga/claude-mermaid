@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Replace the `width` and `height` options of `mermaid_preview` with a single `size` option, the maximum width or height in pixels, following the mermaid-cli v12 `--size` flag; options saved by earlier versions fall back to the default size
 - The `mermaid-diagrams` skill also loads when a Mermaid block in a Markdown file is written, edited, restyled, or reviewed, and gains a short section on diagrams in Markdown files
 
+### Security
+
+- Resolve `katex` to 0.18.2 or later to address GHSA-238p-pmpm-9mq7
+
 ### Fixed
 
 - The skill's `allowed-tools` now also lists the tool names Claude Code gives the MCP server when it is installed as a plugin (`mcp__plugin_claude-mermaid_mermaid__*`)
