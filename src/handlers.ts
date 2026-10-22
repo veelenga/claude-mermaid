@@ -10,6 +10,7 @@ import {
   saveDiagramSource,
   loadDiagramSource,
   loadDiagramOptions,
+  resolveSize,
   validateSavePath,
   validateFormat,
   validateRenderOptions,
@@ -130,7 +131,7 @@ export async function handleMermaidPreview(args: any) {
   const format = (args.format as string) ?? DEFAULT_FORMAT;
   const theme = (args.theme as string) ?? DEFAULT_DIAGRAM_OPTIONS.theme;
   const background = (args.background as string) ?? DEFAULT_DIAGRAM_OPTIONS.background;
-  const size = (args.size as number) ?? DEFAULT_DIAGRAM_OPTIONS.size;
+  const size = resolveSize(args) ?? DEFAULT_DIAGRAM_OPTIONS.size;
   const scale = (args.scale as number) ?? DEFAULT_DIAGRAM_OPTIONS.scale;
 
   if (!diagram) {

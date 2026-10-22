@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { handleMermaidPreview, handleMermaidSave } from "../src/handlers.js";
 import { getPreviewDir, getDiagramFilePath, getDiagramOptionsPath } from "../src/file-utils.js";
-import { readdir, unlink, access, writeFile } from "fs/promises";
+import { readdir, unlink, access, writeFile, readFile } from "fs/promises";
 import { execFile } from "child_process";
 import { getMermaidCliPath } from "../src/mermaid-cli.js";
 import { setupTestEnvWithPreview, restoreTestEnv } from "./helpers/env-helpers.js";
@@ -110,6 +110,19 @@ describe("handleMermaidPreview", () => {
     expect(files).toContain("options.json");
   });
 
+  it("should map deprecated width and height to the larger size", async () => {
+    await handleMermaidPreview({
+      diagram: "graph TD; A-->B",
+      preview_id: testPreviewId,
+      width: 768,
+      height: 1024,
+    });
+
+    const options = JSON.parse(await readFile(getDiagramOptionsPath(testPreviewId), "utf-8"));
+    expect(options).toMatchObject({ size: 1024 });
+    expect(options).not.toHaveProperty("width");
+  });
+
   it("should indicate live preview for SVG format", async () => {
     const result = await handleMermaidPreview({
       diagram: "graph TD; A-->B",
@@ -212,6 +225,8 @@ describe("handleMermaidPreview", () => {
     ["format", { format: "svg&calc" }, "Invalid format"],
     ["size", { size: "800&calc" }, "Invalid size"],
     ["size", { size: -1 }, "Invalid size"],
+    ["width", { width: "800&calc" }, "Invalid size"],
+    ["height", { height: -1 }, "Invalid size"],
     ["scale", { scale: Infinity }, "Invalid scale"],
   ])(
     "should reject invalid %s without invoking mermaid-cli",

@@ -242,13 +242,13 @@ describe("File Utilities", () => {
       expect(loadedOptions.scale).toBe(3);
     });
 
-    it("should fill options missing from older saved files with defaults", async () => {
+    it("should migrate width and height from older saved files to size", async () => {
       await writeFile(
         getDiagramOptionsPath(testPreviewId),
         JSON.stringify({ theme: "dark", background: "white", width: 1024, height: 768, scale: 3 })
       );
       const loadedOptions = await loadDiagramOptions(testPreviewId);
-      expect(loadedOptions).toEqual({ theme: "dark", background: "white", size: 800, scale: 3 });
+      expect(loadedOptions).toEqual({ theme: "dark", background: "white", size: 1024, scale: 3 });
     });
   });
 

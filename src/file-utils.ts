@@ -134,11 +134,25 @@ export async function loadDiagramOptions(previewId: string): Promise<DiagramOpti
   return withDefaultOptions(JSON.parse(content));
 }
 
-function withDefaultOptions(stored: Partial<DiagramOptions>): DiagramOptions {
+interface SizeSource {
+  size?: number;
+  width?: number;
+  height?: number;
+}
+
+export function resolveSize(source: SizeSource): number | undefined {
+  if (source.size !== undefined) {
+    return source.size;
+  }
+  const legacy = [source.width, source.height].filter((value) => value !== undefined);
+  return legacy.length > 0 ? Math.max(...legacy) : undefined;
+}
+
+function withDefaultOptions(stored: Partial<DiagramOptions> & SizeSource): DiagramOptions {
   return {
     theme: stored.theme ?? DEFAULT_DIAGRAM_OPTIONS.theme,
     background: stored.background ?? DEFAULT_DIAGRAM_OPTIONS.background,
-    size: stored.size ?? DEFAULT_DIAGRAM_OPTIONS.size,
+    size: resolveSize(stored) ?? DEFAULT_DIAGRAM_OPTIONS.size,
     scale: stored.scale ?? DEFAULT_DIAGRAM_OPTIONS.scale,
   };
 }

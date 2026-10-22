@@ -306,6 +306,7 @@ There are two tools exposed by the MCP server:
 - `theme` (string, default `default`) — One of `default`, `forest`, `dark`, `neutral`.
 - `background` (string, default `white`) — Background color. Examples: `transparent`, `white`, `#F0F0F0`.
 - `size` (number, default `800`) — Maximum diagram width or height in pixels.
+- `width`, `height` (number, deprecated) — Accepted for compatibility; the larger value is used as `size`.
 - `scale` (number, default `2`) — Scale factor for higher quality output.
 
 2. `mermaid_save` — save the current live diagram to a path

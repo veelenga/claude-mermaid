@@ -83,6 +83,8 @@ The server exposes exactly two tools.
 | `theme`      | string | `default` | One of `default`, `forest`, `dark`, `neutral`.                        |
 | `background` | string | `white`   | Background color, e.g. `transparent`, `white`, `#F0F0F0`.             |
 | `size`       | number | `800`     | Maximum diagram width or height in pixels.                            |
+| `width`      | number | —         | Deprecated. The larger of `width` and `height` is used as `size`.     |
+| `height`     | number | —         | Deprecated. See `width`.                                              |
 | `scale`      | number | `2`       | Scale factor for higher-quality output.                               |
 
 ### mermaid_save — save the current diagram to a path
