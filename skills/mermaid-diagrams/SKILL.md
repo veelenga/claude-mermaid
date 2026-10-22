@@ -1,7 +1,7 @@
 ---
 name: mermaid-diagrams
-description: Creating and refining Mermaid diagrams with live reload. Use when users want flowcharts, sequence diagrams, class diagrams, ER diagrams, state diagrams, or any other Mermaid visualization. Provides best practices for syntax, styling, and the iterative workflow using mermaid_preview and mermaid_save tools.
-allowed-tools: mcp__mermaid__mermaid_preview, mcp__mermaid__mermaid_save
+description: Creating and refining Mermaid diagrams with live reload. Use when users want flowcharts, sequence diagrams, class diagrams, ER diagrams, state diagrams, or any other Mermaid visualization, and when writing, editing, restyling, or reviewing a Mermaid block in a Markdown file. Provides best practices for syntax, styling, and the iterative workflow using mermaid_preview and mermaid_save tools.
+allowed-tools: mcp__mermaid__mermaid_preview, mcp__mermaid__mermaid_save, mcp__plugin_claude-mermaid_mermaid__mermaid_preview, mcp__plugin_claude-mermaid_mermaid__mermaid_save
 ---
 
 # Mermaid Diagram Expert
@@ -192,6 +192,16 @@ When a user requests a diagram:
 **Layout issues**: Try different directions (LR vs TB)
 **Text overlap**: Increase dimensions or shorten labels
 **Colors not working**: Verify CSS color format; remember sequence diagrams don't support styles
+
+## Diagrams in Markdown Files
+
+A `mermaid` code block inside a document follows the same workflow:
+
+- Preview the block with `mermaid_preview` after every change, and look at the result before reporting
+- On light fills, set a dark text color in `classDef` or `style` (for example `color:#0f172a`), so labels stay readable
+- Keep each `<br/>` line short, about 25 characters. A longer line wraps again and leaves orphan words
+- When the diagram grows too wide, switch the direction (`LR` or `TB`) before shortening labels
+- Keep edges off subgraph titles: link a whole subgraph once instead of each node inside it
 
 ## Example Interaction
 
