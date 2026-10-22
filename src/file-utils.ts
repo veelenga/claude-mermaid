@@ -11,6 +11,7 @@ import {
   DIR_NAMES,
   ALLOWED_THEMES,
   ALLOWED_FORMATS,
+  DEFAULT_DIAGRAM_OPTIONS,
 } from "./constants.js";
 import type { DiagramOptions, RenderOptions } from "./types.js";
 
@@ -84,8 +85,7 @@ export function validateRenderOptions(options: RenderOptions): void {
   validateFormat(options.format);
   validateTheme(options.theme);
   validateBackground(options.background);
-  validateDimension("width", options.width);
-  validateDimension("height", options.height);
+  validateDimension("size", options.size);
   validateDimension("scale", options.scale);
 }
 
@@ -110,7 +110,7 @@ export function getDiagramOptionsPath(previewId: string): string {
 export type { DiagramOptions } from "./types.js";
 
 // Re-export DEFAULT_DIAGRAM_OPTIONS from constants.ts for backward compatibility
-export { DEFAULT_DIAGRAM_OPTIONS } from "./constants.js";
+export { DEFAULT_DIAGRAM_OPTIONS };
 
 export async function saveDiagramSource(
   previewId: string,
@@ -131,7 +131,30 @@ export async function loadDiagramSource(previewId: string): Promise<string> {
 export async function loadDiagramOptions(previewId: string): Promise<DiagramOptions> {
   const optionsPath = getDiagramOptionsPath(previewId);
   const content = await readFile(optionsPath, "utf-8");
-  return JSON.parse(content);
+  return withDefaultOptions(JSON.parse(content));
+}
+
+interface SizeSource {
+  size?: number;
+  width?: number;
+  height?: number;
+}
+
+export function resolveSize(source: SizeSource): number | undefined {
+  if (source.size !== undefined) {
+    return source.size;
+  }
+  const legacy = [source.width, source.height].filter((value) => value !== undefined);
+  return legacy.length > 0 ? Math.max(...legacy) : undefined;
+}
+
+function withDefaultOptions(stored: Partial<DiagramOptions> & SizeSource): DiagramOptions {
+  return {
+    theme: stored.theme ?? DEFAULT_DIAGRAM_OPTIONS.theme,
+    background: stored.background ?? DEFAULT_DIAGRAM_OPTIONS.background,
+    size: resolveSize(stored) ?? DEFAULT_DIAGRAM_OPTIONS.size,
+    scale: stored.scale ?? DEFAULT_DIAGRAM_OPTIONS.scale,
+  };
 }
 
 /**

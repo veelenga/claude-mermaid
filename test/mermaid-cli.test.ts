@@ -14,7 +14,7 @@ const OPTION_SIGNATURE_SEPARATOR = /\s{2,}/;
 const FLAG_REGEX = /--?[a-zA-Z][\w-]*/g;
 
 function buildArgs(format: string): string[] {
-  return buildMermaidCliArgs("in.mmd", `out.${format}`, { ...DEFAULT_DIAGRAM_OPTIONS, format });
+  return buildMermaidCliArgs("in.mmd", `out.${format}`, DEFAULT_DIAGRAM_OPTIONS);
 }
 
 function parseSupportedFlags(help: string): Set<string> {
@@ -37,11 +37,9 @@ describe("getMermaidCliPath", () => {
 describe("buildMermaidCliArgs", () => {
   it("should pass input, output and render options", () => {
     const args = buildMermaidCliArgs("in.mmd", "out.svg", {
-      format: "svg",
       theme: "dark",
       background: "transparent",
-      width: 1024,
-      height: 768,
+      size: 1024,
       scale: 2,
     });
 
@@ -54,18 +52,11 @@ describe("buildMermaidCliArgs", () => {
       "dark",
       "-b",
       "transparent",
-      "-w",
+      "--size",
       "1024",
-      "-H",
-      "768",
       "-s",
       "2",
     ]);
-  });
-
-  it("should fit the page to the diagram only for pdf", () => {
-    expect(buildArgs("pdf")).toContain("--pdfFit");
-    expect(buildArgs("svg")).not.toContain("--pdfFit");
   });
 
   it(

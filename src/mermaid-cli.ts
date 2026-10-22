@@ -1,17 +1,13 @@
 import { createRequire } from "module";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
-import { DIAGRAM_FORMATS } from "./constants.js";
 import type { RenderOptions } from "./types.js";
 
 const MERMAID_CLI_PACKAGE = "@mermaid-js/mermaid-cli";
 const MERMAID_CLI_BIN = "mmdc";
 const PACKAGE_MANIFEST = "package.json";
 
-type MermaidCliOptions = Pick<
-  RenderOptions,
-  "format" | "theme" | "background" | "width" | "height" | "scale"
->;
+type MermaidCliOptions = Pick<RenderOptions, "theme" | "background" | "size" | "scale">;
 
 interface PackageManifest {
   bin?: string | Record<string, string>;
@@ -38,17 +34,11 @@ export function buildMermaidCliArgs(
     options.theme,
     "-b",
     options.background,
-    "-w",
-    options.width.toString(),
-    "-H",
-    options.height.toString(),
+    "--size",
+    options.size.toString(),
     "-s",
     options.scale.toString(),
   ];
-
-  if (options.format === DIAGRAM_FORMATS.PDF) {
-    args.push("--pdfFit");
-  }
 
   return args;
 }

@@ -9,7 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Upgrade `@mermaid-js/mermaid-cli` to v12, which renders with Mermaid v12 and requires Node.js 22.13 or later
+- Add a `size` option to `mermaid_preview`, the maximum width or height in pixels, following the mermaid-cli v12 `--size` flag. `width` and `height` are deprecated; when given without `size`, the larger value is used as `size`, and options saved by earlier versions are migrated the same way
 - The `mermaid-diagrams` skill also loads when a Mermaid block in a Markdown file is written, edited, restyled, or reviewed, and gains a short section on diagrams in Markdown files
+
+### Security
+
+- Resolve `katex` to 0.18.2 or later to address GHSA-238p-pmpm-9mq7
 
 ### Fixed
 
