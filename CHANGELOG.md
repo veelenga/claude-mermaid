@@ -7,19 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-10-22
+
 ### Changed
 
-- Upgrade `@mermaid-js/mermaid-cli` to v12, which renders with Mermaid v12 and requires Node.js 22.13 or later
-- Add a `size` option to `mermaid_preview`, the maximum width or height in pixels, following the mermaid-cli v12 `--size` flag. `width` and `height` are deprecated; when given without `size`, the larger value is used as `size`, and options saved by earlier versions are migrated the same way
-- The `mermaid-diagrams` skill also loads when a Mermaid block in a Markdown file is written, edited, restyled, or reviewed, and gains a short section on diagrams in Markdown files
+- Upgrade `@mermaid-js/mermaid-cli` to v12, which renders with Mermaid v12 and lays out flowchart, state and class diagrams with ELK by default. Node.js 22.13 or later is required; Node 20 is end of life and no longer supported (#219)
+- Add a `size` option to `mermaid_preview`, the maximum width or height in pixels, following the mermaid-cli v12 `--size` flag. `width` and `height` are deprecated; when given without `size`, the larger value is used as `size`, and options saved by earlier versions are migrated the same way (#219)
+- The `mermaid-diagrams` skill also loads when a Mermaid block in a Markdown file is written, edited, restyled, or reviewed, and gains a short section on diagrams in Markdown files (#217)
 
 ### Security
 
-- Resolve `katex` to 0.18.2 or later to address GHSA-238p-pmpm-9mq7
+- Resolve `katex` to 0.18.2 or later to address GHSA-238p-pmpm-9mq7 (#219)
 
 ### Fixed
 
-- The skill's `allowed-tools` now also lists the tool names Claude Code gives the MCP server when it is installed as a plugin (`mcp__plugin_claude-mermaid_mermaid__*`)
+- The skill's `allowed-tools` now also lists the tool names Claude Code gives the MCP server when it is installed as a plugin (`mcp__plugin_claude-mermaid_mermaid__*`) (#217)
 
 ## [1.6.6] - 2026-09-28
 
