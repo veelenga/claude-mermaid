@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The `mermaid-diagrams` skill also loads when a Mermaid block in a Markdown file is written, edited, restyled, or reviewed, and gains a short section on diagrams in Markdown files
+
+### Fixed
+
+- The skill's `allowed-tools` now also lists the tool names Claude Code gives the MCP server when it is installed as a plugin (`mcp__plugin_claude-mermaid_mermaid__*`)
+
 ## [1.6.6] - 2026-09-28
 
 ### Security
