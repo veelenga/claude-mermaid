@@ -148,6 +148,11 @@ svg {
   pointer-events: none;
 }
 
+svg a {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
 /* ===== Mobile layout ===== */
 @media (max-width: 640px) {
   .status-bar {
