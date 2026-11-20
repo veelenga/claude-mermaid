@@ -162,6 +162,12 @@ svg a[*|href] {
   cursor: pointer;
 }
 
+svg
+  a[*|href]
+  :is(text, foreignObject span):not(:is(.annotation-group, .members-group, .methods-group) *) {
+  text-decoration: underline;
+}
+
 /* ===== Mobile layout ===== */
 @media (max-width: 640px) {
   .status-bar {
