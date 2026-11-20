@@ -44,6 +44,7 @@ export const ASSET_FILES = {
   SHARED_STYLE: "shared.css",
   GALLERY_STYLE: "gallery.css",
   SCRIPT: "script.js",
+  VIEWER_SCRIPT: "viewer.js",
   GALLERY_SCRIPT: "gallery.js",
   FAVICON: "favicon.svg",
 } as const;
@@ -63,6 +64,7 @@ export const ROUTES = {
   SHARED_STYLE: "/shared.css",
   GALLERY_STYLE: "/gallery.css",
   SCRIPT: "/script.js",
+  VIEWER_SCRIPT: "/viewer.js",
   GALLERY_SCRIPT: "/gallery.js",
 } as const;
 

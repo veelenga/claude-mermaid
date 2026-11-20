@@ -1,12 +1,10 @@
 import { readFile, writeFile } from "fs/promises";
 import { join } from "path";
-import { FILE_NAMES } from "./constants.js";
+import { ASSET_FILES, FILE_NAMES } from "./constants.js";
 import { getPreviewDir } from "./file-utils.js";
 import { escapeHtml, loadTemplate } from "./page-renderer.js";
 
 const TEMPLATE_FILE = "artifact-template.html";
-const STYLE_FILE = "style.css";
-const SCRIPT_FILE = "script.js";
 const PLACEHOLDER_PATTERN = /\{\{(\w+)\}\}/g;
 
 export async function writeArtifactPage(
@@ -16,8 +14,8 @@ export async function writeArtifactPage(
 ): Promise<string> {
   const [template, styles, script, svg] = await Promise.all([
     loadTemplate(TEMPLATE_FILE),
-    loadTemplate(STYLE_FILE),
-    loadTemplate(SCRIPT_FILE),
+    loadTemplate(ASSET_FILES.STYLE),
+    loadTemplate(ASSET_FILES.VIEWER_SCRIPT),
     readFile(svgPath, "utf-8"),
   ]);
 
