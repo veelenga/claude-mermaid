@@ -341,7 +341,8 @@ The live server uses ports 3737-3747 and automatically finds an available port.
 
 By default, previews are served by a local HTTP server with live reload. In Claude Code you can instead have `mermaid_preview` write a self-contained HTML page that Claude publishes as a [Claude artifact](https://claude.ai/code/artifacts). Republishing the same page updates the existing URL, so artifacts are easy to share.
 
-Enable it with the `--preview artifact` flag or the `CLAUDE_MERMAID_PREVIEW` environment variable:
+No setup is needed. Ask for it in plain words, for example "show this diagram as an artifact", and Claude calls `mermaid_preview` with `mode: "artifact"`.
+To make artifact mode the default, set the `CLAUDE_MERMAID_PREVIEW` environment variable. The `mode` argument still overrides it for a single call, so you can ask for a browser preview at any time.
 
 ```json
 {
@@ -363,6 +364,7 @@ In artifact mode:
 - The tool response tells Claude to publish that page with the Artifact tool and to republish the same path after every update.
 - The page has pan, zoom and copy SVG controls and no external dependencies.
 - No local server is started and no browser tab is opened. `mermaid_save` works unchanged.
+- Only the `svg` format gets an artifact page; PNG and PDF are rendered as plain files.
 
 Artifact mode needs a host with the Artifact tool, such as Claude Code. Other MCP clients should keep the default `live` mode.
 

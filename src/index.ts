@@ -16,9 +16,11 @@ import {
   ALLOWED_THEMES,
   DEFAULT_FORMAT,
   DEFAULT_DIAGRAM_OPTIONS,
+  PREVIEW_MODES,
+  type PreviewMode,
 } from "./constants.js";
 import { mcpLogger } from "./logger.js";
-import { resolvePreviewMode } from "./preview-mode.js";
+import { PREVIEW_MODE_ENV_VAR, resolveDefaultPreviewMode } from "./preview-mode.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -37,24 +39,27 @@ if (isServeMode) {
   await startServeMode();
 }
 
-const previewMode = resolvePreviewMode(process.argv, process.env);
+function readDefaultPreviewMode(): PreviewMode {
+  try {
+    return resolveDefaultPreviewMode(process.env);
+  } catch (error) {
+    console.error(`${PREVIEW_MODE_ENV_VAR}: ${error instanceof Error ? error.message : error}`);
+    process.exit(1);
+  }
+}
 
-const PREVIEW_INTRODUCTIONS = {
-  live:
-    "Render a Mermaid diagram and open it in browser with live reload. " +
-    "Takes Mermaid diagram code as input and generates a live preview. " +
-    "The diagram will auto-refresh when updated. ",
-  artifact:
-    "Render a Mermaid diagram into a self-contained HTML page ready to publish as a Claude artifact. " +
-    "Takes Mermaid diagram code as input and writes a page with pan and zoom controls. " +
-    "Publish the returned artifact page path with the Artifact tool, and republish the same path after every update. ",
-};
+const defaultPreviewMode = readDefaultPreviewMode();
 
 const TOOL_DEFINITIONS: Tool[] = [
   {
     name: "mermaid_preview",
     description:
-      PREVIEW_INTRODUCTIONS[previewMode] +
+      "Render a Mermaid diagram from its code and preview it. " +
+      "In 'live' mode the diagram opens in the browser with live reload and auto-refreshes when updated. " +
+      "In 'artifact' mode the tool writes a self-contained HTML page instead: " +
+      "publish the returned artifact page path with the Artifact tool, and republish the same path after every update. " +
+      `The default mode is '${defaultPreviewMode}'. Use 'artifact' when the user asks for an artifact or a shareable page, ` +
+      "and 'live' when they ask for a browser preview. " +
       `Supports themes (${ALLOWED_THEMES.join(", ")}), custom backgrounds, dimensions, and quality scaling. ` +
       "Use mermaid_save to save to disk. " +
       "IMPORTANT: Automatically use this tool whenever you create a Mermaid diagram for the user. " +
@@ -106,6 +111,12 @@ const TOOL_DEFINITIONS: Tool[] = [
           type: "number",
           description: "Scale factor for higher quality output (default: 2)",
           default: 2,
+        },
+        mode: {
+          type: "string",
+          enum: [...PREVIEW_MODES],
+          description: `Where to show the preview: 'live' opens the browser with live reload, 'artifact' writes a page to publish as a Claude artifact (default: ${defaultPreviewMode})`,
+          default: defaultPreviewMode,
         },
       },
       required: ["diagram", "preview_id"],
@@ -168,7 +179,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     let result;
     switch (toolName) {
       case "mermaid_preview":
-        result = await handleMermaidPreview(args, previewMode);
+        result = await handleMermaidPreview(args, defaultPreviewMode);
         mcpLogger.info(`CallTool completed: ${toolName}`);
         return result;
       case "mermaid_save":

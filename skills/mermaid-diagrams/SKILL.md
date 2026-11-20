@@ -43,9 +43,10 @@ Use after the diagram is finalized:
 
 ### Artifact mode
 
-When the server runs in artifact mode, `mermaid_preview` does not open a browser. Instead its response contains an `Artifact page:` path.
+When the user asks for an artifact or a shareable page, call `mermaid_preview` with `mode: "artifact"`. It does not open a browser. Instead its response contains an `Artifact page:` path.
 
 - Publish that path with the Artifact tool right away
+- Keep passing `mode: "artifact"` on every later call for that diagram
 - After every refinement, call `mermaid_preview` with the same `preview_id`, then republish the same path so the existing artifact URL is updated in place
 - Never publish a different path for the same diagram; that would create a new artifact
 - Share the artifact URL with the user once, and mention that later updates appear at the same URL

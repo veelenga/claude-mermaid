@@ -137,10 +137,12 @@ describe("handleMermaidPreview", () => {
   it("should write a self-contained artifact page in artifact mode", async () => {
     vi.mocked(ensureLiveServer).mockClear();
 
-    const result = await handleMermaidPreview(
-      { diagram: "graph TD; A-->B", preview_id: testPreviewId, background: "#F0F0F0" },
-      "artifact"
-    );
+    const result = await handleMermaidPreview({
+      diagram: "graph TD; A-->B",
+      preview_id: testPreviewId,
+      background: "#F0F0F0",
+      mode: "artifact",
+    });
 
     const pagePath = `${getPreviewDir(testPreviewId)}/artifact.html`;
     const page = await readFile(pagePath, "utf-8");
@@ -151,7 +153,49 @@ describe("handleMermaidPreview", () => {
     expect(page).toContain("background: #F0F0F0");
     expect(page).toContain('id="copy-svg"');
     expect(page).not.toMatch(/\{\{\w+\}\}|<link|<script src|<!doctype/i);
+    expect(page).not.toMatch(/WebSocket|download|fetch\(/);
     expect(ensureLiveServer).not.toHaveBeenCalled();
+  });
+
+  it("should not mention live preview for non-SVG formats in artifact mode", async () => {
+    const result = await handleMermaidPreview({
+      diagram: "graph TD; A-->B",
+      preview_id: testPreviewId,
+      format: "png",
+      mode: "artifact",
+    });
+
+    expect(result.content[0].text).toContain("An artifact page is only written for SVG");
+    expect(result.content[0].text).not.toContain("Live preview");
+  });
+
+  it("should use the default mode when the mode argument is omitted", async () => {
+    const result = await handleMermaidPreview(
+      { diagram: "graph TD; A-->B", preview_id: testPreviewId },
+      "artifact"
+    );
+
+    expect(result.content[0].text).toContain("Artifact page:");
+  });
+
+  it("should let the mode argument override the default mode", async () => {
+    const result = await handleMermaidPreview(
+      { diagram: "graph TD; A-->B", preview_id: testPreviewId, mode: "live" },
+      "artifact"
+    );
+
+    expect(result.content[0].text).not.toContain("Artifact page:");
+  });
+
+  it("should reject an unknown mode", async () => {
+    const result = await handleMermaidPreview({
+      diagram: "graph TD; A-->B",
+      preview_id: testPreviewId,
+      mode: "popup",
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Invalid preview mode");
   });
 
   it("should indicate static render for PNG format", async () => {
