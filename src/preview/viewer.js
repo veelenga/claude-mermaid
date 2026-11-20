@@ -161,18 +161,13 @@
     return isCopied;
   }
 
-  function copyText(text) {
-    if (!navigator.clipboard) {
-      return Promise.resolve(copyWithSelection(text));
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      return copyWithSelection(text);
     }
-    return navigator.clipboard.writeText(text).then(
-      function () {
-        return true;
-      },
-      function () {
-        return copyWithSelection(text);
-      }
-    );
   }
 
   function copySvg() {
