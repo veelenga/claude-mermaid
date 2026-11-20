@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { handleMermaidPreview, handleMermaidSave } from "../src/handlers.js";
 import { getPreviewDir, getDiagramFilePath, getDiagramOptionsPath } from "../src/file-utils.js";
+import { ensureLiveServer } from "../src/live-server.js";
 import { readdir, unlink, access, writeFile, readFile } from "fs/promises";
 import { execFile } from "child_process";
 import { getMermaidCliPath } from "../src/mermaid-cli.js";
@@ -133,6 +134,70 @@ describe("handleMermaidPreview", () => {
     expect(result.content[0].text).toContain("Live reload");
   });
 
+  it("should write a self-contained artifact page in artifact mode", async () => {
+    vi.mocked(ensureLiveServer).mockClear();
+
+    const result = await handleMermaidPreview({
+      diagram: "graph TD; A-->B",
+      preview_id: testPreviewId,
+      background: "#F0F0F0",
+      mode: "artifact",
+    });
+
+    const pagePath = `${getPreviewDir(testPreviewId)}/artifact.html`;
+    const page = await readFile(pagePath, "utf-8");
+
+    expect(result.content[0].text).toContain(`Artifact page: ${pagePath}`);
+    expect(page).toContain(`<title>${testPreviewId}</title>`);
+    expect(page).toContain("<svg>test</svg>");
+    expect(page).toContain("background: #F0F0F0");
+    expect(page).toContain('id="copy-svg"');
+    expect(page).not.toMatch(/\{\{\w+\}\}|<link|<script src|<!doctype/i);
+    expect(page).not.toMatch(/WebSocket|download|fetch\(/);
+    expect(ensureLiveServer).not.toHaveBeenCalled();
+  });
+
+  it("should render non-SVG formats as static files in artifact mode", async () => {
+    const result = await handleMermaidPreview({
+      diagram: "graph TD; A-->B",
+      preview_id: testPreviewId,
+      format: "png",
+      mode: "artifact",
+    });
+
+    expect(result.content[0].text).toContain("A preview is only available for SVG");
+    expect(result.content[0].text).not.toContain("Artifact page:");
+  });
+
+  it("should use the default mode when the mode argument is omitted", async () => {
+    const result = await handleMermaidPreview(
+      { diagram: "graph TD; A-->B", preview_id: testPreviewId },
+      "artifact"
+    );
+
+    expect(result.content[0].text).toContain("Artifact page:");
+  });
+
+  it("should let the mode argument override the default mode", async () => {
+    const result = await handleMermaidPreview(
+      { diagram: "graph TD; A-->B", preview_id: testPreviewId, mode: "live" },
+      "artifact"
+    );
+
+    expect(result.content[0].text).not.toContain("Artifact page:");
+  });
+
+  it("should reject an unknown mode", async () => {
+    const result = await handleMermaidPreview({
+      diagram: "graph TD; A-->B",
+      preview_id: testPreviewId,
+      mode: "popup",
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("Invalid preview mode");
+  });
+
   it("should indicate static render for PNG format", async () => {
     const result = await handleMermaidPreview({
       diagram: "graph TD; A-->B",
@@ -140,7 +205,7 @@ describe("handleMermaidPreview", () => {
       format: "png",
     });
 
-    expect(result.content[0].text).toContain("Live preview is only available for SVG");
+    expect(result.content[0].text).toContain("A preview is only available for SVG");
   });
 
   it("should indicate static render for PDF format", async () => {
@@ -150,7 +215,7 @@ describe("handleMermaidPreview", () => {
       format: "pdf",
     });
 
-    expect(result.content[0].text).toContain("Live preview is only available for SVG");
+    expect(result.content[0].text).toContain("A preview is only available for SVG");
   });
 
   it("should include stderr details in error when rendering fails", async () => {

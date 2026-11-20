@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Artifact mode: `mermaid_preview` accepts `mode: "artifact"` to write a self-contained HTML page for publishing as a Claude artifact instead of starting the local live server. Ask for an artifact in plain words and the agent picks the mode, or set `CLAUDE_MERMAID_PREVIEW=artifact` to make it the default
+
 ## [1.7.0] - 2026-10-22
 
 ### Changed

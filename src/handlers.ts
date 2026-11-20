@@ -3,6 +3,7 @@ import { promisify } from "util";
 import { writeFile, mkdir, copyFile, access } from "fs/promises";
 import { join, dirname } from "path";
 import { tmpdir } from "os";
+import { writeArtifactPage } from "./artifact-page.js";
 import { ensureLiveServer, addLiveDiagram, hasActiveConnections } from "./live-server.js";
 import {
   getDiagramFilePath,
@@ -18,8 +19,15 @@ import {
 } from "./file-utils.js";
 import { mcpLogger } from "./logger.js";
 import { buildMermaidCliArgs, getMermaidCliPath } from "./mermaid-cli.js";
+import { resolvePreviewMode } from "./preview-mode.js";
 import type { RenderOptions } from "./types.js";
-import { DEFAULT_DIAGRAM_OPTIONS, DEFAULT_FORMAT } from "./constants.js";
+import {
+  DEFAULT_DIAGRAM_OPTIONS,
+  DEFAULT_FORMAT,
+  DEFAULT_PREVIEW_MODE,
+  PREVIEW_MODE,
+  type PreviewMode,
+} from "./constants.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -114,18 +122,35 @@ function createLivePreviewResponse(
   };
 }
 
-function createStaticRenderResponse(liveFilePath: string, format: string): any {
+function createArtifactResponse(liveFilePath: string, pagePath: string, previewId: string): any {
   return {
     content: [
       {
         type: "text",
-        text: `Mermaid diagram rendered successfully.\nWorking file: ${liveFilePath} (${format.toUpperCase()})\n\nNote: Live preview is only available for SVG format. Use mermaid_save to save this diagram to a permanent location.`,
+        text:
+          `Mermaid diagram rendered successfully.\nWorking file: ${liveFilePath} (SVG)\nArtifact page: ${pagePath}\n\n` +
+          `Publish the artifact page with the Artifact tool to show it to the user. ` +
+          `Republish this same path after every update of preview "${previewId}" so the artifact URL stays the same.`,
       },
     ],
   };
 }
 
-export async function handleMermaidPreview(args: any) {
+function createStaticRenderResponse(liveFilePath: string, format: string): any {
+  return {
+    content: [
+      {
+        type: "text",
+        text: `Mermaid diagram rendered successfully.\nWorking file: ${liveFilePath} (${format.toUpperCase()})\n\nNote: A preview is only available for SVG format. Use mermaid_save to save this diagram to a permanent location.`,
+      },
+    ],
+  };
+}
+
+export async function handleMermaidPreview(
+  args: any,
+  defaultMode: PreviewMode = DEFAULT_PREVIEW_MODE
+) {
   const diagram = args.diagram as string;
   const previewId = args.preview_id as string;
   const format = (args.format as string) ?? DEFAULT_FORMAT;
@@ -143,8 +168,10 @@ export async function handleMermaidPreview(args: any) {
 
   const renderOptions = { diagram, previewId, format, theme, background, size, scale };
 
+  let mode: PreviewMode;
   try {
     validateRenderOptions(renderOptions);
+    mode = resolvePreviewMode(args.mode as string | undefined, defaultMode);
   } catch (error) {
     return createErrorResponse(errorMessage(error));
   }
@@ -158,6 +185,10 @@ export async function handleMermaidPreview(args: any) {
     await renderDiagram(renderOptions, liveFilePath);
 
     if (format === "svg") {
+      if (mode === PREVIEW_MODE.ARTIFACT) {
+        const pagePath = await writeArtifactPage(previewId, liveFilePath, background);
+        return createArtifactResponse(liveFilePath, pagePath, previewId);
+      }
       const { serverUrl, hasConnections } = await setupLivePreview(previewId, liveFilePath);
       return createLivePreviewResponse(liveFilePath, format, serverUrl, hasConnections);
     } else {

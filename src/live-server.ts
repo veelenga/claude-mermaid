@@ -22,6 +22,7 @@ import {
   SERVER_PORT_END,
   SERVER_HOST,
   ROUTES,
+  ASSET_FILES,
   CONTENT_TYPES,
   CACHE_CONTROL,
   WS_MESSAGES,
@@ -34,7 +35,10 @@ const __dirname = dirname(__filename);
 const PREVIEW_DIR = join(__dirname, "preview");
 const TEMPLATE_PATH = join(PREVIEW_DIR, "template.html");
 const STYLE_PATH = join(PREVIEW_DIR, "style.css");
-const SCRIPT_PATH = join(PREVIEW_DIR, "script.js");
+const SCRIPT_PATHS: Record<string, string> = {
+  [ROUTES.SCRIPT]: join(PREVIEW_DIR, ASSET_FILES.SCRIPT),
+  [ROUTES.VIEWER_SCRIPT]: join(PREVIEW_DIR, ASSET_FILES.VIEWER_SCRIPT),
+};
 const FAVICON_PATH = join(PREVIEW_DIR, "favicon.svg");
 
 let liveServer: HttpServer | null = null;
@@ -288,8 +292,9 @@ export async function ensureLiveServer(): Promise<number> {
         return;
       }
 
-      if (url === ROUTES.SCRIPT) {
-        const js = await readFile(SCRIPT_PATH, "utf-8");
+      const scriptPath = SCRIPT_PATHS[url];
+      if (scriptPath) {
+        const js = await readFile(scriptPath, "utf-8");
         res.writeHead(200, { "Content-Type": CONTENT_TYPES.JAVASCRIPT });
         res.end(js);
         return;

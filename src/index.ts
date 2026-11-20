@@ -16,8 +16,12 @@ import {
   ALLOWED_THEMES,
   DEFAULT_FORMAT,
   DEFAULT_DIAGRAM_OPTIONS,
+  DEFAULT_PREVIEW_MODE,
+  PREVIEW_MODES,
+  type PreviewMode,
 } from "./constants.js";
 import { mcpLogger } from "./logger.js";
+import { PREVIEW_MODE_ENV_VAR, resolvePreviewMode } from "./preview-mode.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -36,14 +40,29 @@ if (isServeMode) {
   await startServeMode();
 }
 
+function readDefaultPreviewMode(): PreviewMode {
+  try {
+    return resolvePreviewMode(process.env[PREVIEW_MODE_ENV_VAR], DEFAULT_PREVIEW_MODE);
+  } catch (error) {
+    console.error(`${PREVIEW_MODE_ENV_VAR}: ${error instanceof Error ? error.message : error}`);
+    process.exit(1);
+  }
+}
+
+const defaultPreviewMode = readDefaultPreviewMode();
+
 const TOOL_DEFINITIONS: Tool[] = [
   {
     name: "mermaid_preview",
     description:
-      "Render a Mermaid diagram and open it in browser with live reload. " +
-      "Takes Mermaid diagram code as input and generates a live preview. " +
+      "Render a Mermaid diagram from its code and preview it. " +
+      "In 'live' mode the diagram opens in the browser with live reload and auto-refreshes when updated. " +
+      "In 'artifact' mode the tool writes a self-contained HTML page instead: " +
+      "publish the returned artifact page path with the Artifact tool, and republish the same path after every update. " +
+      `The default mode is '${defaultPreviewMode}'. Use 'artifact' when the user asks for an artifact or a shareable page, ` +
+      "and 'live' when they ask for a browser preview. " +
       `Supports themes (${ALLOWED_THEMES.join(", ")}), custom backgrounds, dimensions, and quality scaling. ` +
-      "The diagram will auto-refresh when updated. Use mermaid_save to save to disk. " +
+      "Use mermaid_save to save to disk. " +
       "IMPORTANT: Automatically use this tool whenever you create a Mermaid diagram for the user. " +
       "NOTE: Sequence diagrams do not support style directives - avoid using 'style' statements in sequenceDiagram.",
     inputSchema: {
@@ -93,6 +112,12 @@ const TOOL_DEFINITIONS: Tool[] = [
           type: "number",
           description: "Scale factor for higher quality output (default: 2)",
           default: 2,
+        },
+        mode: {
+          type: "string",
+          enum: [...PREVIEW_MODES],
+          description: `Where to show the preview: 'live' opens the browser with live reload, 'artifact' writes a page to publish as a Claude artifact (default: ${defaultPreviewMode})`,
+          default: defaultPreviewMode,
         },
       },
       required: ["diagram", "preview_id"],
@@ -155,7 +180,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     let result;
     switch (toolName) {
       case "mermaid_preview":
-        result = await handleMermaidPreview(args);
+        result = await handleMermaidPreview(args, defaultPreviewMode);
         mcpLogger.info(`CallTool completed: ${toolName}`);
         return result;
       case "mermaid_save":

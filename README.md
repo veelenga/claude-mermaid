@@ -9,6 +9,7 @@ Automatically renders diagrams in your browser with real-time updates as you ref
 ## ✨ Features
 
 - 🔄 **Live Reload** - Diagrams auto-refresh in your browser as you edit
+- 🪄 **Artifact Mode** - Optionally publish diagrams as shareable Claude artifacts instead of running a local server
 - 🎨 **Multiple Save Formats** - Export to SVG, PNG, or PDF
 - 🌈 **Themes** - Choose from default, forest, dark, or neutral themes
 - 📐 **Customizable** - Control dimensions, scale, and background colors
@@ -335,6 +336,16 @@ The live server uses ports 3737-3747 and automatically finds an available port.
 
 - Live preview is available for `svg` format only; PNG/PDF are rendered without live reload.
 - For sequence diagrams, Mermaid does not support `style` directives inside `sequenceDiagram`.
+
+## 🪄 Artifact mode
+
+Instead of the local live server, `mermaid_preview` can write a self-contained HTML page that Claude publishes as a [Claude artifact](https://claude.ai/code/artifacts). Updates republish to the same URL, so the link is easy to share.
+
+Ask for it in plain words, for example "show this diagram as an artifact". To make it the default, set `CLAUDE_MERMAID_PREVIEW=artifact` in the server's `env`, or export it in your shell for plugin installs.
+
+- The page has pan, zoom and copy SVG controls. No server is started and no browser tab is opened.
+- Only the `svg` format gets an artifact page.
+- It needs a host with the Artifact tool, such as Claude Code.
 
 ## 🖥️ Standalone server
 
