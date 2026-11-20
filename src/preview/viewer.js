@@ -149,13 +149,28 @@
     return new XMLSerializer().serializeToString(svgClone);
   }
 
+  function copyWithSelection(text) {
+    const field = document.createElement("textarea");
+    field.value = text;
+    field.style.position = "fixed";
+    field.style.opacity = "0";
+    document.body.appendChild(field);
+    field.select();
+    const isCopied = document.execCommand("copy");
+    field.remove();
+    return isCopied;
+  }
+
   function copyText(text) {
+    if (!navigator.clipboard) {
+      return Promise.resolve(copyWithSelection(text));
+    }
     return navigator.clipboard.writeText(text).then(
       function () {
         return true;
       },
       function () {
-        return false;
+        return copyWithSelection(text);
       }
     );
   }
