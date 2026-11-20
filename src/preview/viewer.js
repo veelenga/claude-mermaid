@@ -7,6 +7,9 @@
   const ZOOM_BUTTON_FACTOR = 1.2;
   const WHEEL_ZOOM_FACTOR = 0.001;
   const DRAG_CLICK_THRESHOLD = 5;
+  const DRAGGING_CLASS = "is-dragging";
+  const LINK_SELECTOR = "a[*|href]";
+  const LINK_WINDOW_FEATURES = "noopener,noreferrer";
   const COPY_FEEDBACK_MS = 1500;
   const COPY_SUCCESS_LABEL = "✓";
   const COPY_FAILURE_LABEL = "✕";
@@ -29,10 +32,10 @@
     y: 0,
     scale: 1,
     isDragging: false,
-    dragStartX: 0,
-    dragStartY: 0,
     dragStartClientX: 0,
     dragStartClientY: 0,
+    dragStartPanX: 0,
+    dragStartPanY: 0,
     movedPastThreshold: false,
   };
 
@@ -97,68 +100,74 @@
     zoomAtPoint(newScale, pivotX, pivotY);
   }
 
-  function handleMouseDown(e) {
-    if (!elements.viewport || e.button !== 0 || e.target.closest(".status-bar")) return;
+  // ===== Drag Functions =====
+  function startDrag(point) {
     panState.isDragging = true;
     panState.movedPastThreshold = false;
-    panState.dragStartClientX = e.clientX;
-    panState.dragStartClientY = e.clientY;
-    panState.dragStartX = e.clientX - panState.x;
-    panState.dragStartY = e.clientY - panState.y;
-    elements.viewport.style.cursor = "grabbing";
-    if (!e.target.closest("a")) e.preventDefault();
+    panState.dragStartClientX = point.clientX;
+    panState.dragStartClientY = point.clientY;
+    panState.dragStartPanX = panState.x;
+    panState.dragStartPanY = panState.y;
+    elements.viewport.classList.add(DRAGGING_CLASS);
   }
 
-  function handleViewportClick(e) {
-    if (panState.movedPastThreshold && e.target.closest("a")) {
-      e.preventDefault();
-      e.stopPropagation();
+  function dragTo(point) {
+    const dx = point.clientX - panState.dragStartClientX;
+    const dy = point.clientY - panState.dragStartClientY;
+    if (Math.abs(dx) + Math.abs(dy) > DRAG_CLICK_THRESHOLD) {
+      panState.movedPastThreshold = true;
     }
+    panState.x = panState.dragStartPanX + dx;
+    panState.y = panState.dragStartPanY + dy;
+    applyTransform();
   }
 
-  function handleMouseUp() {
+  function endDrag() {
     panState.isDragging = false;
-    if (elements.viewport) {
-      elements.viewport.style.cursor = "grab";
-    }
+    elements.viewport.classList.remove(DRAGGING_CLASS);
+  }
+
+  // ===== Mouse Event Handlers =====
+  function handleMouseDown(e) {
+    if (e.button !== 0) return;
+    startDrag(e);
+    e.preventDefault();
   }
 
   function handleMouseMove(e) {
-    if (!elements.viewport) return;
-    if (panState.isDragging) {
-      if (!panState.movedPastThreshold) {
-        const dx = e.clientX - panState.dragStartClientX;
-        const dy = e.clientY - panState.dragStartClientY;
-        if (Math.abs(dx) + Math.abs(dy) > DRAG_CLICK_THRESHOLD) {
-          panState.movedPastThreshold = true;
-        }
-      }
-      panState.x = e.clientX - panState.dragStartX;
-      panState.y = e.clientY - panState.dragStartY;
-      applyTransform();
-    }
+    if (panState.isDragging) dragTo(e);
   }
 
   // ===== Touch Event Handlers =====
   function handleTouchStart(e) {
-    if (!elements.viewport || e.target.closest(".status-bar") || e.target.closest("a")) return;
     if (e.touches.length !== 1) return;
-    panState.isDragging = true;
-    panState.dragStartX = e.touches[0].clientX - panState.x;
-    panState.dragStartY = e.touches[0].clientY - panState.y;
-    e.preventDefault();
+    startDrag(e.touches[0]);
   }
 
   function handleTouchMove(e) {
     if (!panState.isDragging || e.touches.length !== 1) return;
-    panState.x = e.touches[0].clientX - panState.dragStartX;
-    panState.y = e.touches[0].clientY - panState.dragStartY;
-    applyTransform();
+    dragTo(e.touches[0]);
     e.preventDefault();
   }
 
-  function handleTouchEnd() {
-    panState.isDragging = false;
+  // ===== Link Functions =====
+  function hasModifierKey(e) {
+    return e.metaKey || e.ctrlKey || e.shiftKey || e.altKey;
+  }
+
+  function handleLinkClick(e) {
+    const link = e.target.closest(LINK_SELECTOR);
+    if (!link) return;
+
+    const isPointerClick = e.detail > 0;
+    if (isPointerClick && panState.movedPastThreshold) {
+      e.preventDefault();
+      return;
+    }
+    if (hasModifierKey(e)) return;
+
+    e.preventDefault();
+    window.open(link.href.baseVal, "_blank", LINK_WINDOW_FEATURES);
   }
 
   // ===== Copy Functions =====
@@ -206,26 +215,17 @@
   }
 
   // ===== Initialization =====
-  function openSvgLinksInNewTab() {
-    if (!elements.svg) return;
-    elements.svg.querySelectorAll("a").forEach(function (anchor) {
-      anchor.setAttribute("target", "_blank");
-      anchor.setAttribute("rel", "noopener");
-    });
-  }
-
   function initialize() {
-    openSvgLinksInNewTab();
     if (elements.viewport) {
       elements.viewport.addEventListener("mousedown", handleMouseDown);
-      document.addEventListener("mouseup", handleMouseUp);
+      document.addEventListener("mouseup", endDrag);
       elements.viewport.addEventListener("mousemove", handleMouseMove);
-      elements.viewport.addEventListener("click", handleViewportClick);
+      elements.viewport.addEventListener("contextmenu", endDrag);
+      elements.viewport.addEventListener("click", handleLinkClick);
       elements.viewport.addEventListener("wheel", handleWheel, { passive: false });
-      elements.viewport.addEventListener("touchstart", handleTouchStart, { passive: false });
+      elements.viewport.addEventListener("touchstart", handleTouchStart, { passive: true });
       elements.viewport.addEventListener("touchmove", handleTouchMove, { passive: false });
-      elements.viewport.addEventListener("touchend", handleTouchEnd);
-      elements.viewport.style.cursor = "grab";
+      elements.viewport.addEventListener("touchend", endDrag);
     }
     if (elements.resetButton) {
       elements.resetButton.addEventListener("click", resetView);

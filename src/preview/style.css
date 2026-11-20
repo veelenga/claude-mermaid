@@ -130,6 +130,15 @@ body {
   align-items: center;
   justify-content: center;
   cursor: grab;
+  touch-action: none;
+}
+
+.viewport.is-dragging {
+  cursor: grabbing;
+}
+
+.viewport.is-dragging svg a[*|href] * {
+  cursor: grabbing !important;
 }
 
 .diagram-wrapper {
@@ -148,7 +157,7 @@ svg {
   pointer-events: none;
 }
 
-svg a {
+svg a[*|href] {
   pointer-events: auto;
   cursor: pointer;
 }
