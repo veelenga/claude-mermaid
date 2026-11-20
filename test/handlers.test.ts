@@ -157,7 +157,7 @@ describe("handleMermaidPreview", () => {
     expect(ensureLiveServer).not.toHaveBeenCalled();
   });
 
-  it("should not mention live preview for non-SVG formats in artifact mode", async () => {
+  it("should render non-SVG formats as static files in artifact mode", async () => {
     const result = await handleMermaidPreview({
       diagram: "graph TD; A-->B",
       preview_id: testPreviewId,
@@ -165,8 +165,8 @@ describe("handleMermaidPreview", () => {
       mode: "artifact",
     });
 
-    expect(result.content[0].text).toContain("An artifact page is only written for SVG");
-    expect(result.content[0].text).not.toContain("Live preview");
+    expect(result.content[0].text).toContain("A preview is only available for SVG");
+    expect(result.content[0].text).not.toContain("Artifact page:");
   });
 
   it("should use the default mode when the mode argument is omitted", async () => {
@@ -205,7 +205,7 @@ describe("handleMermaidPreview", () => {
       format: "png",
     });
 
-    expect(result.content[0].text).toContain("Live preview is only available for SVG");
+    expect(result.content[0].text).toContain("A preview is only available for SVG");
   });
 
   it("should indicate static render for PDF format", async () => {
@@ -215,7 +215,7 @@ describe("handleMermaidPreview", () => {
       format: "pdf",
     });
 
-    expect(result.content[0].text).toContain("Live preview is only available for SVG");
+    expect(result.content[0].text).toContain("A preview is only available for SVG");
   });
 
   it("should include stderr details in error when rendering fails", async () => {

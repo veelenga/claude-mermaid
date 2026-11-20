@@ -153,6 +153,10 @@ export type DiagramFormat = (typeof DIAGRAM_FORMATS)[keyof typeof DIAGRAM_FORMAT
 export const DEFAULT_FORMAT: DiagramFormat = DIAGRAM_FORMATS.SVG;
 export const ALLOWED_FORMATS: readonly DiagramFormat[] = Object.values(DIAGRAM_FORMATS);
 export const ALLOWED_THEMES = ["default", "forest", "dark", "neutral"] as const;
-export const PREVIEW_MODES = ["live", "artifact"] as const;
-export type PreviewMode = (typeof PREVIEW_MODES)[number];
-export const DEFAULT_PREVIEW_MODE: PreviewMode = "live";
+export const PREVIEW_MODE = {
+  LIVE: "live",
+  ARTIFACT: "artifact",
+} as const;
+export type PreviewMode = (typeof PREVIEW_MODE)[keyof typeof PREVIEW_MODE];
+export const PREVIEW_MODES: readonly PreviewMode[] = Object.values(PREVIEW_MODE);
+export const DEFAULT_PREVIEW_MODE: PreviewMode = PREVIEW_MODE.LIVE;

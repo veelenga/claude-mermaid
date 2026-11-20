@@ -16,11 +16,12 @@ import {
   ALLOWED_THEMES,
   DEFAULT_FORMAT,
   DEFAULT_DIAGRAM_OPTIONS,
+  DEFAULT_PREVIEW_MODE,
   PREVIEW_MODES,
   type PreviewMode,
 } from "./constants.js";
 import { mcpLogger } from "./logger.js";
-import { PREVIEW_MODE_ENV_VAR, resolveDefaultPreviewMode } from "./preview-mode.js";
+import { PREVIEW_MODE_ENV_VAR, resolvePreviewMode } from "./preview-mode.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -41,7 +42,7 @@ if (isServeMode) {
 
 function readDefaultPreviewMode(): PreviewMode {
   try {
-    return resolveDefaultPreviewMode(process.env);
+    return resolvePreviewMode(process.env[PREVIEW_MODE_ENV_VAR], DEFAULT_PREVIEW_MODE);
   } catch (error) {
     console.error(`${PREVIEW_MODE_ENV_VAR}: ${error instanceof Error ? error.message : error}`);
     process.exit(1);

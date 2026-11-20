@@ -15,16 +15,17 @@ import {
   validateSavePath,
   validateFormat,
   validateRenderOptions,
-  validatePreviewMode,
   getOpenCommand,
 } from "./file-utils.js";
 import { mcpLogger } from "./logger.js";
 import { buildMermaidCliArgs, getMermaidCliPath } from "./mermaid-cli.js";
+import { resolvePreviewMode } from "./preview-mode.js";
 import type { RenderOptions } from "./types.js";
 import {
   DEFAULT_DIAGRAM_OPTIONS,
   DEFAULT_FORMAT,
   DEFAULT_PREVIEW_MODE,
+  PREVIEW_MODE,
   type PreviewMode,
 } from "./constants.js";
 
@@ -135,17 +136,12 @@ function createArtifactResponse(liveFilePath: string, pagePath: string, previewI
   };
 }
 
-const SVG_ONLY_NOTES: Record<PreviewMode, string> = {
-  live: "Live preview is only available for SVG format.",
-  artifact: "An artifact page is only written for SVG format.",
-};
-
-function createStaticRenderResponse(liveFilePath: string, format: string, mode: PreviewMode): any {
+function createStaticRenderResponse(liveFilePath: string, format: string): any {
   return {
     content: [
       {
         type: "text",
-        text: `Mermaid diagram rendered successfully.\nWorking file: ${liveFilePath} (${format.toUpperCase()})\n\nNote: ${SVG_ONLY_NOTES[mode]} Use mermaid_save to save this diagram to a permanent location.`,
+        text: `Mermaid diagram rendered successfully.\nWorking file: ${liveFilePath} (${format.toUpperCase()})\n\nNote: A preview is only available for SVG format. Use mermaid_save to save this diagram to a permanent location.`,
       },
     ],
   };
@@ -162,7 +158,6 @@ export async function handleMermaidPreview(
   const background = (args.background as string) ?? DEFAULT_DIAGRAM_OPTIONS.background;
   const size = resolveSize(args) ?? DEFAULT_DIAGRAM_OPTIONS.size;
   const scale = (args.scale as number) ?? DEFAULT_DIAGRAM_OPTIONS.scale;
-  const mode = (args.mode as string) ?? defaultMode;
 
   if (!diagram) {
     throw new Error("diagram parameter is required");
@@ -173,9 +168,10 @@ export async function handleMermaidPreview(
 
   const renderOptions = { diagram, previewId, format, theme, background, size, scale };
 
+  let mode: PreviewMode;
   try {
     validateRenderOptions(renderOptions);
-    validatePreviewMode(mode);
+    mode = resolvePreviewMode(args.mode as string | undefined, defaultMode);
   } catch (error) {
     return createErrorResponse(errorMessage(error));
   }
@@ -189,14 +185,14 @@ export async function handleMermaidPreview(
     await renderDiagram(renderOptions, liveFilePath);
 
     if (format === "svg") {
-      if (mode === "artifact") {
+      if (mode === PREVIEW_MODE.ARTIFACT) {
         const pagePath = await writeArtifactPage(previewId, liveFilePath, background);
         return createArtifactResponse(liveFilePath, pagePath, previewId);
       }
       const { serverUrl, hasConnections } = await setupLivePreview(previewId, liveFilePath);
       return createLivePreviewResponse(liveFilePath, format, serverUrl, hasConnections);
     } else {
-      return createStaticRenderResponse(liveFilePath, format, mode);
+      return createStaticRenderResponse(liveFilePath, format);
     }
   } catch (error) {
     return createErrorResponse(`Error rendering Mermaid diagram: ${errorMessage(error)}`);
