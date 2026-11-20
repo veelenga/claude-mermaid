@@ -6,6 +6,7 @@
   const MAX_SCALE = 10;
   const ZOOM_BUTTON_FACTOR = 1.2;
   const WHEEL_ZOOM_FACTOR = 0.001;
+  const DRAG_CLICK_THRESHOLD = 5;
   const COPY_FEEDBACK_MS = 1500;
   const COPY_SUCCESS_LABEL = "✓";
   const COPY_FAILURE_LABEL = "✕";
@@ -30,6 +31,9 @@
     isDragging: false,
     dragStartX: 0,
     dragStartY: 0,
+    dragStartClientX: 0,
+    dragStartClientY: 0,
+    movedPastThreshold: false,
   };
 
   // ===== Pan/Zoom Functions =====
@@ -94,12 +98,22 @@
   }
 
   function handleMouseDown(e) {
-    if (!elements.viewport || e.target.closest(".status-bar")) return;
+    if (!elements.viewport || e.button !== 0 || e.target.closest(".status-bar")) return;
     panState.isDragging = true;
+    panState.movedPastThreshold = false;
+    panState.dragStartClientX = e.clientX;
+    panState.dragStartClientY = e.clientY;
     panState.dragStartX = e.clientX - panState.x;
     panState.dragStartY = e.clientY - panState.y;
     elements.viewport.style.cursor = "grabbing";
-    e.preventDefault();
+    if (!e.target.closest("a")) e.preventDefault();
+  }
+
+  function handleViewportClick(e) {
+    if (panState.movedPastThreshold && e.target.closest("a")) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
   }
 
   function handleMouseUp() {
@@ -112,6 +126,13 @@
   function handleMouseMove(e) {
     if (!elements.viewport) return;
     if (panState.isDragging) {
+      if (!panState.movedPastThreshold) {
+        const dx = e.clientX - panState.dragStartClientX;
+        const dy = e.clientY - panState.dragStartClientY;
+        if (Math.abs(dx) + Math.abs(dy) > DRAG_CLICK_THRESHOLD) {
+          panState.movedPastThreshold = true;
+        }
+      }
       panState.x = e.clientX - panState.dragStartX;
       panState.y = e.clientY - panState.dragStartY;
       applyTransform();
@@ -120,7 +141,7 @@
 
   // ===== Touch Event Handlers =====
   function handleTouchStart(e) {
-    if (!elements.viewport || e.target.closest(".status-bar")) return;
+    if (!elements.viewport || e.target.closest(".status-bar") || e.target.closest("a")) return;
     if (e.touches.length !== 1) return;
     panState.isDragging = true;
     panState.dragStartX = e.touches[0].clientX - panState.x;
@@ -185,11 +206,21 @@
   }
 
   // ===== Initialization =====
+  function openSvgLinksInNewTab() {
+    if (!elements.svg) return;
+    elements.svg.querySelectorAll("a").forEach(function (anchor) {
+      anchor.setAttribute("target", "_blank");
+      anchor.setAttribute("rel", "noopener");
+    });
+  }
+
   function initialize() {
+    openSvgLinksInNewTab();
     if (elements.viewport) {
       elements.viewport.addEventListener("mousedown", handleMouseDown);
       document.addEventListener("mouseup", handleMouseUp);
       elements.viewport.addEventListener("mousemove", handleMouseMove);
+      elements.viewport.addEventListener("click", handleViewportClick);
       elements.viewport.addEventListener("wheel", handleWheel, { passive: false });
       elements.viewport.addEventListener("touchstart", handleTouchStart, { passive: false });
       elements.viewport.addEventListener("touchmove", handleTouchMove, { passive: false });
