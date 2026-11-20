@@ -2,10 +2,9 @@ import { readFile, writeFile } from "fs/promises";
 import { join } from "path";
 import { ASSET_FILES, FILE_NAMES } from "./constants.js";
 import { getPreviewDir } from "./file-utils.js";
-import { escapeHtml, loadTemplate } from "./page-renderer.js";
+import { escapeHtml, loadTemplate, replaceVariables } from "./page-renderer.js";
 
 const TEMPLATE_FILE = "artifact-template.html";
-const PLACEHOLDER_PATTERN = /\{\{(\w+)\}\}/g;
 
 export async function writeArtifactPage(
   previewId: string,
@@ -19,16 +18,16 @@ export async function writeArtifactPage(
     readFile(svgPath, "utf-8"),
   ]);
 
-  const values: Record<string, string> = {
-    TITLE: escapeHtml(previewId),
-    STYLES: `<style>\n${styles}</style>`,
-    BACKGROUND: escapeHtml(background),
-    CONTENT: svg,
-    SCRIPT: `<script>\n${script}</script>`,
-  };
-  const page = template.replace(
-    PLACEHOLDER_PATTERN,
-    (placeholder, key) => values[key] ?? placeholder
+  const page = replaceVariables(
+    template,
+    {
+      TITLE: escapeHtml(previewId),
+      STYLES: `<style>\n${styles}</style>`,
+      BACKGROUND: escapeHtml(background),
+      CONTENT: svg,
+      SCRIPT: `<script>\n${script}</script>`,
+    },
+    false
   );
 
   const pagePath = join(getPreviewDir(previewId), FILE_NAMES.ARTIFACT_PAGE);

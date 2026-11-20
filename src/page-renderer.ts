@@ -16,6 +16,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const PREVIEW_DIR = join(__dirname, "preview");
 
+const PLACEHOLDER_PATTERN = /\{\{(\w+)\}\}/g;
+
 // Template cache for performance
 const templateCache = new Map<string, string>();
 
@@ -58,17 +60,14 @@ export function escapeHtml(unsafe: string): string {
  * @param escape Whether to HTML-escape values (default: true)
  * @returns Processed template
  */
-function replaceVariables(template: string, data: PageData, escape: boolean = true): string {
-  let result = template;
-
-  for (const [key, value] of Object.entries(data)) {
-    const placeholder = `{{${key}}}`;
-    const stringValue = String(value ?? "");
-    const processedValue = escape ? escapeHtml(stringValue) : stringValue;
-    result = result.replaceAll(placeholder, processedValue);
-  }
-
-  return result;
+export function replaceVariables(template: string, data: PageData, escape: boolean = true): string {
+  return template.replace(PLACEHOLDER_PATTERN, (placeholder, key) => {
+    if (!Object.hasOwn(data, key)) {
+      return placeholder;
+    }
+    const value = String(data[key] ?? "");
+    return escape ? escapeHtml(value) : value;
+  });
 }
 
 /**
