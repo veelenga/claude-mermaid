@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-11-21
+
 ### Added
 
-- Artifact mode: `mermaid_preview` accepts `mode: "artifact"` to write a self-contained HTML page for publishing as a Claude artifact instead of starting the local live server. Ask for an artifact in plain words and the agent picks the mode, or set `CLAUDE_MERMAID_PREVIEW=artifact` to make it the default
+- Artifact mode: `mermaid_preview` accepts `mode: "artifact"` to write a self-contained HTML page for publishing as a Claude artifact instead of starting the local live server. Ask for an artifact in plain words and the agent picks the mode, or set `CLAUDE_MERMAID_PREVIEW=artifact` to make it the default (#184)
+- Nodes with a link (`click NodeId "URL"`) show an underlined label in the preview (#234)
+
+### Fixed
+
+- Node links (`click NodeId "URL"`) are clickable in the live preview and on the artifact page, and open in a new tab. Drag-to-pan still starts from anywhere, including linked nodes (#234)
+- A right-click on the diagram no longer leaves it stuck in pan mode (#234)
 
 ## [1.7.0] - 2026-10-22
 
