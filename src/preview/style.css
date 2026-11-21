@@ -130,6 +130,15 @@ body {
   align-items: center;
   justify-content: center;
   cursor: grab;
+  touch-action: none;
+}
+
+.viewport.is-dragging {
+  cursor: grabbing;
+}
+
+.viewport.is-dragging svg a[*|href] * {
+  cursor: grabbing !important;
 }
 
 .diagram-wrapper {
@@ -146,6 +155,17 @@ svg {
   height: auto !important;
   margin: 0 auto;
   pointer-events: none;
+}
+
+svg a[*|href] {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+svg
+  a[*|href]
+  :is(text, foreignObject span):not(:is(.annotation-group, .members-group, .methods-group) *) {
+  text-decoration: underline;
 }
 
 /* ===== Mobile layout ===== */
